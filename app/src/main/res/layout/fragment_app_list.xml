@@ -3,11 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".AppListFragment">
 
-    <FrameLayout
-        android:id="@+id/activity_frame"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/app_list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:clipToPadding="false" />
 
 </FrameLayout>
