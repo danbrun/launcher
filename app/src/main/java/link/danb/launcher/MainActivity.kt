@@ -1,7 +1,8 @@
 package link.danb.launcher
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Process
+import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.UserHandle
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +19,7 @@ import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.ceil
 
-data class AppItem(val info: LauncherActivityInfo) {
+data class AppItem(val user: UserHandle, val info: LauncherActivityInfo) {
 
     val name: Lazy<String> = lazy { info.label as String }
     private val icon: Lazy<Drawable> = lazy { info.getBadgedIcon(0) }
