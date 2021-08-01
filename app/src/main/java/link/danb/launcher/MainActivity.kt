@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
 
         supportFragmentManager
             .beginTransaction()
-            .replace(R.id.activity_frame, AppListFragment())
+            .replace(R.id.activity_frame, DualUserAppListFragment())
             .commit()
     }
 }

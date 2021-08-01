@@ -12,11 +12,22 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
+private const val ARG_USER_HANDLE = "user_handle"
+
 class AppListFragment : Fragment() {
+
+    private var userHandle: UserHandle? = null
 
     private val appViewModel: AppViewModel by activityViewModels()
     private val appItemList = ArrayList<AppItem>()
     private val adapter = AppItem.Adapter(appItemList, 3)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            userHandle = it.getParcelable(ARG_USER_HANDLE)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -48,10 +59,23 @@ class AppListFragment : Fragment() {
         appItemList.apply {
             clear()
             if (apps != null) {
-                addAll(apps)
+                if (userHandle == null) {
+                    addAll(apps)
+                } else {
+                    addAll(apps.filter { it.user == userHandle })
+                }
                 sortBy { it.name.value.lowercase() }
             }
         }
         adapter.notifyDataSetChanged()
+    }
+
+    companion object {
+        @JvmStatic fun newInstance(userHandle: UserHandle) =
+            AppListFragment().apply {
+                arguments = Bundle().apply {
+                    putParcelable(ARG_USER_HANDLE, userHandle)
+                }
+            }
     }
 }
