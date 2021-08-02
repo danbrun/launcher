@@ -37,16 +37,6 @@ class AppListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_app_list, container, false)
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
-        recyclerView.setOnApplyWindowInsetsListener { _, insets ->
-            val systemInsets =
-                WindowInsetsCompat
-                    .toWindowInsetsCompat(insets, recyclerView)
-                    .getInsets(WindowInsetsCompat.Type.systemBars())
-            recyclerView.updatePadding(top = systemInsets.top, bottom = systemInsets.bottom)
-            insets
-        }
-
-        recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = adapter
 
         onAppViewModelUpdate(appViewModel.apps.value)
