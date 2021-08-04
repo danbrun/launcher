@@ -57,64 +57,31 @@ data class AppItem(val user: UserHandle, val info: LauncherActivityInfo) {
         )
     }
 
-    class Adapter(
-        private val appList: List<AppItem>,
-        private val appsPerRow: Int
-    ) : RecyclerView.Adapter<Adapter.ViewHolder>() {
+    class Adapter(private val appList: List<AppItem>) : RecyclerView.Adapter<Adapter.ViewHolder>() {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val children = (view as LinearLayout).children.map { it as TextView }
-        }
+            private val textView: TextView = view.findViewById(R.id.app_item)
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view =
-                LayoutInflater
-                    .from(parent.context)
-                    .inflate(R.layout.app_row, parent, false) as LinearLayout
-
-            (0 until appsPerRow).map {
-                LayoutInflater
-                    .from(parent.context)
-                    .inflate(R.layout.app_item, view, false)
-                    .apply { view.addView(this) }
-                    .findViewById(R.id.app_item) as TextView
-            }
-
-            return ViewHolder(view)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.children.forEachIndexed { index, view ->
-                val appIndex = position * appsPerRow + index
-
-                if (appIndex < appList.size) {
-                    setAppItem(view, appList[appIndex])
-                } else {
-                    unsetAppItem(view)
+            fun setApp(appItem: AppItem?) {
+                textView.apply {
+                    isEnabled = appItem != null
+                    text = appItem?.name?.value
+                    setCompoundDrawables(appItem?.getScaledIcon(context), null, null, null)
+                    setOnClickListener { appItem?.launch(context) }
+                    setOnLongClickListener { appItem?.uninstall(context); true }
                 }
             }
         }
 
-        override fun getItemCount() = ceil(appList.size.toDouble() / appsPerRow).toInt()
-
-        private fun setAppItem(view: TextView, data: AppItem) {
-            view.apply {
-                isEnabled = true
-                text = data.name.value
-                setCompoundDrawables(data.getScaledIcon(context), null, null, null)
-                setOnClickListener { data.launch(context) }
-                setOnLongClickListener { data.uninstall(context); true }
-            }
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.app_item, parent, false)
+            return ViewHolder(view)
         }
 
-        private fun unsetAppItem(view: TextView) {
-            view.apply {
-                isEnabled = false
-                text = null
-                setCompoundDrawables(null, null, null, null)
-                setOnClickListener(null)
-                setOnLongClickListener(null)
-            }
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.setApp(appList.getOrNull(position))
         }
+
+        override fun getItemCount() = appList.size
     }
 }

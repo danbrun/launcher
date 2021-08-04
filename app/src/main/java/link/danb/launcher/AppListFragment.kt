@@ -9,6 +9,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -20,7 +21,7 @@ class AppListFragment : Fragment() {
 
     private val appViewModel: AppViewModel by activityViewModels()
     private val appItemList = ArrayList<AppItem>()
-    private val adapter = AppItem.Adapter(appItemList, 3)
+    private val adapter = AppItem.Adapter(appItemList)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +39,7 @@ class AppListFragment : Fragment() {
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
         recyclerView.adapter = adapter
+        recyclerView.layoutManager = GridLayoutManager(context, 3)
 
         onAppViewModelUpdate(appViewModel.apps.value)
         appViewModel.apps.observe(viewLifecycleOwner, { onAppViewModelUpdate(it) })
