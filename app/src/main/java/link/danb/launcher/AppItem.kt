@@ -13,11 +13,9 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.view.children
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.ceil
 
 data class AppItem(val user: UserHandle, val info: LauncherActivityInfo) {
 
@@ -57,31 +55,38 @@ data class AppItem(val user: UserHandle, val info: LauncherActivityInfo) {
         )
     }
 
-    class Adapter(private val appList: List<AppItem>) : RecyclerView.Adapter<Adapter.ViewHolder>() {
+    class Adapter : androidx.recyclerview.widget.ListAdapter<AppItem, Adapter.ViewHolder>(DIFF) {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             private val textView: TextView = view.findViewById(R.id.app_item)
 
-            fun setApp(appItem: AppItem?) {
+            fun bindTo(appItem: AppItem) {
                 textView.apply {
-                    isEnabled = appItem != null
-                    text = appItem?.name?.value
-                    setCompoundDrawables(appItem?.getScaledIcon(context), null, null, null)
-                    setOnClickListener { appItem?.launch(context) }
-                    setOnLongClickListener { appItem?.uninstall(context); true }
+                    text = appItem.name.value
+                    setCompoundDrawables(appItem.getScaledIcon(context), null, null, null)
+                    setOnClickListener { appItem.launch(context) }
+                    setOnLongClickListener { appItem.uninstall(context); true }
                 }
             }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.app_item, parent, false)
-            return ViewHolder(view)
+            return ViewHolder(
+                LayoutInflater.from(parent.context).inflate(R.layout.app_item, parent, false))
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.setApp(appList.getOrNull(position))
+            holder.bindTo(getItem(position))
         }
 
-        override fun getItemCount() = appList.size
+        companion object {
+            val DIFF = object : DiffUtil.ItemCallback<AppItem>() {
+                override fun areItemsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
+                    oldItem === newItem
+
+                override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
+                    oldItem == newItem
+            }
+        }
     }
 }
