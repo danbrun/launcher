@@ -3,10 +3,13 @@ package link.danb.launcher
 import android.app.Application
 import android.content.Context
 import android.content.pm.LauncherApps
+import android.graphics.Rect
 import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -15,74 +18,78 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             .applicationContext
             .getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
 
-    val apps: LiveData<List<AppItem>> by lazy {
-        val mutableList = ArrayList<AppItem>()
-        val liveData = MutableLiveData<List<AppItem>>(mutableList)
+    private fun getAppItems() = launcherApps.profiles.flatMap { getAppItems(it) }
 
-        val addApp = { name: String?, user: UserHandle? ->
-            if (name != null && user != null) {
-                mutableList.addAll(
-                    launcherApps.getActivityList(name, user).map { AppItem(user, it) }
-                )
-            }
+    private fun getAppItems(user: UserHandle) = getAppItems(null, user)
+
+    private fun getAppItems(packageName: String?, user: UserHandle) =
+        launcherApps.getActivityList(packageName, user).map { AppItem(it) }
+
+    private val mutableApps: MutableLiveData<List<AppItem>> = MutableLiveData(ArrayList())
+    val apps: LiveData<List<AppItem>> = mutableApps
+
+    init {
+        viewModelScope.launch {
+            mutableApps.value = getAppItems()
+            launcherApps.registerCallback(LauncherAppsCallback())
         }
+    }
 
-        val removeApp = { name: String?, user: UserHandle? ->
-            if (name != null && user != null) {
-                mutableList.removeAll {
-                    it.info.applicationInfo.packageName == name && it.user == user
-                }
-            }
-        }
-
-        val notify = { liveData.value = mutableList }
-
-        mutableList.addAll(
-            launcherApps
-                .profiles
-                .flatMap { user ->
-                    launcherApps
-                        .getActivityList(null, user)
-                        .map { info -> AppItem(user, info) }
-                }
+    fun openApp(appItem: AppItem, bounds: Rect) =
+        launcherApps.startMainActivity(
+            appItem.info.componentName,
+            appItem.info.user,
+            bounds,
+            null
         )
 
-        launcherApps.registerCallback(object : LauncherApps.Callback() {
-            override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
-                removeApp(packageName, user)
-                notify()
-            }
+    fun openAppInfo(appItem: AppItem, bounds: Rect) =
+        launcherApps.startAppDetailsActivity(
+            appItem.info.componentName,
+            appItem.info.user,
+            bounds,
+            null
+        )
 
-            override fun onPackageAdded(packageName: String?, user: UserHandle?) {
-                addApp(packageName, user)
-                notify()
-            }
+    private fun isSamePackage(appItem: AppItem, packageName: String?, user: UserHandle?) =
+        appItem.info.applicationInfo.packageName == packageName && appItem.info.user == user
 
-            override fun onPackageChanged(packageName: String?, user: UserHandle?) {
-                removeApp(packageName, user)
-                addApp(packageName, user)
-                notify()
-            }
+    inner class LauncherAppsCallback : LauncherApps.Callback() {
+        override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
+            mutableApps.value = mutableApps.value!!.filter { !isSamePackage(it, packageName, user) }
+        }
 
-            override fun onPackagesAvailable(
-                packageNames: Array<out String>?,
-                user: UserHandle?,
-                replacing: Boolean
-            ) {
-                packageNames?.forEach { addApp(it, user) }
-                notify()
+        override fun onPackageAdded(packageName: String?, user: UserHandle?) {
+            if (packageName != null && user != null) {
+                mutableApps.value =
+                    listOf(mutableApps.value!!, getAppItems(packageName, user)).flatten()
             }
+        }
 
-            override fun onPackagesUnavailable(
-                packageNames: Array<out String>?,
-                user: UserHandle?,
-                replacing: Boolean
-            ) {
-                packageNames?.forEach { removeApp(it, user) }
-                notify()
+        override fun onPackageChanged(packageName: String?, user: UserHandle?) {
+            if (packageName != null && user != null) {
+                mutableApps.value =
+                    listOf(
+                        mutableApps.value!!.filter { !isSamePackage(it, packageName, user) },
+                        getAppItems(packageName, user)
+                    ).flatten()
             }
-        })
+        }
 
-        liveData
+        override fun onPackagesAvailable(
+            packageName: Array<out String>?, user: UserHandle?, replacing: Boolean
+        ) {
+            viewModelScope.launch {
+                mutableApps.value = getAppItems()
+            }
+        }
+
+        override fun onPackagesUnavailable(
+            packageName: Array<out String>?, user: UserHandle?, replacing: Boolean
+        ) {
+            viewModelScope.launch {
+                mutableApps.value = getAppItems()
+            }
+        }
     }
 }

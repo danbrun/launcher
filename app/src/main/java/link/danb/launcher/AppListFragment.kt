@@ -32,19 +32,21 @@ class AppListFragment : Fragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_app_list, container, false)
 
-        val adapter = AppItem.Adapter()
+        val adapter = AppItem.Adapter().apply {
+            setOnClickListener { appItem, bounds -> appViewModel.openApp(appItem, bounds) }
+            setOnLongClickListener { appItem, bounds -> appViewModel.openAppInfo(appItem, bounds) }
+        }
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
         recyclerView.adapter = adapter
         recyclerView.layoutManager = GridLayoutManager(context, 3)
 
         appViewModel.apps.observe(viewLifecycleOwner, { appList ->
-            val processedAppList: MutableList<AppItem> = ArrayList(appList)
-            if (userHandle != null) {
-                processedAppList.retainAll { it.user == userHandle }
-            }
-            processedAppList.sortBy { it.name.value.lowercase() }
-            adapter.submitList(processedAppList)
+            adapter.submitList(
+                appList
+                    .filter { userHandle == null || it.info.user == userHandle }
+                    .sortedBy { it.name.lowercase() }
+            )
         })
 
         return view

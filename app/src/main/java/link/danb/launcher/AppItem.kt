@@ -1,15 +1,8 @@
 package link.danb.launcher
 
-import android.content.Context
-import android.content.Intent
 import android.content.pm.LauncherActivityInfo
-import android.content.pm.LauncherApps
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import android.net.Uri
-import android.os.Bundle
-import android.os.UserHandle
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,62 +10,62 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 
-data class AppItem(val user: UserHandle, val info: LauncherActivityInfo) {
+typealias AppItemClickListener = (appItem: AppItem, bounds: Rect) -> Unit
 
-    val name: Lazy<String> = lazy { info.label as String }
-    private val icon: Lazy<Drawable> = lazy { info.getBadgedIcon(0) }
+data class AppItem(val info: LauncherActivityInfo) {
 
-    fun getScaledIcon(context: Context): Drawable {
-        return icon.value.apply {
-            val size =
-                TypedValue
-                    .applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP,
-                        48f,
-                        context.resources.displayMetrics
-                    )
-                    .toInt()
-            setBounds(0, 0, size, size)
-        }
-    }
-
-    fun launch(context: Context) {
-        (context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps)
-            .startMainActivity(
-                info.componentName,
-                info.user,
-                Rect(0, 0, 0, 0),
-                Bundle()
-            )
-    }
-
-    fun uninstall(context: Context) {
-        context.startActivity(
-            Intent(
-                Intent.ACTION_DELETE,
-                Uri.fromParts("package", info.applicationInfo.packageName, null)
-            )
-        )
-    }
+    val name: String = info.label as String
+    val icon: Drawable = info.getBadgedIcon(0)
 
     class Adapter : androidx.recyclerview.widget.ListAdapter<AppItem, Adapter.ViewHolder>(DIFF) {
 
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private var _onClickListener: AppItemClickListener? = null
+        private var _onLongClickListener: AppItemClickListener? = null
+
+        fun setOnClickListener(onClickListener: AppItemClickListener) {
+            _onClickListener = onClickListener
+        }
+
+        fun setOnLongClickListener(onLongClickListener: AppItemClickListener) {
+            _onLongClickListener = onLongClickListener
+        }
+
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+
             private val textView: TextView = view.findViewById(R.id.app_item)
+
+            private fun getBounds(): Rect {
+                val position = IntArray(2).apply { textView.getLocationOnScreen(this) }
+                return Rect(
+                    position[0], position[1], textView.measuredWidth, textView.measuredHeight
+                )
+            }
 
             fun bindTo(appItem: AppItem) {
                 textView.apply {
-                    text = appItem.name.value
-                    setCompoundDrawables(appItem.getScaledIcon(context), null, null, null)
-                    setOnClickListener { appItem.launch(context) }
-                    setOnLongClickListener { appItem.uninstall(context); true }
+                    text = appItem.name
+                    setCompoundDrawables(
+                        appItem.icon.apply {
+                            val size = (48f * context.resources.displayMetrics.density).toInt()
+                            setBounds(0, 0, size, size)
+                        },
+                        null,
+                        null,
+                        null
+                    )
+                    setOnClickListener { _onClickListener?.invoke(appItem, getBounds()) }
+                    setOnLongClickListener {
+                        _onLongClickListener?.invoke(appItem, getBounds())
+                        true
+                    }
                 }
             }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return ViewHolder(
-                LayoutInflater.from(parent.context).inflate(R.layout.app_item, parent, false))
+                LayoutInflater.from(parent.context).inflate(R.layout.app_item, parent, false)
+            )
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -82,10 +75,10 @@ data class AppItem(val user: UserHandle, val info: LauncherActivityInfo) {
         companion object {
             val DIFF = object : DiffUtil.ItemCallback<AppItem>() {
                 override fun areItemsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
-                    oldItem === newItem
+                    oldItem.info.componentName == newItem.info.componentName
+                            && oldItem.info.user == newItem.info.user
 
-                override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
-                    oldItem == newItem
+                override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean = false
             }
         }
     }
