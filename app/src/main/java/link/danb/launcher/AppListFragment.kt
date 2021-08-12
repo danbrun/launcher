@@ -33,8 +33,8 @@ class AppListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_app_list, container, false)
 
         val adapter = AppItem.Adapter().apply {
-            setOnClickListener { appItem, bounds -> appViewModel.openApp(appItem, bounds) }
-            setOnLongClickListener { appItem, bounds -> appViewModel.openAppInfo(appItem, bounds) }
+            setOnClickListener { appItem, view -> appViewModel.openApp(appItem, view) }
+            setOnLongClickListener { appItem, view -> appViewModel.openAppInfo(appItem, view) }
         }
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)

@@ -1,10 +1,12 @@
 package link.danb.launcher
 
+import android.app.ActivityOptions
 import android.app.Application
 import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Rect
 import android.os.UserHandle
+import android.view.View
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -35,20 +37,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun openApp(appItem: AppItem, bounds: Rect) =
+    private fun getBounds(view: View): Rect {
+        val pos = IntArray(2).apply { view.getLocationOnScreen(this) }
+        return Rect(pos[0], pos[1], view.width, view.height)
+    }
+
+    private fun getAnimation(view: View): ActivityOptions {
+        return ActivityOptions.makeClipRevealAnimation(view, 0, 0, view.width, view.height)
+    }
+
+    fun openApp(appItem: AppItem, view: View) =
         launcherApps.startMainActivity(
             appItem.info.componentName,
             appItem.info.user,
-            bounds,
-            null
+            getBounds(view),
+            getAnimation(view).toBundle()
         )
 
-    fun openAppInfo(appItem: AppItem, bounds: Rect) =
+    fun openAppInfo(appItem: AppItem, view: View) =
         launcherApps.startAppDetailsActivity(
             appItem.info.componentName,
             appItem.info.user,
-            bounds,
-            null
+            getBounds(view),
+            getAnimation(view).toBundle()
         )
 
     private fun isSamePackage(appItem: AppItem, packageName: String?, user: UserHandle?) =

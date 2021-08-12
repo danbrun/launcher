@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.content.pm.LauncherActivityInfo
-import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 
-typealias AppItemClickListener = (appItem: AppItem, bounds: Rect) -> Unit
+typealias AppItemClickListener = (appItem: AppItem, view: View) -> Unit
 
 data class AppItem(val info: LauncherActivityInfo) {
 
@@ -34,13 +33,6 @@ data class AppItem(val info: LauncherActivityInfo) {
 
             private val textView: TextView = view.findViewById(R.id.app_item)
 
-            private fun getBounds(): Rect {
-                val position = IntArray(2).apply { textView.getLocationOnScreen(this) }
-                return Rect(
-                    position[0], position[1], textView.measuredWidth, textView.measuredHeight
-                )
-            }
-
             fun bindTo(appItem: AppItem) {
                 textView.apply {
                     text = appItem.name
@@ -53,9 +45,9 @@ data class AppItem(val info: LauncherActivityInfo) {
                         null,
                         null
                     )
-                    setOnClickListener { _onClickListener?.invoke(appItem, getBounds()) }
+                    setOnClickListener { _onClickListener?.invoke(appItem, textView) }
                     setOnLongClickListener {
-                        _onLongClickListener?.invoke(appItem, getBounds())
+                        _onLongClickListener?.invoke(appItem, textView)
                         true
                     }
                 }
