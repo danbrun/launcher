@@ -67,23 +67,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     inner class LauncherAppsCallback : LauncherApps.Callback() {
         override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
-            mutableApps.value = mutableApps.value!!.filter { !isSamePackage(it, packageName, user) }
+            viewModelScope.launch {
+                mutableApps.value =
+                    mutableApps.value!!.filter { !isSamePackage(it, packageName, user) }
+            }
         }
 
         override fun onPackageAdded(packageName: String?, user: UserHandle?) {
             if (packageName != null && user != null) {
-                mutableApps.value =
-                    listOf(mutableApps.value!!, getAppItems(packageName, user)).flatten()
+                viewModelScope.launch {
+                    mutableApps.value =
+                        listOf(mutableApps.value!!, getAppItems(packageName, user)).flatten()
+                }
             }
         }
 
         override fun onPackageChanged(packageName: String?, user: UserHandle?) {
             if (packageName != null && user != null) {
-                mutableApps.value =
-                    listOf(
-                        mutableApps.value!!.filter { !isSamePackage(it, packageName, user) },
-                        getAppItems(packageName, user)
-                    ).flatten()
+                viewModelScope.launch {
+                    mutableApps.value =
+                        listOf(
+                            mutableApps.value!!.filter { !isSamePackage(it, packageName, user) },
+                            getAppItems(packageName, user)
+                        ).flatten()
+                }
             }
         }
 
