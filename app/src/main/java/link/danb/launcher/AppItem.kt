@@ -15,6 +15,7 @@ data class AppItem(val info: LauncherActivityInfo) {
 
     val name: String = info.label as String
     val icon: Drawable = info.getBadgedIcon(0)
+    private val time: Long = System.currentTimeMillis()
 
     class Adapter : androidx.recyclerview.widget.ListAdapter<AppItem, Adapter.ViewHolder>(DIFF) {
 
@@ -70,7 +71,8 @@ data class AppItem(val info: LauncherActivityInfo) {
                     oldItem.info.componentName == newItem.info.componentName
                             && oldItem.info.user == newItem.info.user
 
-                override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean = false
+                override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
+                    oldItem.time == newItem.time
             }
         }
     }
