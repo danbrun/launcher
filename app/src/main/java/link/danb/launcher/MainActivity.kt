@@ -13,4 +13,8 @@ class MainActivity : AppCompatActivity() {
             .replace(R.id.activity_frame, AppListFragment())
             .commit()
     }
+
+    override fun onBackPressed() {
+        // Intercept back button.
+    }
 }
