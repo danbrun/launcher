@@ -35,13 +35,15 @@ class AppListFragment : Fragment() {
         recyclerView.layoutManager = GridLayoutManager(context, 3)
 
         val filterList = view.findViewById<ChipGroup>(R.id.filter_list)
-        filters.forEach { filter ->
-            val chip = Chip(context)
-            chip.text = filter.name
-            chip.chipStrokeWidth = 0f
-            chip.setOnClickListener { appViewModel.setFilter(filter) }
-            filterList.addView(chip)
-            filterChips[filter.name] = chip
+        if (filterList != null) {
+            filters.forEach { filter ->
+                val chip = Chip(context)
+                chip.text = filter.name
+                chip.chipStrokeWidth = 0f
+                chip.setOnClickListener { appViewModel.setFilter(filter) }
+                filterList.addView(chip)
+                filterChips[filter.name] = chip
+            }
         }
 
         appViewModel.apps.observe(viewLifecycleOwner, { updateAppList() })
@@ -61,7 +63,10 @@ class AppListFragment : Fragment() {
         filterChips.values.forEach {
             it.isSelected = false
         }
-        filterChips[appViewModel.filter.value!!.name]!!.isSelected = true
+        val filterChip = filterChips[appViewModel.filter.value!!.name]
+        if (filterChip != null) {
+            filterChip.isSelected = true
+        }
         updateAppList()
     }
 }
