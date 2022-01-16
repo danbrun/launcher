@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.os.Bundle
-import android.os.Process
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -11,7 +10,7 @@ class MainActivity : AppCompatActivity() {
 
         supportFragmentManager
             .beginTransaction()
-            .replace(R.id.activity_frame, DualUserAppListFragment())
+            .replace(R.id.activity_frame, AppListFragment())
             .commit()
     }
 }

@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.os.Bundle
-import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,21 +8,20 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
-private const val ARG_USER_HANDLE = "user_handle"
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 
 class AppListFragment : Fragment() {
 
-    private var userHandle: UserHandle? = null
-
     private val appViewModel: AppViewModel by activityViewModels()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            userHandle = it.getParcelable(ARG_USER_HANDLE)
-        }
+    private var adapter: AppItem.Adapter = AppItem.Adapter().apply {
+        setOnClickListener { appItem, view -> appViewModel.openApp(appItem, view) }
+        setOnLongClickListener { appItem, view -> appViewModel.openAppInfo(appItem, view) }
     }
+
+    private val filters: List<AppFilter> = listOf(AppFilter.ALL, AppFilter.PERSONAL, AppFilter.WORK)
+    private val filterChips: HashMap<String, Chip> = HashMap()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,33 +30,38 @@ class AppListFragment : Fragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_app_list, container, false)
 
-        val adapter = AppItem.Adapter().apply {
-            setOnClickListener { appItem, view -> appViewModel.openApp(appItem, view) }
-            setOnLongClickListener { appItem, view -> appViewModel.openAppInfo(appItem, view) }
-        }
-
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
         recyclerView.adapter = adapter
         recyclerView.layoutManager = GridLayoutManager(context, 3)
 
-        appViewModel.apps.observe(viewLifecycleOwner, { appList ->
-            adapter.submitList(
-                appList
-                    .filter { userHandle == null || it.info.user == userHandle }
-                    .sortedBy { it.name.lowercase() }
-            )
-        })
+        val filterList = view.findViewById<ChipGroup>(R.id.filter_list)
+        filters.forEach { filter ->
+            val chip = Chip(context)
+            chip.text = filter.name
+            chip.chipStrokeWidth = 0f
+            chip.setOnClickListener { appViewModel.setFilter(filter) }
+            filterList.addView(chip)
+            filterChips[filter.name] = chip
+        }
+
+        appViewModel.apps.observe(viewLifecycleOwner, { updateAppList() })
+        appViewModel.filter.observe(viewLifecycleOwner, { updateFilterList() })
 
         return view
     }
 
-    companion object {
-        @JvmStatic
-        fun newInstance(userHandle: UserHandle) =
-            AppListFragment().apply {
-                arguments = Bundle().apply {
-                    putParcelable(ARG_USER_HANDLE, userHandle)
-                }
-            }
+    private fun updateAppList() {
+        adapter.submitList(
+            appViewModel.apps.value!!
+                .filter(appViewModel.filter.value!!.filterFunction)
+                .sortedBy { it.name.lowercase() })
+    }
+
+    private fun updateFilterList() {
+        filterChips.values.forEach {
+            it.isSelected = false
+        }
+        filterChips[appViewModel.filter.value!!.name]!!.isSelected = true
+        updateAppList()
     }
 }

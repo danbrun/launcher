@@ -30,11 +30,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val mutableApps: MutableLiveData<List<AppItem>> = MutableLiveData(ArrayList())
     val apps: LiveData<List<AppItem>> = mutableApps
 
+    private val mutableFilter: MutableLiveData<AppFilter> = MutableLiveData(AppFilter.PERSONAL)
+    val filter: LiveData<AppFilter> = mutableFilter
+
     init {
         viewModelScope.launch {
             mutableApps.value = getAppItems()
             launcherApps.registerCallback(LauncherAppsCallback())
         }
+    }
+
+    fun setFilter(filter: AppFilter) {
+        mutableFilter.value = filter
     }
 
     private fun getBounds(view: View): Rect {
