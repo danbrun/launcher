@@ -1,5 +1,6 @@
 package link.danb.launcher
 
+import android.content.Context
 import android.content.pm.LauncherActivityInfo
 import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
@@ -14,8 +15,15 @@ typealias AppItemClickListener = (appItem: AppItem, view: View) -> Unit
 data class AppItem(val info: LauncherActivityInfo) {
 
     val name: String = info.label as String
-    val icon: Drawable = info.getBadgedIcon(0)
     private val time: Long = System.currentTimeMillis()
+    private var icon: Drawable? = null
+
+    fun getIcon(context: Context): Drawable {
+        if (icon == null) {
+            icon = LauncherIconDrawable(context, this)
+        }
+        return icon!!
+    }
 
     class Adapter : androidx.recyclerview.widget.ListAdapter<AppItem, Adapter.ViewHolder>(DIFF) {
 
@@ -36,16 +44,13 @@ data class AppItem(val info: LauncherActivityInfo) {
 
             fun bindTo(appItem: AppItem) {
                 textView.apply {
+                    val size = context.resources.getDimension(R.dimen.launcher_icon_size).toInt()
+                    val icon = appItem.getIcon(context).apply {
+                        setBounds(0, 0, size, size)
+                    }
+
                     text = appItem.name
-                    setCompoundDrawables(
-                        appItem.icon.apply {
-                            val size = (48f * context.resources.displayMetrics.density).toInt()
-                            setBounds(0, 0, size, size)
-                        },
-                        null,
-                        null,
-                        null
-                    )
+                    setCompoundDrawables(icon, null, null, null)
                     setOnClickListener { _onClickListener?.invoke(appItem, textView) }
                     setOnLongClickListener {
                         _onLongClickListener?.invoke(appItem, textView)
