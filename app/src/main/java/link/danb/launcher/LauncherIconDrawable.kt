@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
+import android.os.Process
 import androidx.appcompat.content.res.AppCompatResources
 
 class LauncherIconDrawable(private val context: Context, appItem: AppItem) :
@@ -16,6 +17,10 @@ class LauncherIconDrawable(private val context: Context, appItem: AppItem) :
 
     private val defaultBackground: Drawable by lazy {
         AppCompatResources.getDrawable(context, R.drawable.launcher_icon_background)!!
+    }
+
+    private val workBadge: Drawable by lazy {
+        AppCompatResources.getDrawable(context, R.drawable.launcher_icon_badge)!!
     }
 
     init {
@@ -43,6 +48,13 @@ class LauncherIconDrawable(private val context: Context, appItem: AppItem) :
             }
             icon.run {
                 setBounds(padding, padding, size - padding, size - padding)
+                draw(canvas)
+            }
+        }
+
+        if (appItem.info.user != Process.myUserHandle()) {
+            workBadge.run {
+                setBounds(0, 0, size, size)
                 draw(canvas)
             }
         }
