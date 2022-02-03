@@ -17,7 +17,9 @@ class AppListFragment : Fragment() {
 
     private var adapter: AppItem.Adapter = AppItem.Adapter().apply {
         setOnClickListener { appItem, view -> appViewModel.openApp(appItem, view) }
-        setOnLongClickListener { appItem, view -> appViewModel.openAppInfo(appItem, view) }
+        setOnLongClickListener { appItem, _ ->
+            AppOptionsDialogFragment.newInstance(appItem).show(parentFragmentManager, "test")
+        }
     }
 
     private val filters: List<AppFilter> = listOf(AppFilter.ALL, AppFilter.PERSONAL, AppFilter.WORK)
