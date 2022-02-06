@@ -20,7 +20,7 @@ data class AppItem(val info: LauncherActivityInfo) {
 
     fun getIcon(context: Context): Drawable {
         if (icon == null) {
-            icon = LauncherIconDrawable(context, this)
+            icon = LauncherIconDrawable.get(context, this.info)
         }
         return icon!!
     }

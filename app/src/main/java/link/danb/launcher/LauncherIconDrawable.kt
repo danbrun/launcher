@@ -1,73 +1,80 @@
 package link.danb.launcher
 
 import android.content.Context
+import android.content.pm.LauncherActivityInfo
 import android.graphics.*
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Process
 import androidx.appcompat.content.res.AppCompatResources
 
-class LauncherIconDrawable(private val context: Context, appItem: AppItem) :
+class LauncherIconDrawable(
+    private val icon: Drawable,
+    private val radius: Float,
+    private val padding: Int,
+    private val getBackground: () -> Drawable?,
+    private val getWorkBadge: () -> Drawable?
+) :
     Drawable() {
 
-    private val size: Int = context.resources.getDimension(R.dimen.launcher_icon_size).toInt()
-    private val radius: Float = context.resources.getDimension(R.dimen.launcher_icon_radius)
     private val paint: Paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val bitmap: Bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
 
-    private val defaultBackground: Drawable by lazy {
-        AppCompatResources.getDrawable(context, R.drawable.launcher_icon_background)!!
+    override fun draw(canvas: Canvas) {
+        canvas.drawRoundRect(
+            0f, 0f, bounds.width().toFloat(), bounds.height().toFloat(), radius, radius, paint
+        )
     }
 
-    private val workBadge: Drawable by lazy {
-        AppCompatResources.getDrawable(context, R.drawable.launcher_icon_badge)!!
-    }
+    override fun onBoundsChange(bounds: Rect?) {
+        if (bounds == null || bounds.width() <= 0 || bounds.height() <= 0) {
+            return
+        }
 
-    init {
-        val icon = appItem.info.getIcon(0)
+        val width = bounds.width()
+        val height = bounds.height()
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        paint.shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+
         val canvas = Canvas(bitmap)
 
         if (icon is AdaptiveIconDrawable) {
-            val padding = (size * AdaptiveIconDrawable.getExtraInsetFraction()).toInt()
-            val bounds = Rect(-padding, -padding, size + padding, size + padding)
+            val horizontalPadding = (width * AdaptiveIconDrawable.getExtraInsetFraction()).toInt()
+            val verticalPadding = (height * AdaptiveIconDrawable.getExtraInsetFraction()).toInt()
+            val adaptiveIconBounds = Rect(
+                -horizontalPadding,
+                -verticalPadding,
+                width + horizontalPadding,
+                height + verticalPadding
+            )
 
             icon.background.run {
-                setBounds(bounds)
+                setBounds(adaptiveIconBounds)
                 draw(canvas)
             }
             icon.foreground.run {
-                setBounds(bounds)
+                setBounds(adaptiveIconBounds)
                 draw(canvas)
             }
         } else {
-            val padding = context.resources.getDimension(R.dimen.launcher_icon_padding).toInt()
-
-            defaultBackground.run {
-                setBounds(0, 0, size, size)
+            getBackground()?.run {
+                setBounds(0, 0, width, height)
                 draw(canvas)
             }
             icon.run {
-                setBounds(padding, padding, size - padding, size - padding)
+                setBounds(padding, padding, width - padding, height - padding)
                 draw(canvas)
             }
         }
 
-        if (appItem.info.user != Process.myUserHandle()) {
-            workBadge.run {
-                setBounds(0, 0, size, size)
-                draw(canvas)
-            }
+        getWorkBadge()?.run {
+            setBounds(0, 0, width, height)
+            draw(canvas)
         }
-
-        paint.shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
     }
 
-    override fun getIntrinsicWidth(): Int = size
-    override fun getIntrinsicHeight(): Int = size
-
-    override fun draw(canvas: Canvas) {
-        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), radius, radius, paint)
-    }
+    override fun getIntrinsicWidth(): Int = icon.intrinsicWidth
+    override fun getIntrinsicHeight(): Int = icon.intrinsicHeight
 
     override fun setAlpha(p0: Int) {
         TODO("Not yet implemented")
@@ -79,5 +86,22 @@ class LauncherIconDrawable(private val context: Context, appItem: AppItem) :
 
     override fun getOpacity(): Int {
         TODO("Not yet implemented")
+    }
+
+    companion object {
+        fun get(context: Context, info: LauncherActivityInfo): LauncherIconDrawable =
+            LauncherIconDrawable(
+                info.getIcon(0),
+                context.resources.getDimension(R.dimen.launcher_icon_radius),
+                context.resources.getDimension(R.dimen.launcher_icon_padding).toInt(),
+                { AppCompatResources.getDrawable(context, R.drawable.launcher_icon_background) },
+                {
+                    if (info.user != Process.myUserHandle())
+                        AppCompatResources.getDrawable(
+                            context,
+                            R.drawable.launcher_icon_badge
+                        ) else null
+                }
+            )
     }
 }
