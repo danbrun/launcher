@@ -6,13 +6,15 @@ import android.graphics.*
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Process
+import android.util.TypedValue
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.palette.graphics.Palette
 
 class LauncherIconDrawable(
     private val icon: Drawable,
     private val radius: Float,
     private val padding: Int,
-    private val getBackground: () -> Drawable?,
+    private val getBackground: () -> Int,
     private val getWorkBadge: () -> Drawable?
 ) :
     Drawable() {
@@ -57,13 +59,24 @@ class LauncherIconDrawable(
                 draw(canvas)
             }
         } else {
-            getBackground()?.run {
+            icon.run {
                 setBounds(0, 0, width, height)
                 draw(canvas)
             }
-            icon.run {
-                setBounds(padding, padding, width - padding, height - padding)
-                draw(canvas)
+            Palette.from(bitmap).generate {
+                if (it == null) {
+                    return@generate
+                }
+
+                val bgPaint = Paint()
+                bgPaint.color = it.getDominantColor(getBackground())
+                canvas.drawRoundRect(
+                    0f, 0f, width.toFloat(), height.toFloat(), radius, radius, bgPaint
+                )
+                icon.run {
+                    setBounds(padding, padding, width - padding, height - padding)
+                    draw(canvas)
+                }
             }
         }
 
@@ -94,8 +107,12 @@ class LauncherIconDrawable(
                 info.getIcon(0),
                 context.resources.getDimension(R.dimen.launcher_icon_radius),
                 context.resources.getDimension(R.dimen.launcher_icon_padding).toInt(),
-                { AppCompatResources.getDrawable(context, R.drawable.launcher_icon_background) },
                 {
+                    TypedValue().run {
+                        context.theme.resolveAttribute(R.attr.colorAccent, this, true)
+                        this.data
+                    }
+                }, {
                     if (info.user != Process.myUserHandle())
                         AppCompatResources.getDrawable(
                             context,
