@@ -1,5 +1,6 @@
 package link.danb.launcher
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 
@@ -39,15 +41,20 @@ class AppListFragment : Fragment() {
             requireContext().resources.getInteger(R.integer.launcher_columns)
         )
 
-        val filterList = view.findViewById<ChipGroup>(R.id.filter_list)
-        if (filterList != null) {
+        view.findViewById<ChipGroup>(R.id.filter_list)?.run {
             filters.forEach { filter ->
                 val chip = Chip(context)
                 chip.text = filter.name
                 chip.chipStrokeWidth = 0f
                 chip.setOnClickListener { appViewModel.setFilter(filter) }
-                filterList.addView(chip)
+                addView(chip)
                 filterChips[filter.name] = chip
+            }
+        }
+
+        view.findViewById<MaterialButton>(R.id.settings_button)?.run {
+            setOnClickListener {
+                requireContext().startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
             }
         }
 
