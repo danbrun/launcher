@@ -34,7 +34,10 @@ class AppListFragment : Fragment() {
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
         recyclerView.adapter = adapter
-        recyclerView.layoutManager = GridLayoutManager(context, 3)
+        recyclerView.layoutManager = GridLayoutManager(
+            context,
+            requireContext().resources.getInteger(R.integer.launcher_columns)
+        )
 
         val filterList = view.findViewById<ChipGroup>(R.id.filter_list)
         if (filterList != null) {
@@ -48,8 +51,8 @@ class AppListFragment : Fragment() {
             }
         }
 
-        appViewModel.apps.observe(viewLifecycleOwner, { updateAppList() })
-        appViewModel.filter.observe(viewLifecycleOwner, { updateFilterList() })
+        appViewModel.apps.observe(viewLifecycleOwner) { updateAppList() }
+        appViewModel.filter.observe(viewLifecycleOwner) { updateFilterList() }
 
         return view
     }
