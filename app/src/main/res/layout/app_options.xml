@@ -16,4 +16,14 @@
         android:padding="24dp"
         android:text="@string/settings" />
 
+    <TextView
+        android:id="@+id/uninstall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="24dp"
+        android:text="@string/uninstall" />
+
 </LinearLayout>

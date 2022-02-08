@@ -1,5 +1,7 @@
 package link.danb.launcher
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -44,6 +46,20 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
                     appViewModel.openAppInfo(this, v)
                     dismiss()
                 }
+            }
+        }
+
+        view.findViewById<TextView>(R.id.uninstall).apply {
+            setOnClickListener {
+                appItem?.info?.run {
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_DELETE,
+                            Uri.parse("package:" + applicationInfo.packageName)
+                        )
+                    )
+                }
+                dismiss()
             }
         }
 
