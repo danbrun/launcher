@@ -54,7 +54,12 @@ class AppListFragment : Fragment() {
 
         view.findViewById<MaterialButton>(R.id.settings_button)?.run {
             setOnClickListener {
-                requireContext().startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                requireContext().startActivity(
+                    Intent(android.provider.Settings.ACTION_SETTINGS).also {
+                        it.sourceBounds = getLocationOnScreen()
+                    },
+                    makeClipRevealAnimation()
+                )
             }
         }
 

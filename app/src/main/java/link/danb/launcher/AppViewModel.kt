@@ -1,11 +1,9 @@
 package link.danb.launcher
 
-import android.app.ActivityOptions
 import android.app.Application
 import android.content.Context
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
-import android.graphics.Rect
 import android.os.UserHandle
 import android.view.View
 import androidx.lifecycle.AndroidViewModel
@@ -43,16 +41,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         launcherApps.startMainActivity(
             appItem.info.componentName,
             appItem.info.user,
-            getBounds(view),
-            getAnimation(view).toBundle()
+            view.getLocationOnScreen(),
+            view.makeClipRevealAnimation()
         )
 
     fun openAppInfo(appItem: AppItem, view: View) =
         launcherApps.startAppDetailsActivity(
             appItem.info.componentName,
             appItem.info.user,
-            getBounds(view),
-            getAnimation(view).toBundle()
+            view.getLocationOnScreen(),
+            view.makeClipRevealAnimation()
         )
 
     fun setFilter(filter: AppFilter) {
@@ -128,17 +126,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     postActivityList()
                 }
             }
-        }
-    }
-
-    companion object {
-        private fun getBounds(view: View): Rect {
-            val pos = IntArray(2).apply { view.getLocationOnScreen(this) }
-            return Rect(pos[0], pos[1], view.width, view.height)
-        }
-
-        private fun getAnimation(view: View): ActivityOptions {
-            return ActivityOptions.makeClipRevealAnimation(view, 0, 0, view.width, view.height)
         }
     }
 }
