@@ -1,8 +1,9 @@
 package link.danb.launcher
 
-import android.content.Context
-import android.content.pm.LauncherActivityInfo
+import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.graphics.drawable.Drawable
+import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,19 +13,12 @@ import androidx.recyclerview.widget.RecyclerView
 
 typealias AppItemClickListener = (appItem: AppItem, view: View) -> Unit
 
-data class AppItem(val info: LauncherActivityInfo) {
-
-    val name: String = info.label as String
-    private val time: Long = System.currentTimeMillis()
-    private var icon: Drawable? = null
-
-    fun getIcon(context: Context): Drawable {
-        if (icon == null) {
-            icon = LauncherIconDrawable.get(context, this.info)
-        }
-        return icon!!
-    }
-
+data class AppItem(
+    val componentName: ComponentName,
+    val userHandle: UserHandle,
+    val label: String,
+    val getIcon: () -> Drawable?
+) {
     class Adapter : androidx.recyclerview.widget.ListAdapter<AppItem, Adapter.ViewHolder>(DIFF) {
 
         private var _onClickListener: AppItemClickListener? = null
@@ -45,11 +39,11 @@ data class AppItem(val info: LauncherActivityInfo) {
             fun bindTo(appItem: AppItem) {
                 textView.apply {
                     val size = context.resources.getDimension(R.dimen.launcher_icon_size).toInt()
-                    val icon = appItem.getIcon(context).apply {
+                    val icon = appItem.getIcon()?.apply {
                         setBounds(0, 0, size, size)
                     }
 
-                    text = appItem.name
+                    text = appItem.label
                     setCompoundDrawables(icon, null, null, null)
                     setOnClickListener { _onClickListener?.invoke(appItem, textView) }
                     setOnLongClickListener {
@@ -73,11 +67,14 @@ data class AppItem(val info: LauncherActivityInfo) {
         companion object {
             val DIFF = object : DiffUtil.ItemCallback<AppItem>() {
                 override fun areItemsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
-                    oldItem.info.componentName == newItem.info.componentName
-                            && oldItem.info.user == newItem.info.user
+                    oldItem.componentName == newItem.componentName
+                            && oldItem.userHandle == newItem.userHandle
 
+                // Icons are compared by reference since the ActivityIconViewModel caches rendered
+                // bitmaps and should return the same value each time.
+                @SuppressLint("DiffUtilEquals")
                 override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
-                    oldItem.time == newItem.time
+                    oldItem.label == newItem.label && oldItem.getIcon === newItem.getIcon
             }
         }
     }

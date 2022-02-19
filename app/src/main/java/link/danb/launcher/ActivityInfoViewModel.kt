@@ -1,6 +1,7 @@
 package link.danb.launcher
 
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
@@ -14,18 +15,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class AppViewModel(application: Application) : AndroidViewModel(application) {
+class ActivityInfoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val launcherApps =
+    private val launcherApps: LauncherApps by lazy {
         getApplication<Application>()
             .applicationContext
             .getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-    private val activityList: ArrayList<LauncherActivityInfo> = ArrayList()
-    private val mutableApps: MutableLiveData<List<AppItem>> = MutableLiveData(ArrayList())
-    private val mutableFilter: MutableLiveData<AppFilter> = MutableLiveData(AppFilter.PERSONAL)
+    }
 
-    val apps: LiveData<List<AppItem>> = mutableApps
-    val filter: LiveData<AppFilter> = mutableFilter
+    private val internalActivities: ArrayList<LauncherActivityInfo> = ArrayList()
+    private val mutableActivities: MutableLiveData<List<LauncherActivityInfo>> =
+        MutableLiveData(internalActivities)
+    val activities: LiveData<List<LauncherActivityInfo>> = mutableActivities
 
     init {
         viewModelScope.launch {
@@ -37,41 +38,37 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun openApp(appItem: AppItem, view: View) =
+    fun openApp(componentName: ComponentName, userHandle: UserHandle, view: View) =
         launcherApps.startMainActivity(
-            appItem.info.componentName,
-            appItem.info.user,
+            componentName,
+            userHandle,
             view.getLocationOnScreen(),
             view.makeClipRevealAnimation()
         )
 
-    fun openAppInfo(appItem: AppItem, view: View) =
+    fun openAppInfo(componentName: ComponentName, userHandle: UserHandle, view: View) =
         launcherApps.startAppDetailsActivity(
-            appItem.info.componentName,
-            appItem.info.user,
+            componentName,
+            userHandle,
             view.getLocationOnScreen(),
             view.makeClipRevealAnimation()
         )
-
-    fun setFilter(filter: AppFilter) {
-        mutableFilter.value = filter
-    }
 
     private fun updateActivityList(user: UserHandle? = null, packageName: String? = null) {
         if (user != null) {
             if (packageName != null) {
-                activityList.removeIf {
+                internalActivities.removeIf {
                     it.user == user && it.applicationInfo.packageName == packageName
                 }
             } else {
-                activityList.removeIf {
+                internalActivities.removeIf {
                     it.user == user
                 }
             }
-            activityList.addAll(launcherApps.getActivityList(packageName, user))
+            internalActivities.addAll(launcherApps.getActivityList(packageName, user))
         } else {
-            activityList.clear()
-            activityList.addAll(
+            internalActivities.clear()
+            internalActivities.addAll(
                 launcherApps.profiles.flatMap {
                     launcherApps.getActivityList(null, it)
                 }
@@ -80,7 +77,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun postActivityList() {
-        mutableApps.postValue(activityList.map { AppItem(it) })
+        mutableActivities.postValue(internalActivities)
     }
 
     inner class LauncherAppsCallback : LauncherApps.Callback() {

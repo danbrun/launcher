@@ -12,20 +12,30 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import link.danb.launcher.ActivityFilterViewModel.ActivityFilter
 
 class AppListFragment : Fragment() {
 
-    private val appViewModel: AppViewModel by activityViewModels()
+    private val activityInfoViewModel: ActivityInfoViewModel by activityViewModels()
+    private val activityFilterViewModel: ActivityFilterViewModel by activityViewModels()
+    private val activityIconViewModel: ActivityIconViewModel by activityViewModels()
 
     private var adapter: AppItem.Adapter = AppItem.Adapter().apply {
-        setOnClickListener { appItem, view -> appViewModel.openApp(appItem, view) }
+        setOnClickListener { appItem, view ->
+            activityInfoViewModel.openApp(
+                appItem.componentName,
+                appItem.userHandle,
+                view
+            )
+        }
         setOnLongClickListener { appItem, _ ->
             AppOptionsDialogFragment.newInstance(appItem).show(parentFragmentManager, "test")
         }
     }
 
-    private val filters: List<AppFilter> = listOf(AppFilter.ALL, AppFilter.PERSONAL, AppFilter.WORK)
-    private val filterChips: HashMap<String, Chip> = HashMap()
+    private val filters: List<ActivityFilter> =
+        listOf(ActivityFilter.ALL, ActivityFilter.PERSONAL, ActivityFilter.WORK)
+    private val filterChips: HashMap<Int, Chip> = HashMap()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,11 +54,11 @@ class AppListFragment : Fragment() {
         view.findViewById<ChipGroup>(R.id.filter_list)?.run {
             filters.forEach { filter ->
                 val chip = Chip(context)
-                chip.text = filter.name
+                chip.setText(filter.nameResId)
                 chip.chipStrokeWidth = 0f
-                chip.setOnClickListener { appViewModel.setFilter(filter) }
+                chip.setOnClickListener { activityFilterViewModel.setFilter(filter) }
                 addView(chip)
-                filterChips[filter.name] = chip
+                filterChips[filter.nameResId] = chip
             }
         }
 
@@ -63,24 +73,31 @@ class AppListFragment : Fragment() {
             }
         }
 
-        appViewModel.apps.observe(viewLifecycleOwner) { updateAppList() }
-        appViewModel.filter.observe(viewLifecycleOwner) { updateFilterList() }
+        activityInfoViewModel.activities.observe(viewLifecycleOwner) { updateAppList() }
+        activityFilterViewModel.filter.observe(viewLifecycleOwner) { updateFilterList() }
+        activityIconViewModel.observableModel.observe(viewLifecycleOwner) { updateAppList() }
 
         return view
     }
 
     private fun updateAppList() {
         adapter.submitList(
-            appViewModel.apps.value!!
-                .filter(appViewModel.filter.value!!.filterFunction)
-                .sortedBy { it.name.lowercase() })
+            activityInfoViewModel.activities.value!!
+                .filter(activityFilterViewModel.filter.value!!.filterFunction)
+                .map {
+                    AppItem(
+                        it.componentName,
+                        it.user,
+                        it.label as String
+                    ) { activityIconViewModel.getIcon(it) }
+                }.sortedBy { it.label.lowercase() })
     }
 
     private fun updateFilterList() {
         filterChips.values.forEach {
             it.isSelected = false
         }
-        val filterChip = filterChips[appViewModel.filter.value!!.name]
+        val filterChip = filterChips[activityFilterViewModel.filter.value!!.nameResId]
         if (filterChip != null) {
             filterChip.isSelected = true
         }
