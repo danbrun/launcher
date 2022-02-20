@@ -26,9 +26,8 @@ class ActivityInfoViewModel(application: Application) : AndroidViewModel(applica
     private val internalActivities: ArrayList<LauncherActivityInfo> = ArrayList()
     private val mutableActivities: MutableLiveData<List<LauncherActivityInfo>> =
         MutableLiveData(internalActivities)
-    val activities: LiveData<List<LauncherActivityInfo>> = mutableActivities
 
-    init {
+    val activities: LiveData<List<LauncherActivityInfo>> by lazy {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 updateActivityList()
@@ -36,6 +35,8 @@ class ActivityInfoViewModel(application: Application) : AndroidViewModel(applica
             }
             launcherApps.registerCallback(LauncherAppsCallback())
         }
+
+        mutableActivities
     }
 
     fun openApp(componentName: ComponentName, userHandle: UserHandle, view: View) =

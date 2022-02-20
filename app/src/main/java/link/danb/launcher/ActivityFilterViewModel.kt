@@ -12,7 +12,7 @@ class ActivityFilterViewModel(application: Application) : AndroidViewModel(appli
 
     private val mutableFilter: MutableLiveData<ActivityFilter> =
         MutableLiveData(ActivityFilter.PERSONAL)
-    val filter: LiveData<ActivityFilter> = mutableFilter
+    val filter: LiveData<ActivityFilter> get() = mutableFilter
 
     fun setFilter(filter: ActivityFilter) {
         mutableFilter.value = filter

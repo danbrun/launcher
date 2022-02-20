@@ -3,10 +3,7 @@ package link.danb.launcher
 import android.app.Application
 import android.content.pm.LauncherActivityInfo
 import android.graphics.*
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.*
 import android.os.Process
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toBitmap
@@ -26,22 +23,37 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
     val observableModel: LiveData<ActivityIconViewModel> get() = mutableModel
 
     private val iconMap: ConcurrentHashMap<LauncherActivityInfo, Drawable> = ConcurrentHashMap()
+    private val iconTimestampMap: ConcurrentHashMap<LauncherActivityInfo, Long> =
+        ConcurrentHashMap()
+
+    private val placeholder: Drawable by lazy {
+        AppCompatResources.getDrawable(application, R.drawable.launcher_icon_background)!!
+    }
 
     fun getIcon(activityInfo: LauncherActivityInfo): Drawable {
-        if (!iconMap.containsKey(activityInfo)) {
-            // Insert placeholder drawable until load completes.
-            iconMap[activityInfo] = ShapeDrawable()
+        if (iconMap.containsKey(activityInfo)) {
+            return iconMap[activityInfo]!!
+        }
 
-            // TODO: store in LruCache instead of a HashMap?
-            viewModelScope.launch {
-                withContext(Dispatchers.IO) {
-                    val resources = getApplication<Application>().resources
-                    iconMap[activityInfo] = BitmapDrawable(resources, renderIcon(activityInfo))
-                    mutableModel.postValue(this@ActivityIconViewModel)
-                }
+        // Insert placeholder drawable until load completes.
+        iconMap[activityInfo] = placeholder
+        iconTimestampMap[activityInfo] = System.currentTimeMillis()
+
+        // TODO: store in LruCache instead of a HashMap?
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val resources = getApplication<Application>().resources
+                iconMap[activityInfo] = BitmapDrawable(resources, renderIcon(activityInfo))
+                iconTimestampMap[activityInfo] = System.currentTimeMillis()
+                mutableModel.postValue(this@ActivityIconViewModel)
             }
         }
-        return iconMap[activityInfo]!!
+
+        return placeholder
+    }
+
+    fun getIconTimestamp(activityInfo: LauncherActivityInfo): Long {
+        return iconTimestampMap[activityInfo] ?: 0
     }
 
     private val iconSize: Int by lazy {

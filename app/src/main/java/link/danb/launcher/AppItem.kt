@@ -17,7 +17,8 @@ data class AppItem(
     val componentName: ComponentName,
     val userHandle: UserHandle,
     val label: String,
-    val getIcon: () -> Drawable?
+    val iconTimestamp: Long,
+    val getIcon: () -> Drawable
 ) {
     class Adapter : androidx.recyclerview.widget.ListAdapter<AppItem, Adapter.ViewHolder>(DIFF) {
 
@@ -39,7 +40,7 @@ data class AppItem(
             fun bindTo(appItem: AppItem) {
                 textView.apply {
                     val size = context.resources.getDimension(R.dimen.launcher_icon_size).toInt()
-                    val icon = appItem.getIcon()?.apply {
+                    val icon = appItem.getIcon().apply {
                         setBounds(0, 0, size, size)
                     }
 
@@ -74,7 +75,7 @@ data class AppItem(
                 // bitmaps and should return the same value each time.
                 @SuppressLint("DiffUtilEquals")
                 override fun areContentsTheSame(oldItem: AppItem, newItem: AppItem): Boolean =
-                    oldItem.label == newItem.label && oldItem.getIcon === newItem.getIcon
+                    oldItem.label == newItem.label && oldItem.iconTimestamp == newItem.iconTimestamp
             }
         }
     }

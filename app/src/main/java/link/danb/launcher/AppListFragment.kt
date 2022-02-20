@@ -88,7 +88,8 @@ class AppListFragment : Fragment() {
                     AppItem(
                         it.componentName,
                         it.user,
-                        it.label as String
+                        it.label as String,
+                        activityIconViewModel.getIconTimestamp(it)
                     ) { activityIconViewModel.getIcon(it) }
                 }.sortedBy { it.label.lowercase() })
     }
