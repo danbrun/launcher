@@ -99,9 +99,11 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
                 it.draw(canvas)
             }
         } else {
-            canvas.drawRect(0f, 0f, iconSize.toFloat(), iconSize.toFloat(), Paint().apply {
-                color = Palette.from(icon.toBitmap()).generate().getDominantColor(0)
-            })
+            GradientDrawable().run {
+                setColor(Palette.from(icon.toBitmap()).generate().getDominantColor(0))
+                setBounds(0, 0, iconSize, iconSize)
+                draw(canvas)
+            }
             icon.run {
                 setBounds(
                     iconPadding,
