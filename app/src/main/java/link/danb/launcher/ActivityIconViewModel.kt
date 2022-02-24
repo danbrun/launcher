@@ -2,6 +2,7 @@ package link.danb.launcher
 
 import android.app.Application
 import android.content.pm.LauncherActivityInfo
+import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.*
 import android.os.Process
@@ -18,6 +19,8 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 class ActivityIconViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val packageManager: PackageManager = application.packageManager
 
     private val mutableModel: MutableLiveData<ActivityIconViewModel> = MutableLiveData(this)
     val observableModel: LiveData<ActivityIconViewModel> get() = mutableModel
@@ -43,7 +46,12 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val resources = getApplication<Application>().resources
-                iconMap[activityInfo] = BitmapDrawable(resources, renderIcon(activityInfo))
+                iconMap[activityInfo] = packageManager.getUserBadgedIcon(
+                    BitmapDrawable(
+                        resources,
+                        renderIcon(activityInfo)
+                    ), activityInfo.user
+                )
                 iconTimestampMap[activityInfo] = System.currentTimeMillis()
                 mutableModel.postValue(this@ActivityIconViewModel)
             }
@@ -64,12 +72,6 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
     }
     private val iconPadding: Int by lazy {
         application.resources.getDimensionPixelSize(R.dimen.launcher_icon_padding)
-    }
-    private val workBadge: Drawable by lazy {
-        AppCompatResources.getDrawable(
-            application,
-            R.drawable.launcher_icon_badge
-        )!!
     }
 
     private fun renderIcon(info: LauncherActivityInfo): Bitmap {
@@ -111,13 +113,6 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
                     iconSize - iconPadding,
                     iconSize - iconPadding
                 )
-                draw(canvas)
-            }
-        }
-
-        if (info.user != Process.myUserHandle()) {
-            workBadge.apply {
-                setBounds(0, 0, iconSize, iconSize)
                 draw(canvas)
             }
         }
