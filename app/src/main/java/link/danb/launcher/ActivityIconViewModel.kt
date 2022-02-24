@@ -30,7 +30,7 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
         ConcurrentHashMap()
 
     private val placeholder: Drawable by lazy {
-        AppCompatResources.getDrawable(application, R.drawable.launcher_icon_background)!!
+        BitmapDrawable(application.resources, renderIcon(packageManager.defaultActivityIcon))
     }
 
     fun getIcon(activityInfo: LauncherActivityInfo): Drawable {
@@ -45,12 +45,8 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
         // TODO: store in LruCache instead of a HashMap?
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val resources = getApplication<Application>().resources
                 iconMap[activityInfo] = packageManager.getUserBadgedIcon(
-                    BitmapDrawable(
-                        resources,
-                        renderIcon(activityInfo)
-                    ), activityInfo.user
+                    renderIcon(activityInfo), activityInfo.user
                 )
                 iconTimestampMap[activityInfo] = System.currentTimeMillis()
                 mutableModel.postValue(this@ActivityIconViewModel)
@@ -74,8 +70,14 @@ class ActivityIconViewModel(application: Application) : AndroidViewModel(applica
         application.resources.getDimensionPixelSize(R.dimen.launcher_icon_padding)
     }
 
-    private fun renderIcon(info: LauncherActivityInfo): Bitmap {
-        val icon = info.getIcon(0)
+    private fun renderIcon(info: LauncherActivityInfo): Drawable {
+        return BitmapDrawable(
+            getApplication<Application>().resources,
+            renderIcon(info.getIcon(0))
+        )
+    }
+
+    private fun renderIcon(icon: Drawable): Bitmap {
         val bitmap = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap).also {
             it.clipPath(Path().apply {
