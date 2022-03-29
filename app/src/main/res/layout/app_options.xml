@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <include layout="@layout/app_item" />
+    <include layout="@layout/launcher_icon" />
 
     <TextView
         android:id="@+id/settings"
