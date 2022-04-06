@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -22,6 +23,7 @@ import kotlinx.coroutines.launch
 class AppListFragment : Fragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
+    private val widgetViewModel: WidgetViewModel by activityViewModels()
 
     private var adapter: LauncherIcon.Adapter = LauncherIcon.Adapter(
         { view, launcherIcon ->
@@ -83,6 +85,25 @@ class AppListFragment : Fragment() {
                     filterChips.children.forEach {
                         it.isSelected = it.tag == launcherViewModel.filter.value
                     }
+                }
+            }
+        }
+
+        view.findViewById<MaterialButton>(R.id.widget_button).apply {
+            setOnClickListener {
+                WidgetDialogFragment().show(childFragmentManager, WidgetDialogFragment.TAG)
+            }
+            setOnLongClickListener {
+                widgetViewModel.unbind()
+                true
+            }
+        }
+
+        widgetViewModel.widgetHandle.observe(viewLifecycleOwner) {
+            view.findViewById<FrameLayout>(R.id.widget).apply {
+                removeAllViews()
+                if (it != null) {
+                    addView(widgetViewModel.getView(it))
                 }
             }
         }
