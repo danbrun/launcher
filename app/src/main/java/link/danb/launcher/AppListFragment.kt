@@ -1,7 +1,14 @@
 package link.danb.launcher
 
+import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
+import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
+import android.util.SizeF
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -99,11 +106,22 @@ class AppListFragment : Fragment() {
             }
         }
 
+        var widgetView: AppWidgetHostView? = null
+        val widgetContainer = view.findViewById<FrameLayout>(R.id.widget)
+        widgetContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            widgetView?.updateAppWidgetSize(
+                widgetContainer.measuredWidth,
+                widgetContainer.context.pixelsToDips(
+                    resources.getDimensionPixelSize(R.dimen.widget_max_height)
+                )
+            )
+        }
         widgetViewModel.widgetHandle.observe(viewLifecycleOwner) {
-            view.findViewById<FrameLayout>(R.id.widget).apply {
+            widgetContainer.apply {
                 removeAllViews()
                 if (it != null) {
-                    addView(widgetViewModel.getView(it))
+                    widgetView = widgetViewModel.getView(it)
+                    addView(widgetView)
                 }
             }
         }
@@ -118,5 +136,23 @@ class AppListFragment : Fragment() {
         }
 
         return view
+    }
+
+    companion object {
+        fun Context.pixelsToDips(pixels: Int): Int {
+            return (pixels / resources.displayMetrics.density).toInt()
+        }
+
+        fun AppWidgetHostView.updateAppWidgetSize(maxWidthPixels: Int, maxHeightPixels: Int) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                updateAppWidgetSize(
+                    Bundle(),
+                    listOf(SizeF(maxWidthPixels.toFloat(), maxHeightPixels.toFloat()))
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                updateAppWidgetSize(Bundle(), 0, 0, maxWidthPixels, maxHeightPixels)
+            }
+        }
     }
 }
