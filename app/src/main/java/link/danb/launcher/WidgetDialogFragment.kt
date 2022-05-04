@@ -51,7 +51,6 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun onClick(info: AppWidgetProviderInfo) {
-        widgetViewModel.unbind()
         val widgetData = widgetViewModel.newHandle(info)
 
         if (widgetViewModel.bind(widgetData)) {

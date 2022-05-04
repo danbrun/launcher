@@ -26,28 +26,17 @@ class WidgetViewModel(application: Application) : AndroidViewModel(application),
         AppWidgetHost(application, R.id.app_widget_host_id)
     }
 
-    private val _widgetHandle = MutableLiveData<WidgetHandle?>()
+    private val _widgetHandles = MutableLiveData<List<WidgetHandle>>()
 
     /** The currently bound widget in the launcher. */
-    val widgetHandle: LiveData<WidgetHandle?> = _widgetHandle
+    val widgetHandles: LiveData<List<WidgetHandle>> = _widgetHandles
 
     override fun onCreate(owner: LifecycleOwner) {
         super.onCreate(owner)
 
         appWidgetHost.startListening()
 
-        if (appWidgetHost.appWidgetIds.size == 1) {
-            val id = appWidgetHost.appWidgetIds.first()
-            val info = appWidgetManager.getAppWidgetInfo(id)
-
-            if (info != null) {
-                _widgetHandle.postValue(WidgetHandle(id, info))
-            } else {
-                reset()
-            }
-        } else {
-            reset()
-        }
+        update()
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
@@ -73,14 +62,14 @@ class WidgetViewModel(application: Application) : AndroidViewModel(application),
             widgetHandle.info.provider
         )
         if (success) {
-            _widgetHandle.postValue(widgetHandle)
+            update()
         }
         return success
     }
 
     /** Unbind the current widget. */
     fun unbind() {
-        _widgetHandle.postValue(null)
+        _widgetHandles.postValue(listOf())
         reset()
     }
 
@@ -93,6 +82,12 @@ class WidgetViewModel(application: Application) : AndroidViewModel(application),
 
     private fun reset() {
         appWidgetHost.appWidgetIds.forEach { appWidgetHost.deleteAppWidgetId(it) }
+    }
+
+    private fun update() {
+        _widgetHandles.postValue(appWidgetHost.appWidgetIds.map {
+            WidgetHandle(it, appWidgetManager.getAppWidgetInfo(it))
+        })
     }
 
     /** Activity contract that launches the widgets permission dialog and handles the result. */
@@ -112,7 +107,7 @@ class WidgetViewModel(application: Application) : AndroidViewModel(application),
         override fun parseResult(resultCode: Int, intent: Intent?): Boolean {
             val success = resultCode == Activity.RESULT_OK
             if (success) {
-                _widgetHandle.postValue(widgetHandle)
+                update()
             } else {
                 appWidgetHost.deleteAppWidgetId(widgetHandle!!.id)
             }

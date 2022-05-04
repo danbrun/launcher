@@ -13,6 +13,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ListView
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -106,23 +108,23 @@ class AppListFragment : Fragment() {
             }
         }
 
-        var widgetView: AppWidgetHostView? = null
-        val widgetContainer = view.findViewById<FrameLayout>(R.id.widget)
+        var widgetViews: List<AppWidgetHostView> = listOf()
+        val widgetContainer = view.findViewById<LinearLayout>(R.id.widget)
         widgetContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            widgetView?.updateAppWidgetSize(
-                widgetContainer.measuredWidth,
-                widgetContainer.context.pixelsToDips(
-                    resources.getDimensionPixelSize(R.dimen.widget_max_height)
+            widgetViews.forEach {
+                it.updateAppWidgetSize(
+                    widgetContainer.measuredWidth,
+                    widgetContainer.context.pixelsToDips(
+                        resources.getDimensionPixelSize(R.dimen.widget_max_height)
+                    )
                 )
-            )
+            }
         }
-        widgetViewModel.widgetHandle.observe(viewLifecycleOwner) {
+        widgetViewModel.widgetHandles.observe(viewLifecycleOwner) {
             widgetContainer.apply {
                 removeAllViews()
-                if (it != null) {
-                    widgetView = widgetViewModel.getView(it)
-                    addView(widgetView)
-                }
+                widgetViews = it.map { widgetViewModel.getView(it) }
+                widgetViews.forEach { addView(it) }
             }
         }
 
