@@ -1,4 +1,4 @@
-package link.danb.launcher
+package link.danb.launcher.utils
 
 import android.app.ActivityOptions
 import android.graphics.Rect

@@ -1,26 +1,34 @@
 package link.danb.launcher
 
-import android.app.Dialog
+import android.content.Context
 import android.content.Intent
+import android.content.pm.LauncherActivityInfo
+import android.content.pm.LauncherApps
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.activityViewModels
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import link.danb.launcher.list.*
+import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.makeClipRevealAnimation
 
 class AppOptionsDialogFragment : BottomSheetDialogFragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
 
-    private val launcherIcon: LauncherIcon by lazy {
-        launcherViewModel.iconList.value.first { info ->
-            info.componentName == arguments?.getParcelable(NAME_ARGUMENT)
-                    && info.user == arguments?.getParcelable(USER_ARGUMENT)
+    private val launcherApps: LauncherApps by lazy {
+        requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+    }
+
+    private val appItem: AppItem by lazy {
+        launcherViewModel.iconList.value.first { item ->
+            item.info.componentName == arguments?.getParcelable(NAME_ARGUMENT)
+                    && item.info.user == arguments?.getParcelable(USER_ARGUMENT)
         }
     }
 
@@ -28,35 +36,94 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        val view = inflater.inflate(R.layout.app_options, container, false)
+        val recyclerView = inflater.inflate(R.layout.app_options, container, false) as RecyclerView
 
-        view.findViewById<TextView>(R.id.launcher_icon).run {
-            text = launcherIcon.label
-            background = null
-            isClickable = false
-            isFocusable = false
-            setCompoundDrawables(launcherIcon.icon, null, null, null)
-        }
+        val size = requireContext().resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
 
-        view.findViewById<TextView>(R.id.settings).setOnClickListener {
-            launcherViewModel.openAppInfo(launcherIcon.componentName, launcherIcon.user, it)
-            dismiss()
-        }
+        val adapter = ListItemAdapter(this::onListItemClick, null)
 
-        view.findViewById<TextView>(R.id.uninstall).setOnClickListener {
-            requireContext().startActivity(
-                Intent(
-                    Intent.ACTION_DELETE,
-                    Uri.parse("package:" + launcherIcon.componentName.packageName)
-                )
+        recyclerView.adapter = adapter
+        recyclerView.isNestedScrollingEnabled = true
+        recyclerView.layoutManager = GridLayoutManager(
+            context,
+            requireContext().resources.getInteger(R.integer.launcher_columns)
+        )
+
+        val items = mutableListOf<ListItem>(appItem)
+
+        items.add(
+            CustomItem(
+                requireContext(),
+                R.string.settings,
+                R.drawable.ic_baseline_settings_24,
+                { view, _ ->
+                    launcherViewModel.openAppInfo(
+                        appItem.info.componentName,
+                        appItem.info.user,
+                        view
+                    )
+                },
+                null
             )
-            dismiss()
+        )
+        items.add(
+            CustomItem(
+                requireContext(),
+                R.string.uninstall,
+                R.drawable.ic_baseline_delete_forever_24,
+                { _, _ ->
+                    requireContext().startActivity(
+                        Intent(
+                            Intent.ACTION_DELETE,
+                            Uri.parse("package:" + appItem.info.componentName.packageName)
+                        )
+                    )
+                },
+                null
+            )
+        )
+
+        val shortcuts = launcherApps.getShortcuts(
+            LauncherApps.ShortcutQuery()
+                .setQueryFlags(
+                    LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                            LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST
+                )
+                .setPackage(appItem.info.componentName.packageName),
+            appItem.info.user
+        )
+
+        shortcuts?.forEach { shortcut ->
+            val icon = launcherApps.getShortcutIconDrawable(shortcut, 0)
+                ?.let { icon -> LauncherIconDrawable(icon) }
+            icon?.setBounds(0, 0, size, size)
+
+            items.add(ShortcutItem(shortcut, shortcut.shortLabel!!, icon!!))
         }
 
-        return view
+        adapter.submitList(items)
+
+        return recyclerView
+    }
+
+    private fun onListItemClick(view: View, item: ListItem) {
+        when (item) {
+            is AppItem -> launcherViewModel.openApp(
+                appItem.info.componentName,
+                appItem.info.user,
+                view
+            )
+            is ShortcutItem -> launcherApps.startShortcut(
+                item.info,
+                view.getLocationOnScreen(),
+                view.makeClipRevealAnimation()
+            )
+            is CustomItem -> item.onClick?.invoke(view, item)
+        }
+        dismiss()
     }
 
     companion object {
@@ -65,11 +132,11 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
         private const val NAME_ARGUMENT: String = "name"
         private const val USER_ARGUMENT: String = "user"
 
-        fun newInstance(launcherIcon: LauncherIcon): AppOptionsDialogFragment {
+        fun newInstance(info: LauncherActivityInfo): AppOptionsDialogFragment {
             return AppOptionsDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putParcelable(NAME_ARGUMENT, launcherIcon.componentName)
-                    putParcelable(USER_ARGUMENT, launcherIcon.user)
+                    putParcelable(NAME_ARGUMENT, info.componentName)
+                    putParcelable(USER_ARGUMENT, info.user)
                 }
             }
         }

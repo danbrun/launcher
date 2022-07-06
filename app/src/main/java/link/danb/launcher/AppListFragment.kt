@@ -1,20 +1,15 @@
 package link.danb.launcher
 
 import android.appwidget.AppWidgetHostView
-import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
-import android.content.res.Resources
-import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.util.SizeF
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ListView
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -28,25 +23,18 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import link.danb.launcher.list.AppItem
+import link.danb.launcher.list.ListItem
+import link.danb.launcher.list.ListItemAdapter
+import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.makeClipRevealAnimation
 
 class AppListFragment : Fragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
 
-    private var adapter: LauncherIcon.Adapter = LauncherIcon.Adapter(
-        { view, launcherIcon ->
-            launcherViewModel.openApp(
-                launcherIcon.componentName,
-                launcherIcon.user,
-                view
-            )
-        },
-        { _, launcherIcon ->
-            AppOptionsDialogFragment.newInstance(launcherIcon)
-                .show(parentFragmentManager, AppOptionsDialogFragment.TAG)
-        }
-    )
+    private var adapter = ListItemAdapter(this::onListItemClick, this::onListItemLongClick)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -138,6 +126,19 @@ class AppListFragment : Fragment() {
         }
 
         return view
+    }
+
+    private fun onListItemClick(view: View, item: ListItem) {
+        if (item is AppItem) {
+            launcherViewModel.openApp(item.info.componentName, item.info.user, view)
+        }
+    }
+
+    private fun onListItemLongClick(view: View, item: ListItem) {
+        if (item is AppItem) {
+            AppOptionsDialogFragment.newInstance(item.info)
+                .show(parentFragmentManager, AppOptionsDialogFragment.TAG)
+        }
     }
 
     companion object {
