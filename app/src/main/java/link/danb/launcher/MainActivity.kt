@@ -14,10 +14,12 @@ class MainActivity : AppCompatActivity() {
 
         lifecycle.addObserver(widgetViewModel)
 
-        supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.activity_frame, AppListFragment())
-            .commit()
+        if (savedInstanceState == null) {
+            supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.activity_frame, AppListFragment())
+                .commit()
+        }
     }
 
     override fun onBackPressed() {

@@ -8,6 +8,13 @@ class ShortcutItem(
     override val name: CharSequence,
     override val icon: Drawable
 ) : ListItem {
-    override val id: Any
-        get() = info
+    override fun areItemsTheSame(other: ListItem): Boolean {
+        return other is ShortcutItem
+                && info.`package` == other.info.`package`
+                && info.id == other.info.id
+    }
+
+    override fun areContentsTheSame(other: ListItem): Boolean {
+        return false
+    }
 }

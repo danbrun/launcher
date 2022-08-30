@@ -2,7 +2,6 @@ package link.danb.launcher
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.net.Uri
 import android.os.Bundle
@@ -25,10 +24,10 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
         requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
     }
 
-    private val appItem: AppItem by lazy {
-        launcherViewModel.iconList.value.first { item ->
-            item.info.componentName == arguments?.getParcelable(NAME_ARGUMENT)
-                    && item.info.user == arguments?.getParcelable(USER_ARGUMENT)
+    private val launcherActivity by lazy {
+        launcherViewModel.launcherActivities.value.first {
+            it.component == arguments?.getParcelable(COMPONENT_ARGUMENT)
+                    && it.user == arguments?.getParcelable(USER_ARGUMENT)
         }
     }
 
@@ -52,20 +51,14 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
             requireContext().resources.getInteger(R.integer.launcher_columns)
         )
 
-        val items = mutableListOf<ListItem>(appItem)
+        val items = mutableListOf<ListItem>(ActivityItem(launcherActivity))
 
         items.add(
             CustomItem(
                 requireContext(),
                 R.string.settings,
                 R.drawable.ic_baseline_settings_24,
-                { view, _ ->
-                    launcherViewModel.openAppInfo(
-                        appItem.info.componentName,
-                        appItem.info.user,
-                        view
-                    )
-                },
+                { view, _ -> launcherViewModel.openDetailsActivity(launcherActivity, view) },
                 null
             )
         )
@@ -78,7 +71,7 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
                     requireContext().startActivity(
                         Intent(
                             Intent.ACTION_DELETE,
-                            Uri.parse("package:" + appItem.info.componentName.packageName)
+                            Uri.parse("package:" + launcherActivity.component.packageName)
                         )
                     )
                 },
@@ -92,8 +85,8 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
                     LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
                             LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST
                 )
-                .setPackage(appItem.info.componentName.packageName),
-            appItem.info.user
+                .setPackage(launcherActivity.component.packageName),
+            launcherActivity.user
         )
 
         shortcuts?.forEach { shortcut ->
@@ -111,11 +104,7 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
 
     private fun onListItemClick(view: View, item: ListItem) {
         when (item) {
-            is AppItem -> launcherViewModel.openApp(
-                appItem.info.componentName,
-                appItem.info.user,
-                view
-            )
+            is ActivityItem -> launcherViewModel.openActivity(launcherActivity, view)
             is ShortcutItem -> launcherApps.startShortcut(
                 item.info,
                 view.getLocationOnScreen(),
@@ -129,14 +118,14 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
     companion object {
         const val TAG = "app_options_dialog_fragment"
 
-        private const val NAME_ARGUMENT: String = "name"
+        private const val COMPONENT_ARGUMENT: String = "name"
         private const val USER_ARGUMENT: String = "user"
 
-        fun newInstance(info: LauncherActivityInfo): AppOptionsDialogFragment {
+        fun newInstance(launcherActivity: LauncherActivity): AppOptionsDialogFragment {
             return AppOptionsDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putParcelable(NAME_ARGUMENT, info.componentName)
-                    putParcelable(USER_ARGUMENT, info.user)
+                    putParcelable(COMPONENT_ARGUMENT, launcherActivity.component)
+                    putParcelable(USER_ARGUMENT, launcherActivity.user)
                 }
             }
         }

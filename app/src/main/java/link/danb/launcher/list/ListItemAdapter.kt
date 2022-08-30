@@ -36,12 +36,12 @@ class ListItemAdapter(
     companion object {
         val diffUtilItemCallback = object : DiffUtil.ItemCallback<ListItem>() {
             override fun areItemsTheSame(oldItem: ListItem, newItem: ListItem): Boolean {
-                return oldItem.id == newItem.id
+                return oldItem.areItemsTheSame(newItem)
             }
 
             @SuppressLint("DiffUtilEquals")
             override fun areContentsTheSame(oldItem: ListItem, newItem: ListItem): Boolean {
-                return oldItem.name == newItem.name && oldItem.icon == newItem.icon
+                return oldItem.areContentsTheSame(newItem)
             }
         }
     }

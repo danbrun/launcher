@@ -13,9 +13,6 @@ class CustomItem(
     val onClick: ListItemClickHandler?,
     val onLongClick: ListItemClickHandler?
 ) : ListItem {
-    override val id: Any
-        get() = Pair(name, icon)
-
     override val name: CharSequence by lazy {
         context.getString(nameRes)
     }
@@ -23,5 +20,15 @@ class CustomItem(
     override val icon: Drawable by lazy {
         val icon = context.getDrawable(iconRes)
         icon ?: ShapeDrawable()
+    }
+
+    override fun areItemsTheSame(other: ListItem): Boolean {
+        return other is CustomItem
+                && nameRes == other.nameRes
+                && iconRes == other.iconRes
+    }
+
+    override fun areContentsTheSame(other: ListItem): Boolean {
+        return false
     }
 }

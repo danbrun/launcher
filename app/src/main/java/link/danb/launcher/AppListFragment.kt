@@ -23,7 +23,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import link.danb.launcher.list.AppItem
+import link.danb.launcher.list.ActivityItem
 import link.danb.launcher.list.ListItem
 import link.danb.launcher.list.ListItemAdapter
 import link.danb.launcher.utils.getLocationOnScreen
@@ -35,14 +35,6 @@ class AppListFragment : Fragment() {
     private val widgetViewModel: WidgetViewModel by activityViewModels()
 
     private var adapter = ListItemAdapter(this::onListItemClick, this::onListItemLongClick)
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        if (savedInstanceState == null) {
-            launcherViewModel.setFilter(LauncherFilter.PERSONAL)
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -59,19 +51,21 @@ class AppListFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launcherViewModel.iconList.collect {
-                    adapter.submitList(launcherViewModel.iconList.value)
+                launcherViewModel.filteredLauncherActivities.collect { launcherActivities ->
+                    adapter.submitList(launcherActivities
+                        .sortedBy { it.name.toString().lowercase() }
+                        .map { ActivityItem(it) })
                 }
             }
         }
 
         val filterChips: ChipGroup = view.findViewById(R.id.filter_list)
-        LauncherViewModel.FILTERS.forEach { filter ->
+        listOf(LauncherFilter.ALL, LauncherFilter.PERSONAL, LauncherFilter.WORK).forEach { filter ->
             Chip(context).apply {
                 setText(filter.nameResId)
                 tag = filter
                 chipStrokeWidth = 0f
-                setOnClickListener { launcherViewModel.setFilter(filter) }
+                setOnClickListener { launcherViewModel.filter.value = filter }
                 filterChips.addView(this)
             }
         }
@@ -129,14 +123,14 @@ class AppListFragment : Fragment() {
     }
 
     private fun onListItemClick(view: View, item: ListItem) {
-        if (item is AppItem) {
-            launcherViewModel.openApp(item.info.componentName, item.info.user, view)
+        if (item is ActivityItem) {
+            launcherViewModel.openActivity(item.launcherActivity, view)
         }
     }
 
     private fun onListItemLongClick(view: View, item: ListItem) {
-        if (item is AppItem) {
-            AppOptionsDialogFragment.newInstance(item.info)
+        if (item is ActivityItem) {
+            AppOptionsDialogFragment.newInstance(item.launcherActivity)
                 .show(parentFragmentManager, AppOptionsDialogFragment.TAG)
         }
     }
