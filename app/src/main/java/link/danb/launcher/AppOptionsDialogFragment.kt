@@ -1,10 +1,12 @@
 package link.danb.launcher
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.net.Uri
 import android.os.Bundle
+import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +15,10 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import link.danb.launcher.list.*
+import link.danb.launcher.model.LauncherActivityData
+import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
 
 class AppOptionsDialogFragment : BottomSheetDialogFragment() {
@@ -25,9 +30,12 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private val launcherActivity by lazy {
+        val component =
+            arguments?.getParcelableCompat(COMPONENT_ARGUMENT, ComponentName::class.java)
+        val user = arguments?.getParcelableCompat(USER_ARGUMENT, UserHandle::class.java)
+
         launcherViewModel.launcherActivities.value.first {
-            it.component == arguments?.getParcelable(COMPONENT_ARGUMENT)
-                    && it.user == arguments?.getParcelable(USER_ARGUMENT)
+            it.component == component && it.user == user
         }
     }
 
@@ -121,11 +129,11 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
         private const val COMPONENT_ARGUMENT: String = "name"
         private const val USER_ARGUMENT: String = "user"
 
-        fun newInstance(launcherActivity: LauncherActivity): AppOptionsDialogFragment {
+        fun newInstance(launcherActivityData: LauncherActivityData): AppOptionsDialogFragment {
             return AppOptionsDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putParcelable(COMPONENT_ARGUMENT, launcherActivity.component)
-                    putParcelable(USER_ARGUMENT, launcherActivity.user)
+                    putParcelable(COMPONENT_ARGUMENT, launcherActivityData.component)
+                    putParcelable(USER_ARGUMENT, launcherActivityData.user)
                 }
             }
         }

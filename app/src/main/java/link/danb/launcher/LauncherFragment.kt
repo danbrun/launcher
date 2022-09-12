@@ -21,15 +21,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import link.danb.launcher.list.ActivityItem
 import link.danb.launcher.list.ListItem
 import link.danb.launcher.list.ListItemAdapter
+import link.danb.launcher.model.LauncherActivityFilter
+import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.widgets.WidgetDialogFragment
+import link.danb.launcher.widgets.WidgetViewModel
 
-class AppListFragment : Fragment() {
+class LauncherFragment : Fragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
@@ -40,7 +43,7 @@ class AppListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_app_list, container, false)
+        val view = inflater.inflate(R.layout.launcher_fragment, container, false)
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
         recyclerView.adapter = adapter
@@ -60,7 +63,11 @@ class AppListFragment : Fragment() {
         }
 
         val filterChips: ChipGroup = view.findViewById(R.id.filter_list)
-        listOf(LauncherFilter.ALL, LauncherFilter.PERSONAL, LauncherFilter.WORK).forEach { filter ->
+        listOf(
+            LauncherActivityFilter.ALL,
+            LauncherActivityFilter.PERSONAL,
+            LauncherActivityFilter.WORK
+        ).forEach { filter ->
             Chip(context).apply {
                 setText(filter.nameResId)
                 tag = filter
@@ -124,13 +131,13 @@ class AppListFragment : Fragment() {
 
     private fun onListItemClick(view: View, item: ListItem) {
         if (item is ActivityItem) {
-            launcherViewModel.openActivity(item.launcherActivity, view)
+            launcherViewModel.openActivity(item.launcherActivityData, view)
         }
     }
 
     private fun onListItemLongClick(view: View, item: ListItem) {
         if (item is ActivityItem) {
-            AppOptionsDialogFragment.newInstance(item.launcherActivity)
+            AppOptionsDialogFragment.newInstance(item.launcherActivityData)
                 .show(parentFragmentManager, AppOptionsDialogFragment.TAG)
         }
     }

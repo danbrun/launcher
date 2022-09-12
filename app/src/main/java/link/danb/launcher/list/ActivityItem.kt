@@ -1,23 +1,23 @@
 package link.danb.launcher.list
 
 import android.graphics.drawable.Drawable
-import link.danb.launcher.LauncherActivity
+import link.danb.launcher.model.LauncherActivityData
 
-class ActivityItem(val launcherActivity: LauncherActivity) : ListItem {
+class ActivityItem(val launcherActivityData: LauncherActivityData) : ListItem {
     override val name: CharSequence
-        get() = launcherActivity.name
+        get() = launcherActivityData.name
 
     override val icon: Drawable
-        get() = launcherActivity.icon
+        get() = launcherActivityData.icon
 
     override fun areItemsTheSame(other: ListItem): Boolean {
         return other is ActivityItem
-                && launcherActivity.component == other.launcherActivity.component
-                && launcherActivity.user == other.launcherActivity.user
+                && launcherActivityData.component == other.launcherActivityData.component
+                && launcherActivityData.user == other.launcherActivityData.user
     }
 
     override fun areContentsTheSame(other: ListItem): Boolean {
         return other is ActivityItem
-                && launcherActivity.timestamp == other.launcherActivity.timestamp
+                && launcherActivityData.timestamp == other.launcherActivityData.timestamp
     }
 }

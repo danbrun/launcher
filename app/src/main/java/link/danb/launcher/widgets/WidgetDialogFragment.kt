@@ -1,4 +1,4 @@
-package link.danb.launcher
+package link.danb.launcher.widgets
 
 import android.appwidget.AppWidgetProviderInfo
 import android.os.Bundle
@@ -10,6 +10,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import link.danb.launcher.R
 
 class WidgetDialogFragment : BottomSheetDialogFragment() {
 

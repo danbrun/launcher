@@ -1,11 +1,8 @@
-package link.danb.launcher
+package link.danb.launcher.model
 
 import android.app.Application
-import android.content.ComponentName
 import android.content.Context
-import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
-import android.graphics.drawable.Drawable
 import android.os.UserHandle
 import android.view.View
 import androidx.lifecycle.AndroidViewModel
@@ -26,10 +23,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         application.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
     private val launcherAppsCallback = LauncherAppsCallback()
 
-    private val mutableLauncherActivities = MutableStateFlow<List<LauncherActivity>>(listOf())
-    val launcherActivities: StateFlow<List<LauncherActivity>> = mutableLauncherActivities
+    private val mutableLauncherActivities = MutableStateFlow<List<LauncherActivityData>>(listOf())
+    val launcherActivities: StateFlow<List<LauncherActivityData>> = mutableLauncherActivities
 
-    val filter: MutableStateFlow<LauncherFilter> = MutableStateFlow(LauncherFilter.PERSONAL)
+    val filter: MutableStateFlow<LauncherActivityFilter> = MutableStateFlow(LauncherActivityFilter.PERSONAL)
 
     val filteredLauncherActivities =
         launcherActivities.combine(filter) { launcherActivities, filter ->
@@ -41,7 +38,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             withContext(Dispatchers.IO) {
                 mutableLauncherActivities.emit(
                     launcherApps.profiles.flatMap { launcherApps.getActivityList(null, it) }
-                        .map { LauncherActivity(getApplication(), it) }
+                        .map { LauncherActivityData(getApplication(), it) }
                 )
             }
         }
@@ -55,19 +52,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         launcherApps.unregisterCallback(launcherAppsCallback)
     }
 
-    fun openActivity(launcherActivity: LauncherActivity, view: View) {
+    fun openActivity(launcherActivityData: LauncherActivityData, view: View) {
         launcherApps.startMainActivity(
-            launcherActivity.component,
-            launcherActivity.user,
+            launcherActivityData.component,
+            launcherActivityData.user,
             view.getLocationOnScreen(),
             view.makeClipRevealAnimation()
         )
     }
 
-    fun openDetailsActivity(launcherActivity: LauncherActivity, view: View) {
+    fun openDetailsActivity(launcherActivityData: LauncherActivityData, view: View) {
         launcherApps.startAppDetailsActivity(
-            launcherActivity.component,
-            launcherActivity.user,
+            launcherActivityData.component,
+            launcherActivityData.user,
             view.getLocationOnScreen(),
             view.makeClipRevealAnimation()
         )
@@ -80,7 +77,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     removeIf { it.component.packageName == packageName && it.user == user }
                     addAll(
                         launcherApps.getActivityList(packageName, user)
-                            .map { LauncherActivity(getApplication(), it) })
+                            .map { LauncherActivityData(getApplication(), it) })
                     mutableLauncherActivities.emit(toList())
                 }
             }
@@ -125,19 +122,5 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }
-    }
-}
-
-class LauncherActivity(application: Application, launcherActivityInfo: LauncherActivityInfo) {
-    val component: ComponentName = launcherActivityInfo.componentName
-    val user: UserHandle = launcherActivityInfo.user
-    val timestamp = System.currentTimeMillis()
-
-    val name: CharSequence by lazy { launcherActivityInfo.label }
-    val icon: Drawable by lazy {
-        application.packageManager.getUserBadgedIcon(
-            LauncherIconDrawable(launcherActivityInfo.getIcon(0)),
-            user
-        )
     }
 }

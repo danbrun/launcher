@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Launcher">
         <activity
-            android:name=".MainActivity"
+            android:name=".LauncherActivity"
             android:clearTaskOnLaunch="true"
             android:exported="true"
             android:launchMode="singleTask"

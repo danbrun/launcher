@@ -1,4 +1,4 @@
-package link.danb.launcher
+package link.danb.launcher.widgets
 
 import android.annotation.SuppressLint
 import android.appwidget.AppWidgetProviderInfo
@@ -11,6 +11,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import link.danb.launcher.LauncherIconDrawable
+import link.danb.launcher.R
 
 class WidgetItemAdapter(val onClick: (AppWidgetProviderInfo) -> Unit) :
     ListAdapter<AppWidgetProviderInfo, WidgetItemAdapter.ViewHolder>(WidgetItemDiffCallback()) {

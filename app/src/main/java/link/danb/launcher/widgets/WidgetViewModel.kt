@@ -1,4 +1,4 @@
-package link.danb.launcher
+package link.danb.launcher.widgets
 
 import android.app.Activity
 import android.app.Application
@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.*
+import link.danb.launcher.R
 
 /** Represents an allocated widget ID and corresponding widget provider. */
 data class WidgetHandle(val id: Int, val info: AppWidgetProviderInfo)
