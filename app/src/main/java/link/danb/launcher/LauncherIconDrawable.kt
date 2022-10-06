@@ -49,8 +49,10 @@ class LauncherIconDrawable(private val icon: Drawable) : Drawable() {
             icon.background.draw(canvas)
         }
 
-        icon.foreground.bounds = getAdaptiveBounds()
-        icon.foreground.draw(canvas)
+        if (icon.foreground != null) {
+            icon.foreground.bounds = getAdaptiveBounds()
+            icon.foreground.draw(canvas)
+        }
     }
 
     private fun getAdaptiveBounds() = Rect(bounds).apply {
