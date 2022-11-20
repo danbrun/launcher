@@ -87,8 +87,8 @@ class WidgetViewModel(application: Application) : AndroidViewModel(application),
 
     private fun update() {
         _widgetHandles.postValue(appWidgetHost.appWidgetIds.map {
-            WidgetHandle(it, appWidgetManager.getAppWidgetInfo(it))
-        })
+            appWidgetManager.getAppWidgetInfo(it)?.let { info -> WidgetHandle(it, info) }
+        }.filterNotNull())
     }
 
     /** Activity contract that launches the widgets permission dialog and handles the result. */

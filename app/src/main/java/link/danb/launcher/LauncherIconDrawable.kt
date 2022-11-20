@@ -32,6 +32,11 @@ class LauncherIconDrawable(private val icon: Drawable) : Drawable() {
 
     override fun setAlpha(alpha: Int) {}
     override fun setColorFilter(colorFilter: ColorFilter?) {}
+
+    @Deprecated(
+        "Deprecated in Java",
+        ReplaceWith("PixelFormat.TRANSPARENT", "android.graphics.PixelFormat")
+    )
     override fun getOpacity(): Int = PixelFormat.TRANSPARENT
 
     private fun getClipPath() = Path().apply {

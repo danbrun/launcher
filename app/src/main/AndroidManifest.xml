@@ -18,6 +18,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Launcher">
+
         <activity
             android:name=".LauncherActivity"
             android:clearTaskOnLaunch="true"
@@ -33,6 +34,7 @@
                 <category android:name="android.intent.category.HOME" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

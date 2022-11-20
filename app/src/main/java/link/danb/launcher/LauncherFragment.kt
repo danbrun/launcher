@@ -22,9 +22,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
-import link.danb.launcher.list.ActivityItem
-import link.danb.launcher.list.ListItem
-import link.danb.launcher.list.ListItemAdapter
+import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityFilter
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.getLocationOnScreen
@@ -37,7 +35,27 @@ class LauncherFragment : Fragment() {
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
 
-    private var adapter = ListItemAdapter(this::onListItemClick, this::onListItemLongClick)
+    private val activityTileListener = object : ActivityTileListener {
+        override fun onClick(view: View, activityViewItem: ActivityTileViewItem) {
+            launcherViewModel.openActivity(
+                activityViewItem.launcherActivityData,
+                view
+            )
+        }
+
+        override fun onLongClick(view: View, activityViewItem: ActivityTileViewItem) {
+            ActivityDetailsDialogFragment.newInstance(activityViewItem.launcherActivityData)
+                .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
+        }
+    }
+
+    private var adapter = ViewBinderAdapter(ActivityTileViewBinder(activityTileListener))
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        lifecycle.addObserver(widgetViewModel)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -57,7 +75,7 @@ class LauncherFragment : Fragment() {
                 launcherViewModel.filteredLauncherActivities.collect { launcherActivities ->
                     adapter.submitList(launcherActivities
                         .sortedBy { it.name.toString().lowercase() }
-                        .map { ActivityItem(it) })
+                        .map { ActivityTileViewItem(it) })
                 }
             }
         }
@@ -127,19 +145,6 @@ class LauncherFragment : Fragment() {
         }
 
         return view
-    }
-
-    private fun onListItemClick(view: View, item: ListItem) {
-        if (item is ActivityItem) {
-            launcherViewModel.openActivity(item.launcherActivityData, view)
-        }
-    }
-
-    private fun onListItemLongClick(view: View, item: ListItem) {
-        if (item is ActivityItem) {
-            AppOptionsDialogFragment.newInstance(item.launcherActivityData)
-                .show(parentFragmentManager, AppOptionsDialogFragment.TAG)
-        }
     }
 
     companion object {

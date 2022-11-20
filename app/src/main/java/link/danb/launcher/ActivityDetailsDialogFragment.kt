@@ -2,9 +2,7 @@ package link.danb.launcher
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.pm.LauncherApps
-import android.net.Uri
 import android.os.Bundle
 import android.os.UserHandle
 import android.view.LayoutInflater
@@ -12,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import link.danb.launcher.list.*
@@ -21,7 +20,7 @@ import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
 
-class AppOptionsDialogFragment : BottomSheetDialogFragment() {
+class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
 
@@ -30,14 +29,33 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private val launcherActivity by lazy {
-        val component =
-            arguments?.getParcelableCompat(COMPONENT_ARGUMENT, ComponentName::class.java)
-        val user = arguments?.getParcelableCompat(USER_ARGUMENT, UserHandle::class.java)
+        val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
+        val user: UserHandle = arguments?.getParcelableCompat(USER_ARGUMENT)!!
 
         launcherViewModel.launcherActivities.value.first {
             it.component == component && it.user == user
         }
     }
+
+    private val activityHeaderListener = object : ActivityHeaderListener {
+        override fun onUninstallButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
+            dismiss()
+        }
+
+        override fun onSettingsButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
+            dismiss()
+        }
+    }
+
+    private val shortcutTileListener =
+        ShortcutTileListener { view, shortcutTileViewItem ->
+            launcherApps.startShortcut(
+                shortcutTileViewItem.info,
+                view.getLocationOnScreen(),
+                view.makeClipRevealAnimation()
+            )
+            dismiss()
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,46 +64,39 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        val recyclerView = inflater.inflate(R.layout.app_options, container, false) as RecyclerView
+        val recyclerView = inflater.inflate(
+            R.layout.activity_details_dialog_fragment,
+            container,
+            false
+        ) as RecyclerView
 
         val size = requireContext().resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
 
-        val adapter = ListItemAdapter(this::onListItemClick, null)
+        val adapter =
+            ViewBinderAdapter(
+                ActivityHeaderViewBinder(activityHeaderListener),
+                ShortcutTileViewBinder(shortcutTileListener)
+            )
+
+        val columns = requireContext().resources.getInteger(R.integer.launcher_columns)
 
         recyclerView.adapter = adapter
         recyclerView.isNestedScrollingEnabled = true
         recyclerView.layoutManager = GridLayoutManager(
             context,
-            requireContext().resources.getInteger(R.integer.launcher_columns)
-        )
+            columns
+        ).apply {
+            spanSizeLookup = object : SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int {
+                    return when (adapter.currentList[position]) {
+                        is ActivityHeaderViewItem -> columns
+                        else -> 1
+                    }
+                }
+            }
+        }
 
-        val items = mutableListOf<ListItem>(ActivityItem(launcherActivity))
-
-        items.add(
-            CustomItem(
-                requireContext(),
-                R.string.settings,
-                R.drawable.ic_baseline_settings_24,
-                { view, _ -> launcherViewModel.openDetailsActivity(launcherActivity, view) },
-                null
-            )
-        )
-        items.add(
-            CustomItem(
-                requireContext(),
-                R.string.uninstall,
-                R.drawable.ic_baseline_delete_forever_24,
-                { _, _ ->
-                    requireContext().startActivity(
-                        Intent(
-                            Intent.ACTION_DELETE,
-                            Uri.parse("package:" + launcherActivity.component.packageName)
-                        )
-                    )
-                },
-                null
-            )
-        )
+        val items = mutableListOf<ViewItem>(ActivityHeaderViewItem(launcherActivity))
 
         val shortcuts = launcherApps.getShortcuts(
             LauncherApps.ShortcutQuery()
@@ -102,25 +113,12 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
                 ?.let { icon -> LauncherIconDrawable(icon) }
             icon?.setBounds(0, 0, size, size)
 
-            items.add(ShortcutItem(shortcut, shortcut.shortLabel!!, icon!!))
+            items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon!!))
         }
 
-        adapter.submitList(items)
+        adapter.submitList(items as List<ViewItem>?)
 
         return recyclerView
-    }
-
-    private fun onListItemClick(view: View, item: ListItem) {
-        when (item) {
-            is ActivityItem -> launcherViewModel.openActivity(launcherActivity, view)
-            is ShortcutItem -> launcherApps.startShortcut(
-                item.info,
-                view.getLocationOnScreen(),
-                view.makeClipRevealAnimation()
-            )
-            is CustomItem -> item.onClick?.invoke(view, item)
-        }
-        dismiss()
     }
 
     companion object {
@@ -129,8 +127,8 @@ class AppOptionsDialogFragment : BottomSheetDialogFragment() {
         private const val COMPONENT_ARGUMENT: String = "name"
         private const val USER_ARGUMENT: String = "user"
 
-        fun newInstance(launcherActivityData: LauncherActivityData): AppOptionsDialogFragment {
-            return AppOptionsDialogFragment().apply {
+        fun newInstance(launcherActivityData: LauncherActivityData): ActivityDetailsDialogFragment {
+            return ActivityDetailsDialogFragment().apply {
                 arguments = Bundle().apply {
                     putParcelable(COMPONENT_ARGUMENT, launcherActivityData.component)
                     putParcelable(USER_ARGUMENT, launcherActivityData.user)
