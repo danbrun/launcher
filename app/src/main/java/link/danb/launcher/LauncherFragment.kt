@@ -51,12 +51,6 @@ class LauncherFragment : Fragment() {
 
     private var adapter = ViewBinderAdapter(ActivityTileViewBinder(activityTileListener))
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        lifecycle.addObserver(widgetViewModel)
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -127,7 +121,7 @@ class LauncherFragment : Fragment() {
                 )
             }
         }
-        widgetViewModel.widgetHandles.observe(viewLifecycleOwner) {
+        widgetViewModel.widgetIds.observe(viewLifecycleOwner) {
             widgetContainer.apply {
                 removeAllViews()
                 widgetViews = it.map { widgetViewModel.getView(it) }

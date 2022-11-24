@@ -1,7 +1,5 @@
 package link.danb.launcher.widgets
 
-import android.appwidget.AppWidgetManager
-import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
@@ -10,7 +8,6 @@ import android.os.Process.myUserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.ActivityResultLauncher
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,39 +18,17 @@ import link.danb.launcher.utils.getLauncherApps
 
 class WidgetDialogFragment : BottomSheetDialogFragment() {
 
-    private val widgetViewModel: WidgetViewModel by activityViewModels()
     private val launcherApps: LauncherApps by lazy { requireContext().getLauncherApps() }
     private val packageManager: PackageManager by lazy { requireContext().packageManager }
 
-    private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
-        val widgetData = widgetViewModel.newHandle(widgetPreviewViewItem.appWidgetProviderInfo)
-
-        if (widgetViewModel.bind(widgetData)) {
-            if (widgetPreviewViewItem.appWidgetProviderInfo.configure != null) {
-                startActivity(Intent().apply {
-                    action = AppWidgetManager.ACTION_APPWIDGET_CONFIGURE
-                    component = widgetPreviewViewItem.appWidgetProviderInfo.configure
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetData.id)
-                })
-            }
-
-            dismiss()
-        } else {
-            widgetPermissionsLauncher?.launch(widgetData)
-        }
+    private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val widgetBinder = WidgetBinder(this) {
+        widgetViewModel.refresh()
+        dismiss()
     }
 
-    private var widgetPermissionsLauncher: ActivityResultLauncher<WidgetHandle>? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        widgetPermissionsLauncher =
-            registerForActivityResult(widgetViewModel.WidgetPermissionResultHandler()) {
-                if (it) {
-                    dismiss()
-                }
-            }
+    private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
+        widgetBinder.bindWidget(widgetPreviewViewItem.appWidgetProviderInfo)
     }
 
     override fun onCreateView(
@@ -77,7 +52,7 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
         widgetList.adapter = widgetListAdapter
 
         widgetListAdapter.submitList(
-            widgetViewModel.getProviders()
+            widgetViewModel.providers
                 .groupBy { it.provider.packageName }
                 .mapKeys { launcherApps.getApplicationInfo(it.key, 0, myUserHandle()) }
                 .toSortedMap(compareBy<ApplicationInfo> { it.loadLabel(packageManager).toString() })

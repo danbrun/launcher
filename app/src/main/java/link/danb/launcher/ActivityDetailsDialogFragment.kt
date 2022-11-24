@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.os.UserHandle
@@ -16,16 +15,22 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
+import link.danb.launcher.utils.getLauncherApps
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.widgets.WidgetBinder
+import link.danb.launcher.widgets.WidgetViewModel
 
 class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
+    private val launcherApps: LauncherApps by lazy { requireContext().getLauncherApps() }
     private val launcherViewModel: LauncherViewModel by activityViewModels()
 
-    private val launcherApps: LauncherApps by lazy {
-        requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+    private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val widgetBinder = WidgetBinder(this) {
+        widgetViewModel.refresh()
+        dismiss()
     }
 
     private val launcherActivity by lazy {
@@ -57,6 +62,11 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             dismiss()
         }
 
+    private val widgetPreviewListener =
+        WidgetPreviewListener { _, widgetPreviewViewItem ->
+            widgetBinder.bindWidget(widgetPreviewViewItem.appWidgetProviderInfo)
+        }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -75,7 +85,8 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         val adapter =
             ViewBinderAdapter(
                 ActivityHeaderViewBinder(activityHeaderListener),
-                ShortcutTileViewBinder(shortcutTileListener)
+                ShortcutTileViewBinder(shortcutTileListener),
+                WidgetPreviewViewBinder(widgetPreviewListener)
             )
 
         val columns = requireContext().resources.getInteger(R.integer.launcher_columns)
@@ -89,7 +100,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             spanSizeLookup = object : SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
                     return when (adapter.currentList[position]) {
-                        is ActivityHeaderViewItem -> columns
+                        is ActivityHeaderViewItem, is WidgetPreviewViewItem -> columns
                         else -> 1
                     }
                 }
@@ -115,6 +126,10 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
             items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon!!))
         }
+
+        widgetViewModel.providers
+            .filter { it.provider.packageName == launcherActivity.component.packageName }
+            .forEach { items.add(WidgetPreviewViewItem(it)) }
 
         adapter.submitList(items as List<ViewItem>?)
 
