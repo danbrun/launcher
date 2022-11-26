@@ -22,13 +22,15 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
     private val packageManager: PackageManager by lazy { requireContext().packageManager }
 
     private val widgetViewModel: WidgetViewModel by activityViewModels()
-    private val widgetBinder = WidgetBinder(this) {
+    private val widgetBinder = WidgetBinder(this) { success ->
         widgetViewModel.refresh()
-        dismiss()
+        if (success) {
+            dismiss()
+        }
     }
 
     private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
-        widgetBinder.bindWidget(widgetPreviewViewItem.appWidgetProviderInfo)
+        widgetBinder.bindWidget(widgetPreviewViewItem.providerInfo, myUserHandle())
     }
 
     override fun onCreateView(
@@ -59,7 +61,7 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
                 .flatMap { (appInfo, widgets) ->
                     listOf(
                         ApplicationHeaderViewItem(requireActivity().application, appInfo),
-                        *widgets.map { WidgetPreviewViewItem(it) }.toTypedArray()
+                        *widgets.map { WidgetPreviewViewItem(it, myUserHandle()) }.toTypedArray()
                     )
                 })
 

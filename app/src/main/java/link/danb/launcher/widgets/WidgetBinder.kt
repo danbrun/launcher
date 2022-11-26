@@ -3,6 +3,8 @@ package link.danb.launcher.widgets
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
+import android.os.UserHandle
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -53,32 +55,54 @@ class WidgetBinder(
         widgetPermissionLauncher =
             fragment.registerForActivityResult(WidgetPermissionResultContract()) { success ->
                 if (success) {
-                    widgetConfigurationLauncher.launch(widgetHandle!!)
+                    widgetConfigurationLauncher.launch(widgetHandle)
                 } else {
-                    appWidgetHost.deleteAppWidgetId(widgetHandle!!.id)
+                    onBindFailed()
+                    widgetBindListener.onWidgetBind(false)
                     widgetHandle = null
                 }
             }
 
         widgetConfigurationLauncher =
-            fragment.registerForActivityResult(WidgetConfigurationResultContract()) {
-                widgetBindListener.onWidgetBind()
+            fragment.registerForActivityResult(WidgetConfigurationResultContract()) { success ->
+                if (!success) {
+                    onBindFailed()
+                }
+                widgetBindListener.onWidgetBind(success)
                 widgetHandle = null
             }
     }
 
     /** Bind a new widget from the given provider. */
-    fun bindWidget(providerInfo: AppWidgetProviderInfo) {
+    fun bindWidget(providerInfo: AppWidgetProviderInfo, userHandle: UserHandle) {
         if (widgetHandle != null) {
             throw IllegalStateException("Attempted to bind app widget when binding is in progress")
         }
 
-        widgetHandle = WidgetHandle(appWidgetHost.allocateAppWidgetId(), providerInfo)
-        if (appWidgetManager.bindAppWidgetIdIfAllowed(widgetHandle!!.id, providerInfo.provider)) {
-            widgetConfigurationLauncher.launch(widgetHandle!!)
+        widgetHandle = WidgetHandle(appWidgetHost.allocateAppWidgetId(), providerInfo, userHandle)
+        if (bindAppWidgetIfAllowed()) {
+            widgetConfigurationLauncher.launch(widgetHandle)
         } else {
-            widgetPermissionLauncher.launch(widgetHandle!!)
+            widgetPermissionLauncher.launch(widgetHandle)
         }
+    }
+
+    private fun bindAppWidgetIfAllowed(): Boolean {
+        return appWidgetManager.bindAppWidgetIdIfAllowed(
+            widgetHandle!!.id,
+            widgetHandle!!.user,
+            widgetHandle!!.info.provider,
+            null
+        )
+    }
+
+    private fun onBindFailed() {
+        Toast.makeText(
+            fragment.context,
+            R.string.widget_bind_failure,
+            Toast.LENGTH_SHORT
+        ).show()
+        appWidgetHost.deleteAppWidgetId(widgetHandle!!.id)
     }
 
     companion object {
@@ -88,5 +112,5 @@ class WidgetBinder(
 }
 
 fun interface WidgetBindListener {
-    fun onWidgetBind()
+    fun onWidgetBind(success: Boolean)
 }

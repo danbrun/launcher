@@ -37,11 +37,11 @@ class ActivityHeaderViewBinder(
         }
 
         holder.uninstallButton.setOnClickListener {
+            val packageName = viewItem.launcherActivityData.component.packageName
             holder.itemView.context.startActivity(
-                Intent(
-                    Intent.ACTION_DELETE,
-                    Uri.parse("package:" + viewItem.launcherActivityData.component.packageName)
-                )
+                Intent(Intent.ACTION_DELETE)
+                    .setData(Uri.parse("package:${packageName}"))
+                    .putExtra(Intent.EXTRA_USER, viewItem.launcherActivityData.user)
             )
             activityHeaderListener?.onUninstallButtonClick(viewItem)
         }

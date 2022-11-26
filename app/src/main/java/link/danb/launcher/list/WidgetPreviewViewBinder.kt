@@ -2,6 +2,7 @@ package link.danb.launcher.list
 
 import android.appwidget.AppWidgetProviderInfo
 import android.os.Build
+import android.os.UserHandle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -29,19 +30,19 @@ class WidgetPreviewViewBinder(private val widgetPreviewListener: WidgetPreviewLi
 
         holder.image.apply {
             setImageDrawable(
-                viewItem.appWidgetProviderInfo.loadPreviewImage(context, 0)
-                    ?: viewItem.appWidgetProviderInfo.loadIcon(holder.image.context, 0)
+                viewItem.providerInfo.loadPreviewImage(context, 0)
+                    ?: viewItem.providerInfo.loadIcon(holder.image.context, 0)
             )
         }
 
         holder.label.apply {
-            text = viewItem.appWidgetProviderInfo.loadLabel(context.packageManager)
+            text = viewItem.providerInfo.loadLabel(context.packageManager)
         }
 
         holder.description.visibility = View.GONE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val description =
-                viewItem.appWidgetProviderInfo.loadDescription(holder.description.context)
+                viewItem.providerInfo.loadDescription(holder.description.context)
 
             if (description != null) {
                 holder.description.apply {
@@ -59,17 +60,18 @@ class WidgetPreviewViewBinder(private val widgetPreviewListener: WidgetPreviewLi
     }
 }
 
-class WidgetPreviewViewItem(val appWidgetProviderInfo: AppWidgetProviderInfo) : ViewItem {
+class WidgetPreviewViewItem(val providerInfo: AppWidgetProviderInfo, val userHandle: UserHandle) :
+    ViewItem {
     override val viewType: Int = R.id.widget_preview_view_type_id
 
     override fun areItemsTheSame(other: ViewItem): Boolean {
         return other is WidgetPreviewViewItem
-                && appWidgetProviderInfo == other.appWidgetProviderInfo
+                && providerInfo == other.providerInfo
+                && userHandle == other.userHandle
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is WidgetPreviewViewItem
-                && appWidgetProviderInfo == other.appWidgetProviderInfo
+        return true
     }
 }
 

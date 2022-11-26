@@ -10,11 +10,10 @@ import androidx.activity.result.contract.ActivityResultContract
 class WidgetPermissionResultContract : ActivityResultContract<WidgetHandle, Boolean>() {
 
     override fun createIntent(context: Context, input: WidgetHandle): Intent {
-        return Intent(Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, input.id)
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, input.info.provider)
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER_PROFILE, input.info.profile)
-        })
+        return Intent(AppWidgetManager.ACTION_APPWIDGET_BIND)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, input.id)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, input.info.provider)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER_PROFILE, input.info.profile)
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Boolean {

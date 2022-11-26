@@ -56,7 +56,6 @@ class ApplicationHeaderViewItem(
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is ApplicationHeaderViewItem
-                && applicationInfo == other.applicationInfo
+        return true
     }
 }

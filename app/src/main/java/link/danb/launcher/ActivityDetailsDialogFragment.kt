@@ -1,9 +1,11 @@
 package link.danb.launcher
 
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.os.UserHandle
+import android.os.UserManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,8 +16,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
-import link.danb.launcher.model.LauncherViewModel
-import link.danb.launcher.utils.getLauncherApps
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
@@ -24,21 +24,29 @@ import link.danb.launcher.widgets.WidgetViewModel
 
 class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
-    private val launcherApps: LauncherApps by lazy { requireContext().getLauncherApps() }
-    private val launcherViewModel: LauncherViewModel by activityViewModels()
-
-    private val widgetViewModel: WidgetViewModel by activityViewModels()
-    private val widgetBinder = WidgetBinder(this) {
-        widgetViewModel.refresh()
-        dismiss()
+    private val launcherApps: LauncherApps by lazy {
+        requireContext().getSystemService(LauncherApps::class.java)
     }
 
     private val launcherActivity by lazy {
         val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
         val user: UserHandle = arguments?.getParcelableCompat(USER_ARGUMENT)!!
 
-        launcherViewModel.launcherActivities.value.first {
-            it.component == component && it.user == user
+        LauncherActivityData(
+            requireActivity().application,
+            launcherApps.resolveActivity(Intent().setComponent(component), user)
+        )
+    }
+
+    private val userManager: UserManager by lazy {
+        requireContext().getSystemService(UserManager::class.java)
+    }
+
+    private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val widgetBinder = WidgetBinder(this) { success ->
+        widgetViewModel.refresh()
+        if (success) {
+            dismiss()
         }
     }
 
@@ -64,7 +72,10 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     private val widgetPreviewListener =
         WidgetPreviewListener { _, widgetPreviewViewItem ->
-            widgetBinder.bindWidget(widgetPreviewViewItem.appWidgetProviderInfo)
+            widgetBinder.bindWidget(
+                widgetPreviewViewItem.providerInfo,
+                launcherActivity.user
+            )
         }
 
     override fun onCreateView(
@@ -109,27 +120,28 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
         val items = mutableListOf<ViewItem>(ActivityHeaderViewItem(launcherActivity))
 
-        val shortcuts = launcherApps.getShortcuts(
-            LauncherApps.ShortcutQuery()
-                .setQueryFlags(
-                    LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
-                            LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST
-                )
-                .setPackage(launcherActivity.component.packageName),
-            launcherActivity.user
-        )
+        if (!userManager.isQuietModeEnabled(launcherActivity.user)) {
+            val shortcuts = launcherApps.getShortcuts(
+                LauncherApps.ShortcutQuery()
+                    .setQueryFlags(
+                        LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                                LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST
+                    )
+                    .setPackage(launcherActivity.component.packageName),
+                launcherActivity.user
+            )
 
-        shortcuts?.forEach { shortcut ->
-            val icon = launcherApps.getShortcutIconDrawable(shortcut, 0)
-                ?.let { icon -> LauncherIconDrawable(icon) }
-            icon?.setBounds(0, 0, size, size)
+            shortcuts?.forEach { shortcut ->
+                val icon = launcherApps.getShortcutIconDrawable(shortcut, 0)
+                    ?.let { icon -> LauncherIconDrawable(icon) }
+                icon?.setBounds(0, 0, size, size)
 
-            items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon!!))
+                items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon!!))
+            }
         }
 
-        widgetViewModel.providers
-            .filter { it.provider.packageName == launcherActivity.component.packageName }
-            .forEach { items.add(WidgetPreviewViewItem(it)) }
+        widgetViewModel.getProvidersForPackage(launcherActivity.component, launcherActivity.user)
+            .forEach { items.add(WidgetPreviewViewItem(it, launcherActivity.user)) }
 
         adapter.submitList(items as List<ViewItem>?)
 

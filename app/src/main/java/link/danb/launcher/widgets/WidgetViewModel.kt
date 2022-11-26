@@ -5,7 +5,11 @@ import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
-import androidx.lifecycle.*
+import android.content.ComponentName
+import android.os.UserHandle
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import link.danb.launcher.R
 
 /** View model for widgets in launcher. */
@@ -62,4 +66,15 @@ class WidgetViewModel(application: Application) : AndroidViewModel(application) 
     /** Get all available widget providers. */
     val providers: List<AppWidgetProviderInfo>
         get() = appWidgetManager.installedProviders
+
+    /** Get all widget providers for the given package and user. */
+    fun getProvidersForPackage(
+        componentName: ComponentName,
+        userHandle: UserHandle
+    ): List<AppWidgetProviderInfo> {
+        return appWidgetManager.getInstalledProvidersForPackage(
+            componentName.packageName,
+            userHandle
+        )
+    }
 }
