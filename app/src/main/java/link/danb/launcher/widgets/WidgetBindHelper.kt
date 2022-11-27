@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetProviderInfo
 import android.os.UserHandle
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
+import androidx.annotation.StringRes
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -21,6 +22,7 @@ class WidgetBindHelper(
     private val widgetViewModel: WidgetViewModel by fragment.activityViewModels()
 
     private lateinit var widgetPermissionLauncher: ActivityResultLauncher<WidgetHandle>
+    private lateinit var widgetConfigurationLauncher: ActivityResultLauncher<WidgetHandle>
 
     private var widgetHandle: WidgetHandle? = null
 
@@ -47,9 +49,20 @@ class WidgetBindHelper(
         widgetPermissionLauncher =
             fragment.registerForActivityResult(WidgetPermissionResultContract()) { success ->
                 if (success) {
-                    onBindSucceeded()
+                    widgetConfigurationLauncher.launch(widgetHandle)
                 } else {
-                    onBindFailed()
+                    onBindFailed(R.string.widget_permission_denied)
+                }
+            }
+
+        widgetConfigurationLauncher =
+            fragment.registerForActivityResult(WidgetConfigurationResultContract()) { success ->
+                if (success) {
+                    widgetViewModel.refresh()
+                    widgetBindListener.onWidgetBind(true)
+                    widgetHandle = null
+                } else {
+                    onBindFailed(R.string.widget_configuration_failed)
                 }
             }
     }
@@ -62,27 +75,16 @@ class WidgetBindHelper(
 
         widgetHandle = WidgetHandle(widgetViewModel.allocateWidgetId(), providerInfo, userHandle)
         if (widgetViewModel.bindWidgetIfAllowed(widgetHandle!!)) {
-            onBindSucceeded()
+            widgetConfigurationLauncher.launch(widgetHandle)
         } else {
             widgetPermissionLauncher.launch(widgetHandle)
         }
     }
 
-    private fun onBindFailed() {
-        Toast.makeText(
-            fragment.context,
-            R.string.widget_bind_failure,
-            Toast.LENGTH_SHORT
-        ).show()
+    private fun onBindFailed(@StringRes errorMessage: Int) {
+        Toast.makeText(fragment.context, errorMessage, Toast.LENGTH_SHORT).show()
         widgetViewModel.deleteWidgetId(widgetHandle!!.id)
         widgetBindListener.onWidgetBind(false)
-    }
-
-    private fun onBindSucceeded() {
-        // TODO: listen for activity result and delete widget if configuration failed.
-        widgetViewModel.startConfiguration(fragment.requireActivity(), widgetHandle!!)
-        widgetViewModel.refresh()
-        widgetBindListener.onWidgetBind(true)
         widgetHandle = null
     }
 
