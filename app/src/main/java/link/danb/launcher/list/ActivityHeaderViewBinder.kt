@@ -1,21 +1,26 @@
 package link.danb.launcher.list
 
-import android.content.Intent
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
 import link.danb.launcher.model.LauncherActivityData
-import link.danb.launcher.utils.*
+import link.danb.launcher.model.LauncherViewModel
+import link.danb.launcher.utils.inflate
+import link.danb.launcher.utils.setSize
 
 class ActivityHeaderViewBinder(
+    fragment: Fragment,
     private val activityHeaderListener: ActivityHeaderListener? = null
 ) :
     ViewBinder {
+    private val launcherViewModel: LauncherViewModel by fragment.activityViewModels()
+
     override val viewType: Int = R.id.activity_header_view_type_id
 
     override fun createViewHolder(parent: ViewGroup): ViewHolder {
@@ -37,22 +42,12 @@ class ActivityHeaderViewBinder(
         }
 
         holder.uninstallButton.setOnClickListener {
-            val packageName = viewItem.launcherActivityData.component.packageName
-            holder.itemView.context.startActivity(
-                Intent(Intent.ACTION_DELETE)
-                    .setData(Uri.parse("package:${packageName}"))
-                    .putExtra(Intent.EXTRA_USER, viewItem.launcherActivityData.user)
-            )
+            launcherViewModel.uninstall(viewItem.launcherActivityData, it)
             activityHeaderListener?.onUninstallButtonClick(viewItem)
         }
 
         holder.settingsButton.setOnClickListener {
-            holder.itemView.context.getLauncherApps().startAppDetailsActivity(
-                viewItem.launcherActivityData.component,
-                viewItem.launcherActivityData.user,
-                holder.settingsButton.getLocationOnScreen(),
-                holder.settingsButton.makeClipRevealAnimation()
-            )
+            launcherViewModel.manage(viewItem.launcherActivityData, it)
             activityHeaderListener?.onSettingsButtonClick(viewItem)
         }
     }

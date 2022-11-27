@@ -9,7 +9,6 @@ import android.util.SizeF
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -17,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
@@ -37,10 +37,7 @@ class LauncherFragment : Fragment() {
 
     private val activityTileListener = object : ActivityTileListener {
         override fun onClick(view: View, activityViewItem: ActivityTileViewItem) {
-            launcherViewModel.openActivity(
-                activityViewItem.launcherActivityData,
-                view
-            )
+            launcherViewModel.launch(activityViewItem.launcherActivityData, view)
         }
 
         override fun onLongClick(view: View, activityViewItem: ActivityTileViewItem) {
@@ -49,7 +46,8 @@ class LauncherFragment : Fragment() {
         }
     }
 
-    private var adapter = ViewBinderAdapter(ActivityTileViewBinder(activityTileListener))
+    private val activityAdapter = ViewBinderAdapter(ActivityTileViewBinder(activityTileListener))
+    private val widgetAdapter = ViewBinderAdapter(WidgetViewBinder(this))
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -57,19 +55,22 @@ class LauncherFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.launcher_fragment, container, false)
 
-        val recyclerView = view.findViewById<RecyclerView>(R.id.app_list)
-        recyclerView.adapter = adapter
-        recyclerView.layoutManager = GridLayoutManager(
-            context,
-            requireContext().resources.getInteger(R.integer.launcher_columns)
-        )
+        view.findViewById<RecyclerView>(R.id.app_list).apply {
+            adapter = activityAdapter
+            layoutManager = GridLayoutManager(
+                context,
+                requireContext().resources.getInteger(R.integer.launcher_columns)
+            )
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launcherViewModel.filteredLauncherActivities.collect { launcherActivities ->
-                    adapter.submitList(launcherActivities
-                        .sortedBy { it.name.toString().lowercase() }
-                        .map { ActivityTileViewItem(it) })
+                    activityAdapter.submitList(
+                        launcherActivities
+                            .sortedBy { it.name.toString().lowercase() }
+                            .map { ActivityTileViewItem(it) }
+                    )
                 }
             }
         }
@@ -104,29 +105,17 @@ class LauncherFragment : Fragment() {
                 WidgetDialogFragment().show(childFragmentManager, WidgetDialogFragment.TAG)
             }
             setOnLongClickListener {
-                widgetViewModel.unbind()
+                widgetViewModel.deleteWidgets()
                 true
             }
         }
 
-        var widgetViews: List<AppWidgetHostView> = listOf()
-        val widgetContainer = view.findViewById<LinearLayout>(R.id.widget)
-        widgetContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            widgetViews.forEach {
-                it.updateAppWidgetSize(
-                    widgetContainer.measuredWidth,
-                    widgetContainer.context.pixelsToDips(
-                        resources.getDimensionPixelSize(R.dimen.widget_max_height)
-                    )
-                )
-            }
+        view.findViewById<RecyclerView>(R.id.widgets).apply {
+            adapter = widgetAdapter
+            layoutManager = LinearLayoutManager(context)
         }
         widgetViewModel.widgetIds.observe(viewLifecycleOwner) {
-            widgetContainer.apply {
-                removeAllViews()
-                widgetViews = it.map { widgetViewModel.getView(it) }
-                widgetViews.forEach { addView(it) }
-            }
+            widgetAdapter.submitList(it.map(::WidgetViewItem))
         }
 
         view.findViewById<MaterialButton>(R.id.settings_button).setOnClickListener { button ->

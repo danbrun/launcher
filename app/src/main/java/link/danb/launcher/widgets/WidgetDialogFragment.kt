@@ -14,23 +14,24 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import link.danb.launcher.R
 import link.danb.launcher.list.*
-import link.danb.launcher.utils.getLauncherApps
 
 class WidgetDialogFragment : BottomSheetDialogFragment() {
 
-    private val launcherApps: LauncherApps by lazy { requireContext().getLauncherApps() }
+    private val launcherApps: LauncherApps by lazy {
+        requireContext().getSystemService(LauncherApps::class.java)
+    }
     private val packageManager: PackageManager by lazy { requireContext().packageManager }
 
     private val widgetViewModel: WidgetViewModel by activityViewModels()
-    private val widgetBinder = WidgetBinder(this) { success ->
-        widgetViewModel.refresh()
+
+    private val widgetBindHelper = WidgetBindHelper(this) { success ->
         if (success) {
             dismiss()
         }
     }
 
     private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
-        widgetBinder.bindWidget(widgetPreviewViewItem.providerInfo, myUserHandle())
+        widgetBindHelper.bindWidget(widgetPreviewViewItem.providerInfo, myUserHandle())
     }
 
     override fun onCreateView(
@@ -42,16 +43,16 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
 
         val view = inflater.inflate(R.layout.widget_dialog_fragment, container, false)
 
-        val widgetList: RecyclerView = view.findViewById(R.id.widget_list)
-        widgetList.isNestedScrollingEnabled = true
-        widgetList.layoutManager = LinearLayoutManager(context)
-
         val widgetListAdapter =
             ViewBinderAdapter(
                 ApplicationHeaderViewBinder(),
                 WidgetPreviewViewBinder(widgetPreviewListener)
             )
-        widgetList.adapter = widgetListAdapter
+
+        view.findViewById<RecyclerView>(R.id.widget_list).apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = widgetListAdapter
+        }
 
         widgetListAdapter.submitList(
             widgetViewModel.providers

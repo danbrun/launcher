@@ -1,8 +1,9 @@
 package link.danb.launcher.model
 
 import android.app.Application
-import android.content.Context
+import android.content.Intent
 import android.content.pm.LauncherApps
+import android.net.Uri
 import android.os.UserHandle
 import android.view.View
 import androidx.lifecycle.AndroidViewModel
@@ -19,14 +20,14 @@ import link.danb.launcher.utils.makeClipRevealAnimation
 /** View model for launch icons. */
 class LauncherViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val launcherApps =
-        application.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+    private val launcherApps = application.getSystemService(LauncherApps::class.java)
     private val launcherAppsCallback = LauncherAppsCallback()
 
     private val mutableLauncherActivities = MutableStateFlow<List<LauncherActivityData>>(listOf())
     val launcherActivities: StateFlow<List<LauncherActivityData>> = mutableLauncherActivities
 
-    val filter: MutableStateFlow<LauncherActivityFilter> = MutableStateFlow(LauncherActivityFilter.PERSONAL)
+    val filter: MutableStateFlow<LauncherActivityFilter> =
+        MutableStateFlow(LauncherActivityFilter.PERSONAL)
 
     val filteredLauncherActivities =
         launcherActivities.combine(filter) { launcherActivities, filter ->
@@ -52,7 +53,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         launcherApps.unregisterCallback(launcherAppsCallback)
     }
 
-    fun openActivity(launcherActivityData: LauncherActivityData, view: View) {
+    /** Launches the given activity. */
+    fun launch(launcherActivityData: LauncherActivityData, view: View) {
         launcherApps.startMainActivity(
             launcherActivityData.component,
             launcherActivityData.user,
@@ -61,12 +63,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
-    fun openDetailsActivity(launcherActivityData: LauncherActivityData, view: View) {
+    /** Launches application settings for the given activity. */
+    fun manage(launcherActivityData: LauncherActivityData, view: View) {
         launcherApps.startAppDetailsActivity(
             launcherActivityData.component,
             launcherActivityData.user,
             view.getLocationOnScreen(),
             view.makeClipRevealAnimation()
+        )
+    }
+
+    /** Launches an application uninstall dialog for the given activity. */
+    fun uninstall(launcherActivityData: LauncherActivityData, view: View) {
+        view.context.startActivity(
+            Intent(Intent.ACTION_DELETE)
+                .setData(Uri.parse("package:${launcherActivityData.component.packageName}"))
+                .putExtra(Intent.EXTRA_USER, launcherActivityData.user)
         )
     }
 

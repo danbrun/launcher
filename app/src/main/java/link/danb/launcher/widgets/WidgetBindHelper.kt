@@ -1,34 +1,26 @@
 package link.danb.launcher.widgets
 
-import android.appwidget.AppWidgetHost
-import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.os.UserHandle
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import link.danb.launcher.R
 import link.danb.launcher.utils.getParcelableCompat
 
 /** Binds new widgets and launches permissions and configuration activities. */
-class WidgetBinder(
+class WidgetBindHelper(
     private val fragment: Fragment,
     private val widgetBindListener: WidgetBindListener
 ) : DefaultLifecycleObserver {
 
-    private val appWidgetHost: AppWidgetHost by lazy {
-        AppWidgetHost(fragment.requireContext().applicationContext, R.id.app_widget_host_id)
-    }
-
-    private val appWidgetManager: AppWidgetManager by lazy {
-        AppWidgetManager.getInstance(fragment.requireContext().applicationContext)
-    }
+    private val widgetViewModel: WidgetViewModel by fragment.activityViewModels()
 
     private lateinit var widgetPermissionLauncher: ActivityResultLauncher<WidgetHandle>
-    private lateinit var widgetConfigurationLauncher: ActivityResultLauncher<WidgetHandle>
 
     private var widgetHandle: WidgetHandle? = null
 
@@ -55,21 +47,10 @@ class WidgetBinder(
         widgetPermissionLauncher =
             fragment.registerForActivityResult(WidgetPermissionResultContract()) { success ->
                 if (success) {
-                    widgetConfigurationLauncher.launch(widgetHandle)
+                    onBindSucceeded()
                 } else {
                     onBindFailed()
-                    widgetBindListener.onWidgetBind(false)
-                    widgetHandle = null
                 }
-            }
-
-        widgetConfigurationLauncher =
-            fragment.registerForActivityResult(WidgetConfigurationResultContract()) { success ->
-                if (!success) {
-                    onBindFailed()
-                }
-                widgetBindListener.onWidgetBind(success)
-                widgetHandle = null
             }
     }
 
@@ -79,21 +60,12 @@ class WidgetBinder(
             throw IllegalStateException("Attempted to bind app widget when binding is in progress")
         }
 
-        widgetHandle = WidgetHandle(appWidgetHost.allocateAppWidgetId(), providerInfo, userHandle)
-        if (bindAppWidgetIfAllowed()) {
-            widgetConfigurationLauncher.launch(widgetHandle)
+        widgetHandle = WidgetHandle(widgetViewModel.allocateWidgetId(), providerInfo, userHandle)
+        if (widgetViewModel.bindWidgetIfAllowed(widgetHandle!!)) {
+            onBindSucceeded()
         } else {
             widgetPermissionLauncher.launch(widgetHandle)
         }
-    }
-
-    private fun bindAppWidgetIfAllowed(): Boolean {
-        return appWidgetManager.bindAppWidgetIdIfAllowed(
-            widgetHandle!!.id,
-            widgetHandle!!.user,
-            widgetHandle!!.info.provider,
-            null
-        )
     }
 
     private fun onBindFailed() {
@@ -102,7 +74,16 @@ class WidgetBinder(
             R.string.widget_bind_failure,
             Toast.LENGTH_SHORT
         ).show()
-        appWidgetHost.deleteAppWidgetId(widgetHandle!!.id)
+        widgetViewModel.deleteWidgetId(widgetHandle!!.id)
+        widgetBindListener.onWidgetBind(false)
+    }
+
+    private fun onBindSucceeded() {
+        // TODO: listen for activity result and delete widget if configuration failed.
+        widgetViewModel.startConfiguration(fragment.requireActivity(), widgetHandle!!)
+        widgetViewModel.refresh()
+        widgetBindListener.onWidgetBind(true)
+        widgetHandle = null
     }
 
     companion object {

@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <id name="app_widget_host_id" />
+    <id name="app_widget_configure_request_id" />
+
+    <!-- View binder type IDs -->
     <id name="activity_header_view_type_id" />
     <id name="activity_tile_view_type_id" />
     <id name="application_header_view_type_id" />
     <id name="shortcut_tile_view_type_id" />
     <id name="widget_preview_view_type_id" />
+    <id name="widget_view_type_id" />
 </resources>

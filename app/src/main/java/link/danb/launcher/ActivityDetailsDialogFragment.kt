@@ -19,14 +19,10 @@ import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
-import link.danb.launcher.widgets.WidgetBinder
+import link.danb.launcher.widgets.WidgetBindHelper
 import link.danb.launcher.widgets.WidgetViewModel
 
 class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
-
-    private val launcherApps: LauncherApps by lazy {
-        requireContext().getSystemService(LauncherApps::class.java)
-    }
 
     private val launcherActivity by lazy {
         val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
@@ -38,13 +34,17 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         )
     }
 
+    private val launcherApps: LauncherApps by lazy {
+        requireContext().getSystemService(LauncherApps::class.java)
+    }
+
     private val userManager: UserManager by lazy {
         requireContext().getSystemService(UserManager::class.java)
     }
 
     private val widgetViewModel: WidgetViewModel by activityViewModels()
-    private val widgetBinder = WidgetBinder(this) { success ->
-        widgetViewModel.refresh()
+
+    private val widgetBindHelper = WidgetBindHelper(this) { success ->
         if (success) {
             dismiss()
         }
@@ -72,10 +72,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     private val widgetPreviewListener =
         WidgetPreviewListener { _, widgetPreviewViewItem ->
-            widgetBinder.bindWidget(
-                widgetPreviewViewItem.providerInfo,
-                launcherActivity.user
-            )
+            widgetBindHelper.bindWidget(widgetPreviewViewItem.providerInfo, launcherActivity.user)
         }
 
     override fun onCreateView(
@@ -95,7 +92,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
         val adapter =
             ViewBinderAdapter(
-                ActivityHeaderViewBinder(activityHeaderListener),
+                ActivityHeaderViewBinder(this, activityHeaderListener),
                 ShortcutTileViewBinder(shortcutTileListener),
                 WidgetPreviewViewBinder(widgetPreviewListener)
             )
