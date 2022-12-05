@@ -36,10 +36,10 @@
         </activity>
 
         <activity
-            android:name=".widgets.WidgetConfigurationLauncherActivity"
+            android:name=".widgets.AppWidgetSetupActivity"
             android:excludeFromRecents="true"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Dialog" />
+            android:theme="@style/Theme.NoDisplay" />
 
     </application>
 
