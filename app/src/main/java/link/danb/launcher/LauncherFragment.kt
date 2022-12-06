@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -22,6 +23,7 @@ import com.google.android.material.chip.ChipGroup
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import link.danb.launcher.list.*
+import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherActivityFilter
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.getLocationOnScreen
@@ -57,7 +59,8 @@ class LauncherFragment : Fragment() {
         }
     }
 
-    private val activityAdapter = ViewBinderAdapter(ActivityTileViewBinder(activityTileListener))
+    private val activityAdapter =
+        ViewBinderAdapter(GroupHeaderViewBinder(), ActivityTileViewBinder(activityTileListener))
     private val widgetAdapter: ViewBinderAdapter by lazy {
         ViewBinderAdapter(WidgetViewBinder(appWidgetViewProvider) {
             appWidgetHost.deleteAppWidgetId(it)
@@ -70,19 +73,24 @@ class LauncherFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.launcher_fragment, container, false)
 
-        view.findViewById<RecyclerView>(R.id.app_list).apply {
-            adapter = activityAdapter
-            layoutManager = GridLayoutManager(
-                context, requireContext().resources.getInteger(R.integer.launcher_columns)
-            )
+        val recyclerView: RecyclerView = view.findViewById(R.id.app_list)
+        val columns = requireContext().resources.getInteger(R.integer.launcher_columns)
+        recyclerView.adapter = activityAdapter
+        recyclerView.layoutManager = GridLayoutManager(context, columns).apply {
+            spanSizeLookup = object : SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int {
+                    return when (activityAdapter.currentList[position]) {
+                        is GroupHeaderViewItem -> columns
+                        else -> 1
+                    }
+                }
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launcherViewModel.filteredLauncherActivities.collect { launcherActivities ->
-                    activityAdapter.submitList(launcherActivities.sortedBy {
-                        it.name.toString().lowercase()
-                    }.map { ActivityTileViewItem(it) })
+                launcherViewModel.filteredLauncherActivities.collect {
+                    activityAdapter.submitList(getAppListViewItems(it))
                 }
             }
         }
@@ -144,5 +152,21 @@ class LauncherFragment : Fragment() {
         super.onStart()
 
         widgetViewModel.refresh(appWidgetHost)
+    }
+
+    private fun getAppListViewItems(launcherActivities: List<LauncherActivityData>): List<ViewItem> {
+        return launcherActivities.groupBy {
+            val initial = it.name.first().uppercaseChar()
+            when {
+                initial.isLetter() -> initial.toString()
+                else -> "..."
+            }
+        }.toSortedMap().flatMap { (groupName, launcherActivities) ->
+            buildList {
+                add(GroupHeaderViewItem(groupName))
+                addAll(launcherActivities.sortedBy { it.name.toString() }
+                    .map { ActivityTileViewItem(it) })
+            }
+        }
     }
 }

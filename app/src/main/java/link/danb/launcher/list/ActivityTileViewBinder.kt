@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.model.LauncherActivityData
@@ -22,21 +23,24 @@ class ActivityTileViewBinder(private val activityTileListener: ActivityTileListe
         holder as ActivityTileViewHolder
         viewItem as ActivityTileViewItem
 
+        holder.cardView.apply {
+            isClickable = activityTileListener == null
+            setOnClickListener { activityTileListener?.onClick(it, viewItem) }
+            setOnLongClickListener { activityTileListener?.onLongClick(it, viewItem); true }
+        }
+
         holder.textView.apply {
             text = viewItem.name
             viewItem.icon.setSize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)
-
-            isClickable = activityTileListener == null
-            setOnClickListener { activityTileListener?.onClick(it, viewItem) }
-            setOnLongClickListener { activityTileListener?.onLongClick(it, viewItem); true }
         }
     }
 
     private class ActivityTileViewHolder(view: View) : ViewHolder(view) {
-        val textView = view as TextView
+        val cardView: CardView = view as CardView
+        val textView: TextView = view.findViewById(R.id.text_view)
     }
 }
 

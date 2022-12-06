@@ -6,22 +6,15 @@
     android:elevation="1dp"
     android:orientation="vertical">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/app_card"
+    <androidx.recyclerview.widget.RecyclerView xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/app_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fitsSystemWindows="true"
         app:layout_constraintBottom_toTopOf="@id/buttons"
         app:layout_constraintTop_toTopOf="parent"
-        app:strokeWidth="0dp">
-
-        <androidx.recyclerview.widget.RecyclerView xmlns:tools="http://schemas.android.com/tools"
-            android:id="@+id/app_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            tools:context=".LauncherFragment" />
-
-    </com.google.android.material.card.MaterialCardView>
+        tools:context=".LauncherFragment" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/buttons"
@@ -29,7 +22,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@id/widgets"
-        app:layout_constraintTop_toBottomOf="@id/app_card">
+        app:layout_constraintTop_toBottomOf="@id/app_list">
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/filter_list"

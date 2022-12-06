@@ -2,11 +2,13 @@
 <resources>
 
     <style name="Theme.Launcher.Base" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:navigationBarColor">?attr/colorSurface</item>
-        <item name="android:statusBarColor">?attr/colorSurface</item>
-        <item name="android:windowBackground">?attr/colorSurface</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
     </style>
 
     <style name="Theme.Launcher" parent="Theme.Launcher.Base" />

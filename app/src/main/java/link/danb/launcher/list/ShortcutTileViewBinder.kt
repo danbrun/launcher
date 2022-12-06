@@ -5,6 +5,7 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.utils.inflate
@@ -22,21 +23,24 @@ class ShortcutTileViewBinder(private val shortcutTileListener: ShortcutTileListe
         holder as ShortcutTileViewHolder
         viewItem as ShortcutTileViewItem
 
+        holder.cardView.apply {
+            isClickable = shortcutTileListener != null
+            setOnClickListener { shortcutTileListener?.onClick(it, viewItem) }
+            setOnLongClickListener { shortcutTileListener?.onLongClick(it, viewItem); true }
+        }
+
         holder.textView.apply {
             text = viewItem.name
             viewItem.icon.setSize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)
-
-            isClickable = shortcutTileListener != null
-            setOnClickListener { shortcutTileListener?.onClick(it, viewItem) }
-            setOnLongClickListener { shortcutTileListener?.onLongClick(it, viewItem); true }
         }
     }
 
     private class ShortcutTileViewHolder(view: View) : ViewHolder(view) {
-        val textView = view as TextView
+        val cardView = view as CardView
+        val textView: TextView = view.findViewById(R.id.text_view)
     }
 }
 
