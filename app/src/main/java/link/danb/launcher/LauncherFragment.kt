@@ -164,7 +164,7 @@ class LauncherFragment : Fragment() {
         }.toSortedMap().flatMap { (groupName, launcherActivities) ->
             buildList {
                 add(GroupHeaderViewItem(groupName))
-                addAll(launcherActivities.sortedBy { it.name.toString() }
+                addAll(launcherActivities.sortedBy { it.name.toString().lowercase() }
                     .map { ActivityTileViewItem(it) })
             }
         }

@@ -69,7 +69,7 @@ class LauncherIconDrawable(private val icon: Drawable) : Drawable() {
 
     private fun drawLegacyIcon(canvas: Canvas, icon: Drawable) {
         val background = GradientDrawable()
-        background.setColor(palette.getDominantColor(0))
+        background.setColor(palette.getMutedColor(Color.WHITE))
         background.bounds = Rect(bounds)
         background.draw(canvas)
 
