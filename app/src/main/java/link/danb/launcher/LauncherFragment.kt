@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -73,10 +74,10 @@ class LauncherFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.launcher_fragment, container, false)
 
-        val recyclerView: RecyclerView = view.findViewById(R.id.app_list)
+        val appsList: RecyclerView = view.findViewById(R.id.app_list)
         val columns = requireContext().resources.getInteger(R.integer.launcher_columns)
-        recyclerView.adapter = activityAdapter
-        recyclerView.layoutManager = GridLayoutManager(context, columns).apply {
+        appsList.adapter = activityAdapter
+        appsList.layoutManager = GridLayoutManager(context, columns).apply {
             spanSizeLookup = object : SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
                     return when (activityAdapter.currentList[position]) {
@@ -129,7 +130,8 @@ class LauncherFragment : Fragment() {
             }
         }
 
-        view.findViewById<RecyclerView>(R.id.widgets).apply {
+        val widgetsList: RecyclerView = view.findViewById(R.id.widgets)
+        widgetsList.apply {
             adapter = widgetAdapter
             layoutManager = LinearLayoutManager(context)
         }
@@ -143,6 +145,20 @@ class LauncherFragment : Fragment() {
                     it.sourceBounds = button.getLocationOnScreen()
                 }, button.makeClipRevealAnimation()
             )
+        }
+
+        view.setOnApplyWindowInsetsListener { v, insets ->
+            val systemInsets = WindowInsetsCompat.toWindowInsetsCompat(insets, v)
+                .getInsets(WindowInsetsCompat.Type.systemBars())
+
+            appsList.apply {
+                setPadding(paddingLeft, systemInsets.top, paddingRight, paddingBottom)
+            }
+            widgetsList.apply {
+                setPadding(paddingLeft, paddingTop, paddingRight, systemInsets.bottom)
+            }
+
+            insets
         }
 
         return view
