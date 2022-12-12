@@ -7,7 +7,11 @@ import android.graphics.drawable.Drawable
 import android.os.UserHandle
 import link.danb.launcher.LauncherIconDrawable
 
-class LauncherActivityData(application: Application, launcherActivityInfo: LauncherActivityInfo) {
+class LauncherActivityData(
+    application: Application,
+    launcherActivityInfo: LauncherActivityInfo,
+    launcherActivityMetadata: LauncherActivityMetadata
+) {
     val component: ComponentName = launcherActivityInfo.componentName
     val user: UserHandle = launcherActivityInfo.user
     val timestamp = System.currentTimeMillis()
@@ -15,8 +19,8 @@ class LauncherActivityData(application: Application, launcherActivityInfo: Launc
     val name: CharSequence by lazy { launcherActivityInfo.label }
     val icon: Drawable by lazy {
         application.packageManager.getUserBadgedIcon(
-            LauncherIconDrawable(launcherActivityInfo.getIcon(0)),
-            user
+            LauncherIconDrawable(launcherActivityInfo.getIcon(0)), user
         )
     }
+    val tags = launcherActivityMetadata.tags
 }

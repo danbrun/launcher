@@ -3,7 +3,6 @@ package link.danb.launcher
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
-import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.os.Bundle
@@ -21,6 +20,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
+import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
@@ -32,6 +32,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
+    private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
 
     @Inject
@@ -44,10 +45,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
         val user: UserHandle = arguments?.getParcelableCompat(USER_ARGUMENT)!!
 
-        LauncherActivityData(
-            requireActivity().application,
-            launcherApps.resolveActivity(Intent().setComponent(component), user)
-        )
+        launcherViewModel.launcherActivities.value.first {
+            it.component == component && it.user == user
+        }
     }
 
     private val launcherApps: LauncherApps by lazy {
@@ -74,6 +74,10 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
 
         override fun onSettingsButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
+            dismiss()
+        }
+
+        override fun onVisibilityButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
             dismiss()
         }
     }

@@ -7,7 +7,7 @@
     <string name="all">All</string>
     <string name="personal">Personal</string>
     <string name="work">Work</string>
-    <string name="none">None</string>
+    <string name="hidden">Hidden</string>
 
     <!-- Error messages -->
     <string name="widget_permission_denied">Cannot bind widget without permission</string>

@@ -97,9 +97,7 @@ class LauncherFragment : Fragment() {
         }
 
         val filterChips: ChipGroup = view.findViewById(R.id.filter_list)
-        listOf(
-            LauncherActivityFilter.ALL, LauncherActivityFilter.PERSONAL, LauncherActivityFilter.WORK
-        ).forEach { filter ->
+        LauncherActivityFilter.FILTERS.forEach { filter ->
             Chip(context).apply {
                 setText(filter.nameResId)
                 tag = filter

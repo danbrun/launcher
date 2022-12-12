@@ -15,10 +15,8 @@ import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.setSize
 
 class ActivityHeaderViewBinder(
-    fragment: Fragment,
-    private val activityHeaderListener: ActivityHeaderListener? = null
-) :
-    ViewBinder {
+    fragment: Fragment, private val activityHeaderListener: ActivityHeaderListener? = null
+) : ViewBinder {
     private val launcherViewModel: LauncherViewModel by fragment.activityViewModels()
 
     override val viewType: Int = R.id.activity_header_view_type_id
@@ -41,6 +39,23 @@ class ActivityHeaderViewBinder(
             setCompoundDrawables(viewItem.icon, null, null, null)
         }
 
+        holder.visibilityButton.apply {
+            setIconResource(
+                if (launcherViewModel.isVisible(viewItem.launcherActivityData)) {
+                    R.drawable.ic_baseline_visibility_off_24
+                } else {
+                    R.drawable.ic_baseline_visibility_24
+                }
+            )
+            setOnClickListener {
+                launcherViewModel.setVisibility(
+                    viewItem.launcherActivityData,
+                    !launcherViewModel.isVisible(viewItem.launcherActivityData)
+                )
+                activityHeaderListener?.onVisibilityButtonClick(viewItem)
+            }
+        }
+
         holder.uninstallButton.setOnClickListener {
             launcherViewModel.uninstall(viewItem.launcherActivityData, it)
             activityHeaderListener?.onUninstallButtonClick(viewItem)
@@ -54,6 +69,7 @@ class ActivityHeaderViewBinder(
 
     private class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
         val activityItem: TextView = view.findViewById(R.id.activity_item)
+        val visibilityButton: MaterialButton = view.findViewById(R.id.visibility_button)
         val uninstallButton: MaterialButton = view.findViewById(R.id.uninstall_button)
         val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
     }
@@ -69,18 +85,16 @@ class ActivityHeaderViewItem(val launcherActivityData: LauncherActivityData) : V
         get() = launcherActivityData.icon
 
     override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is ActivityHeaderViewItem
-                && launcherActivityData.component == other.launcherActivityData.component
-                && launcherActivityData.user == other.launcherActivityData.user
+        return other is ActivityHeaderViewItem && launcherActivityData.component == other.launcherActivityData.component && launcherActivityData.user == other.launcherActivityData.user
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is ActivityHeaderViewItem
-                && launcherActivityData.timestamp == other.launcherActivityData.timestamp
+        return other is ActivityHeaderViewItem && launcherActivityData.timestamp == other.launcherActivityData.timestamp
     }
 }
 
 interface ActivityHeaderListener {
+    fun onVisibilityButtonClick(activityHeaderViewItem: ActivityHeaderViewItem)
     fun onUninstallButtonClick(activityHeaderViewItem: ActivityHeaderViewItem)
     fun onSettingsButtonClick(activityHeaderViewItem: ActivityHeaderViewItem)
 }
