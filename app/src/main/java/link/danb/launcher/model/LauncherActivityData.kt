@@ -5,7 +5,7 @@ import android.content.ComponentName
 import android.content.pm.LauncherActivityInfo
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
-import link.danb.launcher.LauncherIconDrawable
+import link.danb.launcher.ui.LauncherIconDrawable
 
 class LauncherActivityData(
     application: Application,

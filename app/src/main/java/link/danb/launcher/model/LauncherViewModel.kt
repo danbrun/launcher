@@ -1,49 +1,46 @@
 package link.danb.launcher.model
 
 import android.app.Application
-import android.content.Intent
 import android.content.pm.LauncherApps
-import android.net.Uri
+import android.os.Process.myUserHandle
 import android.os.UserHandle
-import android.view.View
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import link.danb.launcher.utils.getLocationOnScreen
-import link.danb.launcher.utils.makeClipRevealAnimation
 import javax.inject.Inject
 
 /** View model for launch icons. */
 @HiltViewModel
-class LauncherViewModel @Inject constructor(application: Application) :
-    AndroidViewModel(application) {
-
-    @Inject
-    lateinit var launcherDatabase: LauncherDatabase
+class LauncherViewModel @Inject constructor(
+    application: Application,
+    private val launcherApps: LauncherApps,
+    private val launcherDatabase: LauncherDatabase
+) : AndroidViewModel(application) {
 
     private val launcherActivityMetadata by lazy {
         launcherDatabase.launcherActivityMetadata()
     }
 
-    private val launcherApps = application.getSystemService(LauncherApps::class.java)
     private val launcherAppsCallback = LauncherAppsCallback()
 
     private val mutableLauncherActivities = MutableStateFlow<List<LauncherActivityData>>(listOf())
     val launcherActivities: StateFlow<List<LauncherActivityData>> = mutableLauncherActivities
 
-    val filter: MutableStateFlow<LauncherActivityFilter> =
-        MutableStateFlow(LauncherActivityFilter.PERSONAL)
+    val activitiesMetadata: StateFlow<ActivitiesMetadata> = launcherActivities.map { activities ->
+        ActivitiesMetadata(activities.any { it.user != myUserHandle() },
+            activities.any { it.tags.contains(HIDDEN_TAG) })
+    }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(), ActivitiesMetadata(
+            hasWorkActivities = false, hasHiddenActivities = false
+        )
+    )
 
-    val filteredLauncherActivities =
-        launcherActivities.combine(filter) { launcherActivities, filter ->
-            launcherActivities.filter { filter.function(this, it) }
-        }
+    val activitiesFilter: MutableStateFlow<ActivitiesFilter> =
+        MutableStateFlow(ActivitiesFilter(showWorkActivities = false, showHiddenActivities = false))
 
     init {
         viewModelScope.launch {
@@ -65,34 +62,6 @@ class LauncherViewModel @Inject constructor(application: Application) :
         super.onCleared()
 
         launcherApps.unregisterCallback(launcherAppsCallback)
-    }
-
-    /** Launches the given activity. */
-    fun launch(launcherActivityData: LauncherActivityData, view: View) {
-        launcherApps.startMainActivity(
-            launcherActivityData.component,
-            launcherActivityData.user,
-            view.getLocationOnScreen(),
-            view.makeClipRevealAnimation()
-        )
-    }
-
-    /** Launches application settings for the given activity. */
-    fun manage(launcherActivityData: LauncherActivityData, view: View) {
-        launcherApps.startAppDetailsActivity(
-            launcherActivityData.component,
-            launcherActivityData.user,
-            view.getLocationOnScreen(),
-            view.makeClipRevealAnimation()
-        )
-    }
-
-    /** Launches an application uninstall dialog for the given activity. */
-    fun uninstall(launcherActivityData: LauncherActivityData, view: View) {
-        view.context.startActivity(
-            Intent(Intent.ACTION_DELETE).setData(Uri.parse("package:${launcherActivityData.component.packageName}"))
-                .putExtra(Intent.EXTRA_USER, launcherActivityData.user)
-        )
     }
 
     /** Sets the list of tags to associate with the given [LauncherActivityData] */
@@ -178,6 +147,10 @@ class LauncherViewModel @Inject constructor(application: Application) :
             }
         }
     }
+
+    data class ActivitiesMetadata(val hasWorkActivities: Boolean, val hasHiddenActivities: Boolean)
+
+    data class ActivitiesFilter(val showWorkActivities: Boolean, val showHiddenActivities: Boolean)
 
     companion object {
         private const val HIDDEN_TAG = "hidden"

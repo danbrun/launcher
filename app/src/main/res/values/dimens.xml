@@ -2,4 +2,6 @@
 <resources>
     <dimen name="launcher_icon_size">48dp</dimen>
     <dimen name="widget_max_height">256dp</dimen>
+    <dimen name="apps_list_corner_radius">24dp</dimen>
+    <dimen name="app_item_corner_radius">12dp</dimen>
 </resources>

@@ -6,7 +6,6 @@ import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.updateAppWidgetSize
 import link.danb.launcher.widgets.AppWidgetViewProvider
 
 class WidgetViewBinder(
@@ -24,13 +23,6 @@ class WidgetViewBinder(
         viewItem as WidgetViewItem
 
         val widgetView = appWidgetViewProvider.createView(viewItem.widgetId).apply {
-            addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                updateAppWidgetSize(
-                    holder.widgetFrame.measuredWidth,
-                    resources.getDimensionPixelSize(R.dimen.widget_max_height)
-                )
-            }
-
             setOnLongClickListener {
                 widgetViewListener.onLongClick(viewItem.widgetId)
                 true

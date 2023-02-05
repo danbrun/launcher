@@ -12,4 +12,12 @@
     <!-- Error messages -->
     <string name="widget_permission_denied">Cannot bind widget without permission</string>
     <string name="widget_configuration_failed">Widget configuration was unsuccessful</string>
+
+    <!-- Actions -->
+    <string name="search">Search</string>
+    <string name="add_widget">Add widget</string>
+    <string name="show_personal">Show personal apps</string>
+    <string name="show_work">Show work apps</string>
+    <string name="show_hidden">Show hidden apps</string>
+    <string name="hide_hidden">Stop showing hidden apps</string>
 </resources>

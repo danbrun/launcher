@@ -4,10 +4,10 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.model.LauncherActivityData
+import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.setSize
 
@@ -23,24 +23,22 @@ class ActivityTileViewBinder(private val activityTileListener: ActivityTileListe
         holder as ActivityTileViewHolder
         viewItem as ActivityTileViewItem
 
-        holder.cardView.apply {
-            isClickable = activityTileListener == null
-            setOnClickListener { activityTileListener?.onClick(it, viewItem) }
-            setOnLongClickListener { activityTileListener?.onLongClick(it, viewItem); true }
-        }
-
         holder.textView.apply {
             text = viewItem.name
             viewItem.icon.setSize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)
+            setOnClickListener { activityTileListener?.onClick(it, viewItem) }
+            setOnLongClickListener { activityTileListener?.onLongClick(it, viewItem); true }
+            clipToOutline = true
+            outlineProvider =
+                RoundedCornerOutlineProvider(resources.getDimensionPixelSize(R.dimen.app_item_corner_radius))
         }
     }
 
     private class ActivityTileViewHolder(view: View) : ViewHolder(view) {
-        val cardView: CardView = view as CardView
-        val textView: TextView = view.findViewById(R.id.text_view)
+        val textView: TextView = view as TextView
     }
 }
 
@@ -54,14 +52,11 @@ class ActivityTileViewItem(val launcherActivityData: LauncherActivityData) : Vie
         get() = launcherActivityData.icon
 
     override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is ActivityTileViewItem
-                && launcherActivityData.component == other.launcherActivityData.component
-                && launcherActivityData.user == other.launcherActivityData.user
+        return other is ActivityTileViewItem && launcherActivityData.component == other.launcherActivityData.component && launcherActivityData.user == other.launcherActivityData.user
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is ActivityTileViewItem
-                && launcherActivityData.timestamp == other.launcherActivityData.timestamp
+        return other is ActivityTileViewItem && launcherActivityData.timestamp == other.launcherActivityData.timestamp
     }
 }
 

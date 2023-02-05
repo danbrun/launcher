@@ -3,8 +3,10 @@ package link.danb.launcher
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
+import android.net.Uri
 import android.os.Bundle
 import android.os.UserHandle
 import android.os.UserManager
@@ -21,11 +23,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
+import link.danb.launcher.ui.LauncherIconDrawable
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
+import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
@@ -40,6 +44,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var appWidgetManager: AppWidgetManager
+
+    @Inject
+    lateinit var appWidgetViewProvider: AppWidgetViewProvider
 
     private val launcherActivity by lazy {
         val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
@@ -69,15 +76,30 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
 
     private val activityHeaderListener = object : ActivityHeaderListener {
-        override fun onUninstallButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
+        override fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
+            val packageName = viewItem.launcherActivityData.component.packageName
+            view.context.startActivity(
+                Intent(Intent.ACTION_DELETE).setData(Uri.parse("package:$packageName"))
+                    .putExtra(Intent.EXTRA_USER, viewItem.launcherActivityData.user)
+            )
             dismiss()
         }
 
-        override fun onSettingsButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
+        override fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
+            launcherApps.startAppDetailsActivity(
+                viewItem.launcherActivityData.component,
+                viewItem.launcherActivityData.user,
+                view.getLocationOnScreen(),
+                view.makeClipRevealAnimation()
+            )
             dismiss()
         }
 
-        override fun onVisibilityButtonClick(activityHeaderViewItem: ActivityHeaderViewItem) {
+        override fun onVisibilityButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
+            launcherViewModel.setVisibility(
+                viewItem.launcherActivityData,
+                !launcherViewModel.isVisible(viewItem.launcherActivityData)
+            )
             dismiss()
         }
     }
@@ -109,7 +131,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         val adapter = ViewBinderAdapter(
             ActivityHeaderViewBinder(this, activityHeaderListener),
             ShortcutTileViewBinder(shortcutTileListener),
-            WidgetPreviewViewBinder(widgetPreviewListener)
+            WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
         )
 
         val columns = requireContext().resources.getInteger(R.integer.launcher_columns)

@@ -4,6 +4,10 @@ import android.app.Activity
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
+import android.content.res.Resources
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -35,5 +39,14 @@ class AppWidgetViewProvider @Inject constructor(
         return appWidgetHost.createView(
             activity.applicationContext, widgetId, appWidgetManager.getAppWidgetInfo(widgetId)
         )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    fun createPreview(appWidgetProviderInfo: AppWidgetProviderInfo): AppWidgetHostView {
+        return appWidgetHost.createView(activity.applicationContext,
+            Resources.ID_NULL,
+            appWidgetProviderInfo.clone().apply { initialLayout = previewLayout }).apply {
+            updateAppWidget(null)
+        }
     }
 }

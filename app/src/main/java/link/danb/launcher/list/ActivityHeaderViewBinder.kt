@@ -48,22 +48,16 @@ class ActivityHeaderViewBinder(
                 }
             )
             setOnClickListener {
-                launcherViewModel.setVisibility(
-                    viewItem.launcherActivityData,
-                    !launcherViewModel.isVisible(viewItem.launcherActivityData)
-                )
-                activityHeaderListener?.onVisibilityButtonClick(viewItem)
+                activityHeaderListener?.onVisibilityButtonClick(it, viewItem)
             }
         }
 
         holder.uninstallButton.setOnClickListener {
-            launcherViewModel.uninstall(viewItem.launcherActivityData, it)
-            activityHeaderListener?.onUninstallButtonClick(viewItem)
+            activityHeaderListener?.onUninstallButtonClick(it, viewItem)
         }
 
         holder.settingsButton.setOnClickListener {
-            launcherViewModel.manage(viewItem.launcherActivityData, it)
-            activityHeaderListener?.onSettingsButtonClick(viewItem)
+            activityHeaderListener?.onSettingsButtonClick(it, viewItem)
         }
     }
 
@@ -94,7 +88,7 @@ class ActivityHeaderViewItem(val launcherActivityData: LauncherActivityData) : V
 }
 
 interface ActivityHeaderListener {
-    fun onVisibilityButtonClick(activityHeaderViewItem: ActivityHeaderViewItem)
-    fun onUninstallButtonClick(activityHeaderViewItem: ActivityHeaderViewItem)
-    fun onSettingsButtonClick(activityHeaderViewItem: ActivityHeaderViewItem)
+    fun onVisibilityButtonClick(view: View, viewItem: ActivityHeaderViewItem)
+    fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem)
+    fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem)
 }

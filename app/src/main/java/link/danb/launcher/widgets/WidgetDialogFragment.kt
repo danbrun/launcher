@@ -32,6 +32,9 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
     @Inject
     lateinit var appWidgetManager: AppWidgetManager
 
+    @Inject
+    lateinit var appWidgetViewProvider: AppWidgetViewProvider
+
     private val launcherApps: LauncherApps by lazy {
         requireContext().getSystemService(LauncherApps::class.java)
     }
@@ -63,7 +66,8 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
         val view = inflater.inflate(R.layout.widget_dialog_fragment, container, false)
 
         val widgetListAdapter = ViewBinderAdapter(
-            ApplicationHeaderViewBinder(), WidgetPreviewViewBinder(widgetPreviewListener)
+            ApplicationHeaderViewBinder(),
+            WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
         )
 
         view.findViewById<RecyclerView>(R.id.widget_list).apply {

@@ -20,6 +20,11 @@
             android:layout_marginTop="4dp"
             android:contentDescription="@null" />
 
+        <link.danb.launcher.ui.TouchInterceptView
+            android:id="@+id/widget_preview_frame"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <TextView
             android:id="@+id/widget_label"
             android:layout_width="match_parent"
