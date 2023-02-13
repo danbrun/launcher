@@ -3,10 +3,12 @@ package link.danb.launcher
 import android.app.SearchManager
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.os.Process.myUserHandle
+import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +25,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import link.danb.launcher.LauncherActivity.IconViewProvider
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
@@ -35,7 +38,7 @@ import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class LauncherFragment : Fragment() {
+class LauncherFragment : Fragment(), IconViewProvider {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
@@ -54,6 +57,8 @@ class LauncherFragment : Fragment() {
 
     @Inject
     lateinit var launcherMenuProvider: LauncherMenuProvider
+
+    private lateinit var appsList: RecyclerView
 
     private val activityAdapter: ViewBinderAdapter by lazy {
         ViewBinderAdapter(
@@ -84,6 +89,29 @@ class LauncherFragment : Fragment() {
         widgetViewModel.refresh(appWidgetHost)
     }
 
+    override fun getIconView(component: ComponentName, user: UserHandle): View? {
+        // If there is an exact component match, returns that icon view. Otherwise returns the icon
+        // view of the first package match.
+
+        var firstMatchIndex = -1
+
+        for (index in activityAdapter.currentList.indices) {
+            val item = activityAdapter.currentList[index]
+
+            if (item !is ActivityTileViewItem || item.launcherActivityData.user != user) continue
+
+            if (item.launcherActivityData.component == component) {
+                return appsList.findViewHolderForAdapterPosition(index)?.itemView
+            }
+
+            if (item.launcherActivityData.component.packageName == component.packageName) {
+                firstMatchIndex = index
+            }
+        }
+
+        return appsList.findViewHolderForAdapterPosition(firstMatchIndex)?.itemView
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -100,7 +128,7 @@ class LauncherFragment : Fragment() {
                 }
         }
 
-        val appsList: RecyclerView = view.findViewById(R.id.app_list)
+        appsList = view.findViewById(R.id.app_list)
         appsList.adapter = activityAdapter
         appsList.layoutManager = gridLayoutManager
 

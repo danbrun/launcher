@@ -1,9 +1,18 @@
 package link.danb.launcher
 
+import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
+import android.os.Message
+import android.os.UserHandle
+import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toRectF
+import androidx.core.os.bundleOf
 import dagger.hilt.android.AndroidEntryPoint
+import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.getParcelableCompat
 
 @AndroidEntryPoint
 class LauncherActivity : AppCompatActivity() {
@@ -13,10 +22,8 @@ class LauncherActivity : AppCompatActivity() {
         setContentView(R.layout.launcher_activity)
 
         if (savedInstanceState == null) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.activity_frame, LauncherFragment())
-                .commit()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.activity_frame, LauncherFragment()).commit()
         }
 
         onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
@@ -24,5 +31,40 @@ class LauncherActivity : AppCompatActivity() {
                 // Do not close app.
             }
         })
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        val extras = intent.getBundleExtra(EXTRA_GESTURE_CONTRACT) ?: return
+
+        val component: ComponentName? = extras.getParcelableCompat(Intent.EXTRA_COMPONENT_NAME)
+        val user: UserHandle? = extras.getParcelableCompat(Intent.EXTRA_USER)
+        val message: Message? = extras.getParcelableCompat(EXTRA_REMOTE_CALLBACK)
+
+        if (component != null && user != null && message != null && message.replyTo != null) {
+            var iconViewProvider: IconViewProvider? = null
+            for (fragment in supportFragmentManager.fragments) {
+                if (fragment is IconViewProvider) {
+                    iconViewProvider = fragment
+                    break
+                }
+            }
+
+            val view = iconViewProvider?.getIconView(component, user) ?: return
+
+            message.data = bundleOf(EXTRA_ICON_POSITION to view.getLocationOnScreen().toRectF())
+            message.replyTo.send(message)
+        }
+    }
+
+    fun interface IconViewProvider {
+        fun getIconView(component: ComponentName, user: UserHandle): View?
+    }
+
+    companion object {
+        private const val EXTRA_GESTURE_CONTRACT = "gesture_nav_contract_v1"
+        private const val EXTRA_ICON_POSITION = "gesture_nav_contract_icon_position"
+        private const val EXTRA_REMOTE_CALLBACK = "android.intent.extra.REMOTE_CALLBACK"
     }
 }
