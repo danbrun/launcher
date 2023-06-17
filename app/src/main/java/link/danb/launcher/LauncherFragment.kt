@@ -20,9 +20,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.LauncherActivity.IconViewProvider
@@ -89,7 +92,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
         widgetViewModel.refresh(appWidgetHost)
     }
 
-    override fun getIconView(component: ComponentName, user: UserHandle): View? {
+    override suspend fun getIconView(component: ComponentName, user: UserHandle): View? {
         // If there is an exact component match, returns that icon view. Otherwise returns the icon
         // view of the first package match.
 
@@ -101,7 +104,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
             if (item !is ActivityTileViewItem || item.launcherActivityData.user != user) continue
 
             if (item.launcherActivityData.component == component) {
-                return appsList.findViewHolderForAdapterPosition(index)?.itemView
+                return getViewHolderForAdapterPosition(index)?.itemView
             }
 
             if (item.launcherActivityData.component.packageName == component.packageName) {
@@ -109,7 +112,16 @@ class LauncherFragment : Fragment(), IconViewProvider {
             }
         }
 
-        return appsList.findViewHolderForAdapterPosition(firstMatchIndex)?.itemView
+        return getViewHolderForAdapterPosition(firstMatchIndex)?.itemView
+    }
+
+    private suspend fun getViewHolderForAdapterPosition(position: Int): ViewHolder? {
+        return appsList.findViewHolderForAdapterPosition(position) ?: coroutineScope {
+            // Scroll and delay so the item has a chance to be bound.
+            appsList.scrollToPosition(position)
+            delay(5)
+            appsList.findViewHolderForAdapterPosition(position)
+        }
     }
 
     override fun onCreateView(

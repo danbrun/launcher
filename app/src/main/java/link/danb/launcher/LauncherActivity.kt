@@ -10,7 +10,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toRectF
 import androidx.core.os.bundleOf
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 
@@ -51,15 +53,17 @@ class LauncherActivity : AppCompatActivity() {
                 }
             }
 
-            val view = iconViewProvider?.getIconView(component, user) ?: return
+            lifecycleScope.launch {
+                val view = iconViewProvider?.getIconView(component, user) ?: return@launch
 
-            message.data = bundleOf(EXTRA_ICON_POSITION to view.getLocationOnScreen().toRectF())
-            message.replyTo.send(message)
+                message.data = bundleOf(EXTRA_ICON_POSITION to view.getLocationOnScreen().toRectF())
+                message.replyTo.send(message)
+            }
         }
     }
 
     fun interface IconViewProvider {
-        fun getIconView(component: ComponentName, user: UserHandle): View?
+        suspend fun getIconView(component: ComponentName, user: UserHandle): View?
     }
 
     companion object {
