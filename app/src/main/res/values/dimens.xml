@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="launcher_icon_size">48dp</dimen>
-    <dimen name="widget_max_height">256dp</dimen>
+    <dimen name="widget_height_multiplier">32dp</dimen>
     <dimen name="apps_list_corner_radius">24dp</dimen>
     <dimen name="app_item_corner_radius">12dp</dimen>
 </resources>

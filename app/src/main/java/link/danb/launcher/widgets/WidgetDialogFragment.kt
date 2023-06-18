@@ -49,7 +49,7 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
         } else {
             Toast.makeText(context, it.errorMessage, Toast.LENGTH_SHORT)
         }
-        widgetViewModel.refresh(appWidgetHost)
+        widgetViewModel.refresh()
     }
 
     private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->

@@ -2,15 +2,105 @@ package link.danb.launcher.widgets
 
 import android.appwidget.AppWidgetHost
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import link.danb.launcher.model.LauncherDatabase
+import link.danb.launcher.model.WidgetMetadata
+import javax.inject.Inject
 
-class WidgetViewModel : ViewModel() {
+@HiltViewModel
+class WidgetViewModel @Inject constructor(
+    private val launcherDatabase: LauncherDatabase, private val appWidgetHost: AppWidgetHost
+) : ViewModel() {
 
-    private val _widgetIds: MutableStateFlow<List<Int>> = MutableStateFlow(listOf())
-    val widgetIds: StateFlow<List<Int>> = _widgetIds
+    private val widgetMetadata by lazy {
+        launcherDatabase.widgetMetadata()
+    }
 
-    fun refresh(appWidgetHost: AppWidgetHost) {
-        _widgetIds.value = appWidgetHost.appWidgetIds.toList()
+    private val _widgets: MutableStateFlow<List<WidgetMetadata>> = MutableStateFlow(listOf())
+    val widgets: StateFlow<List<WidgetMetadata>> = _widgets
+
+    fun refresh() {
+        viewModelScope.launch(Dispatchers.IO) {
+            refreshInBackground()
+        }
+    }
+
+    fun delete(widgetId: Int) {
+        appWidgetHost.deleteAppWidgetId(widgetId)
+        refresh()
+    }
+
+    fun increaseHeight(widgetId: Int) {
+        adjustHeight(widgetId, 1)
+    }
+
+    fun decreaseHeight(widgetId: Int) {
+        adjustHeight(widgetId, -1)
+    }
+
+    fun moveUp(widgetId: Int) {
+        adjustPosition(widgetId, 1)
+    }
+
+    fun moveDown(widgetId: Int) {
+        adjustPosition(widgetId, -1)
+    }
+
+    private fun adjustPosition(widgetId: Int, positionChange: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val widgets = widgetMetadata.get().sortedBy { it.position }.toMutableList()
+            val widget = widgets.first { it.widgetId == widgetId }
+            val originalPosition = widgets.indexOf(widget)
+            val targetPosition = originalPosition + positionChange
+
+            if (targetPosition in 0 until widgets.size) {
+                widgets[originalPosition] = widgets[targetPosition]
+                widgets[targetPosition] = widget
+                widgets.indices.forEach {
+                    widgetMetadata.put(widgets[it].copy(position = it))
+                }
+                refreshInBackground()
+            }
+        }
+    }
+
+    private fun adjustHeight(widgetId: Int, heightChange: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val metadata = widgetMetadata.get().first { it.widgetId == widgetId }
+            widgetMetadata.put(
+                metadata.copy(height = (metadata.height + heightChange).coerceIn(2, 12))
+            )
+            refreshInBackground()
+        }
+    }
+
+    private fun refreshInBackground() {
+        var widgetMetadataList = widgetMetadata.get()
+        val widgetIds = appWidgetHost.appWidgetIds.toList()
+
+        // Remove metadata for any unbound widgets.
+        widgetMetadataList = widgetMetadataList.filter {
+            if (!widgetIds.contains(it.widgetId)) {
+                widgetMetadata.delete(it)
+                false
+            } else {
+                true
+            }
+        }
+
+        // Add metadata for any bound widgets missing from the database.
+        var position = widgetMetadataList.maxOfOrNull { it.position } ?: 0
+        widgetIds.forEach { widgetId ->
+            if (widgetMetadataList.none { it.widgetId == widgetId }) {
+                widgetMetadata.put(WidgetMetadata(widgetId, position++, height = 2))
+            }
+        }
+
+        _widgets.value = widgetMetadata.get().sortedBy { it.position }
     }
 }

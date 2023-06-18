@@ -32,11 +32,13 @@ import link.danb.launcher.LauncherActivity.IconViewProvider
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
+import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.WidgetOptionsDialogFragment
 import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
@@ -88,8 +90,8 @@ class LauncherFragment : Fragment(), IconViewProvider {
     }
 
     private val widgetViewListener = WidgetViewListener {
-        appWidgetHost.deleteAppWidgetId(it)
-        widgetViewModel.refresh(appWidgetHost)
+        WidgetOptionsDialogFragment.newInstance(it)
+            .show(parentFragmentManager, WidgetOptionsDialogFragment.TAG)
     }
 
     override suspend fun getIconView(component: ComponentName, user: UserHandle): View? {
@@ -167,7 +169,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
                     combine(
                         launcherViewModel.launcherActivities,
                         launcherViewModel.activitiesFilter,
-                        widgetViewModel.widgetIds,
+                        widgetViewModel.widgets,
                         ::LauncherListUpdateData
                     ).collect(::updateLauncherList)
                 }
@@ -180,13 +182,13 @@ class LauncherFragment : Fragment(), IconViewProvider {
     override fun onStart() {
         super.onStart()
 
-        widgetViewModel.refresh(appWidgetHost)
+        widgetViewModel.refresh()
     }
 
     private data class LauncherListUpdateData(
         val activities: List<LauncherActivityData>,
         val activitiesFilter: LauncherViewModel.ActivitiesFilter,
-        val widgetIds: List<Int>,
+        val widgetIds: List<WidgetMetadata>,
     )
 
     private fun updateLauncherList(data: LauncherListUpdateData) {

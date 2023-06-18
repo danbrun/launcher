@@ -7,15 +7,15 @@ import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
-import android.os.SystemClock
+import android.view.GestureDetector
+import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
-import android.view.ViewConfiguration
-import androidx.core.view.postDelayed
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import link.danb.launcher.R
+import link.danb.launcher.utils.updateAppWidgetSize
 import javax.inject.Singleton
 
 @Module
@@ -48,43 +48,45 @@ class AppWidgetModule {
     /** Custom [AppWidgetHostView] that intercepts long presses. */
     private class LauncherWidgetHostView(context: Context?) : AppWidgetHostView(context) {
 
-        private var isDown = false
-        private var hasLongPressed = false
+        private val gestureDetector = GestureDetector(context, object : SimpleOnGestureListener() {
+            init {
+                isLongClickable = true
+            }
+
+            override fun onLongPress(e: MotionEvent) {
+                performLongClick()
+            }
+        })
+
+        var customHeight: Int? = null
+            set(value) {
+                field = value
+                invalidate()
+            }
 
         override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-            handleTouchEvent(event)
-            return hasLongPressed
+            return gestureDetector.onTouchEvent(event)
         }
 
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouchEvent(event: MotionEvent): Boolean {
-            handleTouchEvent(event)
-            return true
+            return gestureDetector.onTouchEvent(event)
         }
 
-        private fun handleTouchEvent(event: MotionEvent) {
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    isDown = true
-                    hasLongPressed = false
-                    postDelayed(LONG_PRESS_TIMEOUT) {
-                        val finishTime = event.downTime + LONG_PRESS_TIMEOUT
-                        if (isDown && SystemClock.uptimeMillis() > finishTime) {
-                            performLongClick()
-                            hasLongPressed = true
-                        }
-                    }
-                }
-                MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                    isDown = false
-                    hasLongPressed = false
-                    requestDisallowInterceptTouchEvent(false)
-                }
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            if (customHeight != null) {
+                super.onMeasure(
+                    widthMeasureSpec,
+                    MeasureSpec.makeMeasureSpec(customHeight!!, MeasureSpec.EXACTLY)
+                )
+            } else {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec)
             }
         }
 
-        companion object {
-            private val LONG_PRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout().toLong()
+        override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+            updateAppWidgetSize(right - left, top - bottom)
+            super.onLayout(changed, left, top, right, bottom)
         }
     }
 }

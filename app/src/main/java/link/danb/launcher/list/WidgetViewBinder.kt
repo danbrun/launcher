@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
+import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.utils.inflate
 import link.danb.launcher.widgets.AppWidgetViewProvider
 
@@ -22,15 +23,24 @@ class WidgetViewBinder(
         holder as WidgetViewHolder
         viewItem as WidgetViewItem
 
-        val widgetView = appWidgetViewProvider.createView(viewItem.widgetId).apply {
+        val widgetView = appWidgetViewProvider.createView(viewItem.widgetMetadata.widgetId).apply {
             setOnLongClickListener {
-                widgetViewListener.onLongClick(viewItem.widgetId)
+                widgetViewListener.onLongClick(viewItem.widgetMetadata)
                 true
             }
         }
 
-        holder.widgetFrame.removeAllViews()
-        holder.widgetFrame.addView(widgetView)
+        holder.widgetFrame.apply {
+            removeAllViews()
+            addView(widgetView)
+
+            layoutParams = holder.widgetFrame.layoutParams.apply {
+                val heightMultiplier = holder.widgetFrame.context.resources.getDimensionPixelSize(
+                    R.dimen.widget_height_multiplier
+                )
+                height = viewItem.widgetMetadata.height * heightMultiplier
+            }
+        }
     }
 
     private class WidgetViewHolder(view: View) : ViewHolder(view) {
@@ -38,18 +48,18 @@ class WidgetViewBinder(
     }
 }
 
-class WidgetViewItem(val widgetId: Int) : ViewItem {
+class WidgetViewItem(val widgetMetadata: WidgetMetadata) : ViewItem {
     override val viewType: Int = R.id.widget_view_type_id
 
     override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is WidgetViewItem && widgetId == other.widgetId
+        return other is WidgetViewItem && widgetMetadata.widgetId == other.widgetMetadata.widgetId
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return true
+        return other is WidgetViewItem && widgetMetadata == other.widgetMetadata
     }
 }
 
 fun interface WidgetViewListener {
-    fun onLongClick(widgetId: Int)
+    fun onLongClick(widgetMetadata: WidgetMetadata)
 }

@@ -9,11 +9,13 @@ import dagger.hilt.components.SingletonComponent
 import org.json.JSONArray
 import javax.inject.Singleton
 
-@Database(entities = [LauncherActivityMetadata::class], version = 1)
+@Database(entities = [LauncherActivityMetadata::class, WidgetMetadata::class], version = 2)
 @TypeConverters(StringSetConverter::class)
 abstract class LauncherDatabase : RoomDatabase() {
 
     abstract fun launcherActivityMetadata(): LauncherActivityMetadata.DataAccessObject
+
+    abstract fun widgetMetadata(): WidgetMetadata.DataAccessObject
 
     @Module
     @InstallIn(SingletonComponent::class)
@@ -24,7 +26,7 @@ abstract class LauncherDatabase : RoomDatabase() {
         fun getDatabase(application: Application): LauncherDatabase {
             return Room.databaseBuilder(
                 application, LauncherDatabase::class.java, DATABASE_NAME
-            ).build()
+            ).fallbackToDestructiveMigration().build()
         }
     }
 

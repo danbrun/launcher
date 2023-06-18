@@ -72,7 +72,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             } else {
                 Toast.makeText(context, it.errorMessage, Toast.LENGTH_SHORT).show()
             }
-            widgetViewModel.refresh(appWidgetHost)
+            widgetViewModel.refresh()
         }
 
     private val activityHeaderListener = object : ActivityHeaderListener {
