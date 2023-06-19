@@ -2,17 +2,13 @@ package link.danb.launcher.list
 
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.utils.inflate
-import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.AppWidgetFrameView
 
-class WidgetViewBinder(
-    private val appWidgetViewProvider: AppWidgetViewProvider,
-    private val widgetViewListener: WidgetViewListener
-) : ViewBinder {
+class WidgetViewBinder(private val widgetViewListener: WidgetViewListener) : ViewBinder {
     override val viewType: Int = R.id.widget_view_type_id
 
     override fun createViewHolder(parent: ViewGroup): ViewHolder {
@@ -23,28 +19,17 @@ class WidgetViewBinder(
         holder as WidgetViewHolder
         viewItem as WidgetViewItem
 
-        val widgetView = appWidgetViewProvider.createView(viewItem.widgetMetadata.widgetId).apply {
+        holder.widgetFrame.apply {
+            widgetMetadata = viewItem.widgetMetadata
             setOnLongClickListener {
                 widgetViewListener.onLongClick(viewItem.widgetMetadata)
                 true
             }
         }
-
-        holder.widgetFrame.apply {
-            removeAllViews()
-            addView(widgetView)
-
-            layoutParams = layoutParams.apply {
-                val heightMultiplier = holder.widgetFrame.context.resources.getDimensionPixelSize(
-                    R.dimen.widget_height_multiplier
-                )
-                height = viewItem.widgetMetadata.height * heightMultiplier
-            }
-        }
     }
 
     private class WidgetViewHolder(view: View) : ViewHolder(view) {
-        val widgetFrame = view as FrameLayout
+        val widgetFrame = view as AppWidgetFrameView
     }
 }
 

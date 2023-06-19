@@ -37,7 +37,6 @@ import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
-import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
@@ -57,9 +56,6 @@ class LauncherFragment : Fragment(), IconViewProvider {
     lateinit var appWidgetManager: AppWidgetManager
 
     @Inject
-    lateinit var appWidgetViewProvider: AppWidgetViewProvider
-
-    @Inject
     lateinit var launcherMenuProvider: LauncherMenuProvider
 
     private lateinit var appsList: RecyclerView
@@ -68,7 +64,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
         ViewBinderAdapter(
             GroupHeaderViewBinder(),
             ActivityTileViewBinder(activityTileListener),
-            WidgetViewBinder(appWidgetViewProvider, widgetViewListener),
+            WidgetViewBinder(widgetViewListener),
             WidgetEditorViewBinder(widgetEditorViewListener),
         )
     }
