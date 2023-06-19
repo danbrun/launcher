@@ -24,6 +24,17 @@ class WidgetViewModel @Inject constructor(
     private val _widgets: MutableStateFlow<List<WidgetMetadata>> = MutableStateFlow(listOf())
     val widgets: StateFlow<List<WidgetMetadata>> = _widgets
 
+    private val _widgetToEdit: MutableStateFlow<Int?> = MutableStateFlow(null)
+    val widgetToEdit: StateFlow<Int?> = _widgetToEdit
+
+    fun startEditing(widgetId: Int) {
+        _widgetToEdit.value = widgetId
+    }
+
+    fun finishEditing() {
+        _widgetToEdit.value = null
+    }
+
     fun refresh() {
         viewModelScope.launch(Dispatchers.IO) {
             refreshInBackground()
@@ -44,11 +55,11 @@ class WidgetViewModel @Inject constructor(
     }
 
     fun moveUp(widgetId: Int) {
-        adjustPosition(widgetId, 1)
+        adjustPosition(widgetId, -1)
     }
 
     fun moveDown(widgetId: Int) {
-        adjustPosition(widgetId, -1)
+        adjustPosition(widgetId, 1)
     }
 
     private fun adjustPosition(widgetId: Int, positionChange: Int) {

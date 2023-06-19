@@ -13,6 +13,7 @@
     <id name="shortcut_tile_view_type_id" />
     <id name="widget_preview_view_type_id" />
     <id name="widget_view_type_id" />
+    <id name="widget_editor_view_type_id" />
 
     <!-- Icon button IDs -->
     <id name="add_widget_button" />

@@ -38,7 +38,6 @@ import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetViewProvider
-import link.danb.launcher.widgets.WidgetOptionsDialogFragment
 import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
@@ -70,6 +69,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
             GroupHeaderViewBinder(),
             ActivityTileViewBinder(activityTileListener),
             WidgetViewBinder(appWidgetViewProvider, widgetViewListener),
+            WidgetEditorViewBinder(widgetEditorViewListener),
         )
     }
 
@@ -90,8 +90,33 @@ class LauncherFragment : Fragment(), IconViewProvider {
     }
 
     private val widgetViewListener = WidgetViewListener {
-        WidgetOptionsDialogFragment.newInstance(it)
-            .show(parentFragmentManager, WidgetOptionsDialogFragment.TAG)
+        widgetViewModel.startEditing(it.widgetId)
+    }
+
+    private val widgetEditorViewListener = object : WidgetEditorViewListener {
+        override fun onFinishEditing(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.finishEditing()
+        }
+
+        override fun onRemoveWidget(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.delete(widgetMetadata.widgetId)
+        }
+
+        override fun onIncreaseHeight(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.increaseHeight(widgetMetadata.widgetId)
+        }
+
+        override fun onDecreaseHeight(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.decreaseHeight(widgetMetadata.widgetId)
+        }
+
+        override fun onMoveUp(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.moveUp(widgetMetadata.widgetId)
+        }
+
+        override fun onMoveDown(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.moveDown(widgetMetadata.widgetId)
+        }
     }
 
     override suspend fun getIconView(component: ComponentName, user: UserHandle): View? {
@@ -137,7 +162,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
         gridLayoutManager.spanSizeLookup = object : SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int =
                 when (activityAdapter.currentList[position]) {
-                    is WidgetViewItem, is GroupHeaderViewItem -> gridLayoutManager.spanCount
+                    is WidgetViewItem, is WidgetEditorViewItem, is GroupHeaderViewItem -> gridLayoutManager.spanCount
                     else -> 1
                 }
         }
@@ -166,12 +191,21 @@ class LauncherFragment : Fragment(), IconViewProvider {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    combine(
+                    val widgetsFlow = combine(
+                        widgetViewModel.widgets,
+                        widgetViewModel.widgetToEdit,
+                        ::getWidgetListViewItems
+                    )
+
+                    val appsFlow = combine(
                         launcherViewModel.launcherActivities,
                         launcherViewModel.activitiesFilter,
-                        widgetViewModel.widgets,
-                        ::LauncherListUpdateData
-                    ).collect(::updateLauncherList)
+                        ::getAppListViewItems
+                    )
+
+                    combine(widgetsFlow, appsFlow) { widgets, apps ->
+                        widgets + apps
+                    }.collect { activityAdapter.submitList(it) }
                 }
             }
         }
@@ -185,31 +219,26 @@ class LauncherFragment : Fragment(), IconViewProvider {
         widgetViewModel.refresh()
     }
 
-    private data class LauncherListUpdateData(
-        val activities: List<LauncherActivityData>,
-        val activitiesFilter: LauncherViewModel.ActivitiesFilter,
-        val widgetIds: List<WidgetMetadata>,
-    )
-
-    private fun updateLauncherList(data: LauncherListUpdateData) {
-        activityAdapter.submitList(
-            data.widgetIds.map(::WidgetViewItem) + getAppListViewItems(
-                data.activities,
-                data.activitiesFilter.showWorkActivities,
-                data.activitiesFilter.showHiddenActivities
-            )
-        )
+    private fun getWidgetListViewItems(
+        widgets: List<WidgetMetadata>, widgetToEdit: Int?
+    ): List<ViewItem> {
+        return widgets.flatMap {
+            if (it.widgetId == widgetToEdit) {
+                listOf(WidgetViewItem(it), WidgetEditorViewItem(it))
+            } else {
+                listOf(WidgetViewItem(it))
+            }
+        }
     }
 
     private fun getAppListViewItems(
         launcherActivities: List<LauncherActivityData>,
-        showWorkProfileActivities: Boolean,
-        showHiddenActivities: Boolean,
+        launcherFilters: LauncherViewModel.ActivitiesFilter,
     ): List<ViewItem> {
         return launcherActivities.filter {
             val isWorkActivity = it.user != myUserHandle()
             val isHiddenActivity = !launcherViewModel.isVisible(it)
-            showWorkProfileActivities == isWorkActivity && (showHiddenActivities || !isHiddenActivity)
+            launcherFilters.showWorkActivities == isWorkActivity && (launcherFilters.showHiddenActivities || !isHiddenActivity)
         }.groupBy {
             val initial = it.name.first().uppercaseChar()
             when {

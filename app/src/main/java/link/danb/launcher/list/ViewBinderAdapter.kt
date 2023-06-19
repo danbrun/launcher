@@ -9,7 +9,8 @@ class ViewBinderAdapter(private vararg val viewBinders: ViewBinder) :
     ListAdapter<ViewItem, ViewHolder>(diffUtilItemCallback) {
 
     private fun getViewBinder(viewType: Int): ViewBinder {
-        return viewBinders.first { it.viewType == viewType }
+        return viewBinders.firstOrNull { it.viewType == viewType }
+            ?: throw IllegalStateException("View binder not installed for view type.")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

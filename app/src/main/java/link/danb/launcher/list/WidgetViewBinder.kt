@@ -34,7 +34,7 @@ class WidgetViewBinder(
             removeAllViews()
             addView(widgetView)
 
-            layoutParams = holder.widgetFrame.layoutParams.apply {
+            layoutParams = layoutParams.apply {
                 val heightMultiplier = holder.widgetFrame.context.resources.getDimensionPixelSize(
                     R.dimen.widget_height_multiplier
                 )
@@ -56,7 +56,7 @@ class WidgetViewItem(val widgetMetadata: WidgetMetadata) : ViewItem {
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is WidgetViewItem && widgetMetadata == other.widgetMetadata
+        return other is WidgetViewItem && widgetMetadata.height == other.widgetMetadata.height
     }
 }
 
