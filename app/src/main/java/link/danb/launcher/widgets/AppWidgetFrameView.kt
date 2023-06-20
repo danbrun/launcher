@@ -39,7 +39,7 @@ class AppWidgetFrameView @JvmOverloads constructor(
     var widgetMetadata: WidgetMetadata? = null
         set(value) {
             val old = field
-            value!!
+            field = value!!
 
             if (old == null || old.widgetId != value.widgetId) {
                 removeAllViews()
@@ -54,8 +54,6 @@ class AppWidgetFrameView @JvmOverloads constructor(
                     height = value.height * heightMultiplier
                 }
             }
-
-            field = value
         }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
