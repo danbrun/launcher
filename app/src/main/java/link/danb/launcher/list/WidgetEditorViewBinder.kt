@@ -1,5 +1,6 @@
 package link.danb.launcher.list
 
+import android.appwidget.AppWidgetProviderInfo
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -38,6 +39,15 @@ class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorV
             widgetEditorViewListener.onDecreaseHeight(viewItem.widgetMetadata)
         }
 
+        holder.configureButton.visibility = if (viewItem.widgetProviderInfo.configure != null) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        holder.configureButton.setOnClickListener {
+            widgetEditorViewListener.onConfigureWidget(viewItem.widgetMetadata)
+        }
+
         holder.removeButton.setOnClickListener {
             widgetEditorViewListener.onRemoveWidget(viewItem.widgetMetadata)
         }
@@ -52,12 +62,16 @@ class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorV
         val moveDownButton: MaterialButton = view.findViewById(R.id.move_down)
         val increaseHeightButton: MaterialButton = view.findViewById(R.id.increase_height)
         val decreaseHeightButton: MaterialButton = view.findViewById(R.id.decrease_height)
+        val configureButton: TextView = view.findViewById(R.id.configure_widget)
         val removeButton: TextView = view.findViewById(R.id.remove_widget)
         val doneButton: TextView = view.findViewById(R.id.done_editing)
     }
 }
 
-class WidgetEditorViewItem(val widgetMetadata: WidgetMetadata) : ViewItem {
+class WidgetEditorViewItem(
+    val widgetMetadata: WidgetMetadata,
+    val widgetProviderInfo: AppWidgetProviderInfo
+) : ViewItem {
     override val viewType: Int = R.id.widget_editor_view_type_id
 
     override fun areItemsTheSame(other: ViewItem): Boolean {
@@ -72,6 +86,7 @@ class WidgetEditorViewItem(val widgetMetadata: WidgetMetadata) : ViewItem {
 interface WidgetEditorViewListener {
     fun onFinishEditing(widgetMetadata: WidgetMetadata)
     fun onRemoveWidget(widgetMetadata: WidgetMetadata)
+    fun onConfigureWidget(widgetMetadata: WidgetMetadata)
     fun onIncreaseHeight(widgetMetadata: WidgetMetadata)
     fun onDecreaseHeight(widgetMetadata: WidgetMetadata)
     fun onMoveUp(widgetMetadata: WidgetMetadata)

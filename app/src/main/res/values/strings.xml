@@ -17,6 +17,7 @@
     <string name="search">Search</string>
     <string name="add_widget">Add widget</string>
     <string name="remove_widget">Remove widget</string>
+    <string name="configure_widget">Configure widget</string>
     <string name="finish_editing">Finish editing</string>
     <string name="change_height">Change height</string>
     <string name="change_position">Change position</string>

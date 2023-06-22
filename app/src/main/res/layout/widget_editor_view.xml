@@ -80,6 +80,20 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/configure_widget"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:drawablePadding="16dp"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:text="@string/configure_widget"
+            app:drawableStartCompat="@drawable/ic_baseline_settings_24" />
+
+        <TextView
             android:id="@+id/remove_widget"
             style="@style/TextAppearance.Material3.BodyMedium"
             android:layout_width="match_parent"

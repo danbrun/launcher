@@ -94,6 +94,14 @@ class LauncherFragment : Fragment(), IconViewProvider {
             widgetViewModel.finishEditing()
         }
 
+        override fun onConfigureWidget(widgetMetadata: WidgetMetadata) {
+            appWidgetHost.startAppWidgetConfigureActivityForResult(
+                this@LauncherFragment.requireActivity(), widgetMetadata.widgetId,
+                /* intentFlags = */ 0, R.id.app_widget_configure_request_id,
+                /* options = */ null
+            )
+        }
+
         override fun onRemoveWidget(widgetMetadata: WidgetMetadata) {
             widgetViewModel.delete(widgetMetadata.widgetId)
         }
@@ -220,7 +228,10 @@ class LauncherFragment : Fragment(), IconViewProvider {
     ): List<ViewItem> {
         return widgets.flatMap {
             if (it.widgetId == widgetToEdit) {
-                listOf(WidgetViewItem(it), WidgetEditorViewItem(it))
+                listOf(
+                    WidgetViewItem(it),
+                    WidgetEditorViewItem(it, appWidgetManager.getAppWidgetInfo(it.widgetId))
+                )
             } else {
                 listOf(WidgetViewItem(it))
             }
