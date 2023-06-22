@@ -11,6 +11,8 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ListView
+import androidx.core.view.children
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.utils.updateAppWidgetSize
@@ -29,6 +31,9 @@ class AppWidgetFrameView @JvmOverloads constructor(
 
     private val gestureDetector = GestureDetector(context, object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
+            if (containsListView) {
+                parent.requestDisallowInterceptTouchEvent(true)
+            }
             hasLongPressed = false
             return true
         }
@@ -61,6 +66,9 @@ class AppWidgetFrameView @JvmOverloads constructor(
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         gestureDetector.onTouchEvent(event)
+        if (event.action == MotionEvent.ACTION_UP) {
+            parent.requestDisallowInterceptTouchEvent(false)
+        }
         return hasLongPressed
     }
 
@@ -69,4 +77,7 @@ class AppWidgetFrameView @JvmOverloads constructor(
         gestureDetector.onTouchEvent(event)
         return true
     }
+
+    private val ViewGroup.containsListView: Boolean
+        get() = this is ListView || children.any { it is ViewGroup && it.containsListView }
 }
