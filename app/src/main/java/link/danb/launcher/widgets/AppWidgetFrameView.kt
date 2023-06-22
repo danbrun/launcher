@@ -4,13 +4,16 @@ import android.annotation.SuppressLint
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.res.Resources
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.model.WidgetMetadata
+import link.danb.launcher.utils.updateAppWidgetSize
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -41,20 +44,19 @@ class AppWidgetFrameView @JvmOverloads constructor(
 
     var widgetMetadata: WidgetMetadata? = null
         set(value) {
-            val old = field
             field = value!!
 
-            if (old == null || old.widgetId != value.widgetId) {
-                removeAllViews()
-                appWidgetHostView = appWidgetViewProvider.createView(value.widgetId)
-                addView(appWidgetHostView)
+            removeAllViews()
+            appWidgetHostView = appWidgetViewProvider.getView(value.widgetId).apply {
+                (parent as ViewGroup?)?.removeAllViews()
+                updateAppWidgetSize(
+                    Resources.getSystem().displayMetrics.widthPixels, value.height
+                )
             }
-
-            if (old == null || old.height != value.height) {
-                layoutParams = layoutParams.apply {
-                    height = value.height
-                }
+            layoutParams = layoutParams.apply {
+                height = value.height
             }
+            addView(appWidgetHostView)
         }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {

@@ -31,14 +31,19 @@ class AppWidgetViewProvider @Inject constructor(
         }
     }
 
+    private val widgetViews: MutableMap<Int, AppWidgetHostView> = mutableMapOf()
+
     init {
         (activity as AppCompatActivity).lifecycle.addObserver(lifecycleObserver)
     }
 
-    fun createView(widgetId: Int): AppWidgetHostView {
-        return appWidgetHost.createView(
-            activity.applicationContext, widgetId, appWidgetManager.getAppWidgetInfo(widgetId)
-        )
+    fun getView(widgetId: Int): AppWidgetHostView {
+        if (!widgetViews.containsKey(widgetId)) {
+            widgetViews[widgetId] = appWidgetHost.createView(
+                activity.applicationContext, widgetId, appWidgetManager.getAppWidgetInfo(widgetId)
+            )
+        }
+        return widgetViews[widgetId]!!
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
