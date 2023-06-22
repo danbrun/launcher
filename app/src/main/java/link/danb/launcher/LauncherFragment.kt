@@ -106,12 +106,8 @@ class LauncherFragment : Fragment(), IconViewProvider {
             widgetViewModel.delete(widgetMetadata.widgetId)
         }
 
-        override fun onIncreaseHeight(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.increaseHeight(widgetMetadata.widgetId)
-        }
-
-        override fun onDecreaseHeight(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.decreaseHeight(widgetMetadata.widgetId)
+        override fun onChangeHeight(widgetMetadata: WidgetMetadata, heightChange: Int) {
+            widgetViewModel.adjustHeight(widgetMetadata.widgetId, heightChange)
         }
 
         override fun onMoveUp(widgetMetadata: WidgetMetadata) {

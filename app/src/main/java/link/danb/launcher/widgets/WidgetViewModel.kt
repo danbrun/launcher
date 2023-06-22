@@ -1,5 +1,6 @@
 package link.danb.launcher.widgets
 
+import android.app.Application
 import android.appwidget.AppWidgetHost
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,13 +9,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import link.danb.launcher.R
 import link.danb.launcher.model.LauncherDatabase
 import link.danb.launcher.model.WidgetMetadata
 import javax.inject.Inject
 
 @HiltViewModel
 class WidgetViewModel @Inject constructor(
-    private val launcherDatabase: LauncherDatabase, private val appWidgetHost: AppWidgetHost
+    private val application: Application,
+    private val launcherDatabase: LauncherDatabase,
+    private val appWidgetHost: AppWidgetHost,
 ) : ViewModel() {
 
     private val widgetMetadata by lazy {
@@ -46,20 +50,33 @@ class WidgetViewModel @Inject constructor(
         refresh()
     }
 
-    fun increaseHeight(widgetId: Int) {
-        adjustHeight(widgetId, 1)
-    }
-
-    fun decreaseHeight(widgetId: Int) {
-        adjustHeight(widgetId, -1)
-    }
-
     fun moveUp(widgetId: Int) {
         adjustPosition(widgetId, -1)
     }
 
     fun moveDown(widgetId: Int) {
         adjustPosition(widgetId, 1)
+    }
+
+    fun adjustHeight(widgetId: Int, heightChange: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val metadata = widgetMetadata.get().first { it.widgetId == widgetId }
+
+            val height = (metadata.height + heightChange).coerceIn(
+                application.resources.getDimensionPixelSize(
+                    R.dimen.widget_min_height
+                ), application.resources.getDimensionPixelSize(
+                    R.dimen.widget_max_height
+                )
+            )
+
+            widgetMetadata.put(
+                metadata.copy(
+                    height = height
+                )
+            )
+            refreshInBackground()
+        }
     }
 
     private fun adjustPosition(widgetId: Int, positionChange: Int) {
@@ -77,16 +94,6 @@ class WidgetViewModel @Inject constructor(
                 }
                 refreshInBackground()
             }
-        }
-    }
-
-    private fun adjustHeight(widgetId: Int, heightChange: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val metadata = widgetMetadata.get().first { it.widgetId == widgetId }
-            widgetMetadata.put(
-                metadata.copy(height = (metadata.height + heightChange).coerceIn(2, 12))
-            )
-            refreshInBackground()
         }
     }
 
@@ -108,7 +115,13 @@ class WidgetViewModel @Inject constructor(
         var position = widgetMetadataList.maxOfOrNull { it.position } ?: 0
         widgetIds.forEach { widgetId ->
             if (widgetMetadataList.none { it.widgetId == widgetId }) {
-                widgetMetadata.put(WidgetMetadata(widgetId, position++, height = 2))
+                widgetMetadata.put(
+                    WidgetMetadata(
+                        widgetId,
+                        position++,
+                        height = application.resources.getDimensionPixelSize(R.dimen.widget_min_height)
+                    )
+                )
             }
         }
 

@@ -2,6 +2,7 @@ package link.danb.launcher.widgets
 
 import android.annotation.SuppressLint
 import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -9,7 +10,6 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import dagger.hilt.android.AndroidEntryPoint
-import link.danb.launcher.R
 import link.danb.launcher.model.WidgetMetadata
 import javax.inject.Inject
 
@@ -20,6 +20,9 @@ class AppWidgetFrameView @JvmOverloads constructor(
 
     @Inject
     lateinit var appWidgetViewProvider: AppWidgetViewProvider
+
+    @Inject
+    lateinit var appWidgetManager: AppWidgetManager
 
     private val gestureDetector = GestureDetector(context, object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
@@ -49,9 +52,7 @@ class AppWidgetFrameView @JvmOverloads constructor(
 
             if (old == null || old.height != value.height) {
                 layoutParams = layoutParams.apply {
-                    val heightMultiplier =
-                        context.resources.getDimensionPixelSize(R.dimen.widget_height_multiplier)
-                    height = value.height * heightMultiplier
+                    height = value.height
                 }
             }
         }
