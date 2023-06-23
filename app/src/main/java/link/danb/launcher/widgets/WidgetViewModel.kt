@@ -58,21 +58,19 @@ class WidgetViewModel @Inject constructor(
         adjustPosition(widgetId, 1)
     }
 
-    fun adjustHeight(widgetId: Int, heightChange: Int) {
+    fun setHeight(widgetId: Int, height: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             val metadata = widgetMetadata.get().first { it.widgetId == widgetId }
 
-            val height = (metadata.height + heightChange).coerceIn(
-                application.resources.getDimensionPixelSize(
-                    R.dimen.widget_min_height
-                ), application.resources.getDimensionPixelSize(
-                    R.dimen.widget_max_height
-                )
-            )
-
             widgetMetadata.put(
                 metadata.copy(
-                    height = height
+                    height = height.coerceIn(
+                        application.resources.getDimensionPixelSize(
+                            R.dimen.widget_min_height
+                        ), application.resources.getDimensionPixelSize(
+                            R.dimen.widget_max_height
+                        )
+                    )
                 )
             )
             refreshInBackground()

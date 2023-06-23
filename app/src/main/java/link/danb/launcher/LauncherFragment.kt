@@ -96,9 +96,9 @@ class LauncherFragment : Fragment(), IconViewProvider {
 
         override fun onConfigureWidget(widgetMetadata: WidgetMetadata) {
             appWidgetHost.startAppWidgetConfigureActivityForResult(
-                this@LauncherFragment.requireActivity(), widgetMetadata.widgetId,
-                /* intentFlags = */ 0, R.id.app_widget_configure_request_id,
-                /* options = */ null
+                this@LauncherFragment.requireActivity(), widgetMetadata.widgetId,/* intentFlags = */
+                0, R.id.app_widget_configure_request_id,/* options = */
+                null
             )
         }
 
@@ -106,8 +106,22 @@ class LauncherFragment : Fragment(), IconViewProvider {
             widgetViewModel.delete(widgetMetadata.widgetId)
         }
 
-        override fun onChangeHeight(widgetMetadata: WidgetMetadata, heightChange: Int) {
-            widgetViewModel.adjustHeight(widgetMetadata.widgetId, heightChange)
+        override fun onHeightDrag(widgetMetadata: WidgetMetadata, height: Int) {
+            val itemIndex = activityAdapter.currentList.indexOfFirst {
+                it is WidgetViewItem && it.widgetMetadata.widgetId == widgetMetadata.widgetId
+            }
+
+            val viewHolder = appsList.findViewHolderForAdapterPosition(itemIndex) ?: return
+            viewHolder.itemView.layoutParams = viewHolder.itemView.layoutParams.apply {
+                this.height = height.coerceIn(
+                    resources.getDimensionPixelSize(R.dimen.widget_min_height),
+                    resources.getDimensionPixelSize(R.dimen.widget_max_height)
+                )
+            }
+        }
+
+        override fun onHeightRelease(widgetMetadata: WidgetMetadata, height: Int) {
+            widgetViewModel.setHeight(widgetMetadata.widgetId, height)
         }
 
         override fun onMoveUp(widgetMetadata: WidgetMetadata) {

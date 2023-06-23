@@ -44,13 +44,19 @@ class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorV
                 }
 
                 MotionEvent.ACTION_MOVE -> {
+                    print(motionEvent.rawY.toInt() - downEvent!!.rawY.toInt())
+                    widgetEditorViewListener.onHeightDrag(
+                        viewItem.widgetMetadata,
+                        viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
+                    )
                     downEvent != null
                 }
 
                 MotionEvent.ACTION_UP -> {
                     view.parent.requestDisallowInterceptTouchEvent(false)
-                    widgetEditorViewListener.onChangeHeight(
-                        viewItem.widgetMetadata, motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
+                    widgetEditorViewListener.onHeightRelease(
+                        viewItem.widgetMetadata,
+                        viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
                     )
                     downEvent!!.recycle()
                     downEvent = null
@@ -99,7 +105,7 @@ class WidgetEditorViewItem(
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return true
+        return other is WidgetEditorViewItem && widgetMetadata == other.widgetMetadata
     }
 }
 
@@ -107,7 +113,8 @@ interface WidgetEditorViewListener {
     fun onFinishEditing(widgetMetadata: WidgetMetadata)
     fun onRemoveWidget(widgetMetadata: WidgetMetadata)
     fun onConfigureWidget(widgetMetadata: WidgetMetadata)
-    fun onChangeHeight(widgetMetadata: WidgetMetadata, heightChange: Int)
+    fun onHeightDrag(widgetMetadata: WidgetMetadata, height: Int)
+    fun onHeightRelease(widgetMetadata: WidgetMetadata, height: Int)
     fun onMoveUp(widgetMetadata: WidgetMetadata)
     fun onMoveDown(widgetMetadata: WidgetMetadata)
 }
