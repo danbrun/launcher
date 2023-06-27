@@ -1,101 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <com.google.android.material.card.MaterialCardView xmlns:app="http://schemas.android.com/apk/res-auto"
+        style="@style/Widget.Material3.CardView.Elevated"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_gravity="center_horizontal">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <TextView
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawablePadding="16dp"
-                android:gravity="center_vertical"
-                android:padding="16dp"
-                android:text="@string/change_position"
-                app:drawableStartCompat="@drawable/baseline_swap_vert_24" />
-
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/move_down"
+                android:id="@+id/widget_configure_button"
                 style="@style/Widget.Material3.Button.IconButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:icon="@drawable/baseline_arrow_downward_24"
-                app:iconSize="24dp" />
+                app:icon="@drawable/ic_baseline_settings_24" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/move_up"
+                android:id="@+id/widget_delete_button"
                 style="@style/Widget.Material3.Button.IconButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:icon="@drawable/baseline_arrow_upward_24"
-                app:iconSize="24dp" />
+                app:icon="@drawable/ic_baseline_delete_forever_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/widget_move_up_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/baseline_arrow_upward_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/widget_resize_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/baseline_drag_handle_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/widget_move_down_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/baseline_arrow_downward_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/widget_done_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/baseline_check_24" />
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/height_resize"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:drawablePadding="16dp"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:text="@string/change_height"
-            app:drawableEndCompat="@drawable/baseline_drag_indicator_24"
-            app:drawableStartCompat="@drawable/baseline_expand_24" />
+    </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/configure_widget"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:drawablePadding="16dp"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:text="@string/configure_widget"
-            app:drawableStartCompat="@drawable/ic_baseline_settings_24" />
-
-        <TextView
-            android:id="@+id/remove_widget"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:drawablePadding="16dp"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:text="@string/remove_widget"
-            app:drawableStartCompat="@drawable/ic_baseline_delete_forever_24" />
-
-        <TextView
-            android:id="@+id/done_editing"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:drawablePadding="16dp"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:text="@string/finish_editing"
-            app:drawableStartCompat="@drawable/baseline_check_24" />
-
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+</FrameLayout>

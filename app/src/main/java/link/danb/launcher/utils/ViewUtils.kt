@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams
 
 /** Gets the location of the [View] on screen as a [Rect]. */
 fun View.getLocationOnScreen(): Rect {
@@ -15,4 +17,21 @@ fun View.getLocationOnScreen(): Rect {
 /** Creates clip reveal animation [Intent] options for the [View]. */
 fun View.makeClipRevealAnimation(): Bundle {
     return ActivityOptions.makeClipRevealAnimation(this, 0, 0, width, height).toBundle()
+}
+
+/** Updates the [LayoutParams] of the view to force specific dimensions. */
+fun View.setLayoutSize(width: Int? = null, height: Int? = null) {
+    layoutParams = layoutParams.apply {
+        if (width != null) {
+            this.width = width
+        }
+        if (height != null) {
+            this.height = height
+        }
+    }
+}
+
+/** Removes the view from its parent if it is currently attached to a parent view. */
+fun View.removeFromParent() {
+    (parent as ViewGroup?)?.removeView(this)
 }

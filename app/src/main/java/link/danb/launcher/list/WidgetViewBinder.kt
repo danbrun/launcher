@@ -1,14 +1,23 @@
 package link.danb.launcher.list
 
+import android.content.res.Resources
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.utils.inflate
-import link.danb.launcher.widgets.AppWidgetFrameView
+import link.danb.launcher.utils.removeFromParent
+import link.danb.launcher.utils.setLayoutSize
+import link.danb.launcher.utils.updateAppWidgetSize
+import link.danb.launcher.widgets.AppWidgetViewProvider
 
-class WidgetViewBinder(private val widgetViewListener: WidgetViewListener) : ViewBinder {
+class WidgetViewBinder(
+    private val appWidgetViewProvider: AppWidgetViewProvider,
+    private val widgetViewListener: WidgetViewListener,
+) : ViewBinder {
+
     override val viewType: Int = R.id.widget_view_type_id
 
     override fun createViewHolder(parent: ViewGroup): ViewHolder {
@@ -19,17 +28,25 @@ class WidgetViewBinder(private val widgetViewListener: WidgetViewListener) : Vie
         holder as WidgetViewHolder
         viewItem as WidgetViewItem
 
-        holder.widgetFrame.apply {
-            widgetMetadata = viewItem.widgetMetadata
+        appWidgetViewProvider.getView(viewItem.widgetMetadata.widgetId).apply {
+            removeFromParent()
+            updateAppWidgetSize(
+                Resources.getSystem().displayMetrics.widthPixels, viewItem.widgetMetadata.height
+            )
             setOnLongClickListener {
                 widgetViewListener.onLongClick(viewItem.widgetMetadata)
                 true
             }
+            holder.widgetFrame.run {
+                removeAllViews()
+                addView(this@apply)
+            }
+            setLayoutSize(height = viewItem.widgetMetadata.height)
         }
     }
 
     private class WidgetViewHolder(view: View) : ViewHolder(view) {
-        val widgetFrame = view as AppWidgetFrameView
+        val widgetFrame = view as FrameLayout
     }
 }
 
@@ -41,7 +58,7 @@ class WidgetViewItem(val widgetMetadata: WidgetMetadata) : ViewItem {
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is WidgetViewItem && widgetMetadata.height == other.widgetMetadata.height
+        return other is WidgetViewItem && widgetMetadata == other.widgetMetadata
     }
 }
 

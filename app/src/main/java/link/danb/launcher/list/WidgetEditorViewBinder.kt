@@ -11,9 +11,15 @@ import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.utils.inflate
+import link.danb.launcher.utils.setLayoutSize
+import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.WidgetSizeUtil
 
-class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorViewListener) :
-    ViewBinder {
+class WidgetEditorViewBinder(
+    private val appWidgetViewProvider: AppWidgetViewProvider,
+    private val widgetSizeUtil: WidgetSizeUtil,
+    private val widgetEditorViewListener: WidgetEditorViewListener,
+) : ViewBinder {
 
     override val viewType: Int = R.id.widget_editor_view_type_id
 
@@ -35,7 +41,7 @@ class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorV
         }
 
         var downEvent: MotionEvent? = null
-        holder.heightResizeView.setOnTouchListener { view, motionEvent ->
+        holder.resizeButton.setOnTouchListener { view, motionEvent ->
             when (motionEvent.action) {
                 MotionEvent.ACTION_DOWN -> {
                     view.parent.requestDisallowInterceptTouchEvent(true)
@@ -44,17 +50,14 @@ class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorV
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    print(motionEvent.rawY.toInt() - downEvent!!.rawY.toInt())
-                    widgetEditorViewListener.onHeightDrag(
-                        viewItem.widgetMetadata,
-                        viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
-                    )
+                    appWidgetViewProvider.getView(viewItem.widgetMetadata.widgetId)
+                        .setLayoutSize(height = widgetSizeUtil.getWidgetHeight(viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()))
                     downEvent != null
                 }
 
                 MotionEvent.ACTION_UP -> {
                     view.parent.requestDisallowInterceptTouchEvent(false)
-                    widgetEditorViewListener.onHeightRelease(
+                    widgetEditorViewListener.onResize(
                         viewItem.widgetMetadata,
                         viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
                     )
@@ -73,25 +76,25 @@ class WidgetEditorViewBinder(private val widgetEditorViewListener: WidgetEditorV
             View.GONE
         }
         holder.configureButton.setOnClickListener {
-            widgetEditorViewListener.onConfigureWidget(viewItem.widgetMetadata)
+            widgetEditorViewListener.onConfigure(viewItem.widgetMetadata)
         }
 
-        holder.removeButton.setOnClickListener {
-            widgetEditorViewListener.onRemoveWidget(viewItem.widgetMetadata)
+        holder.deleteButton.setOnClickListener {
+            widgetEditorViewListener.onDelete(viewItem.widgetMetadata)
         }
 
         holder.doneButton.setOnClickListener {
-            widgetEditorViewListener.onFinishEditing(viewItem.widgetMetadata)
+            widgetEditorViewListener.onDone(viewItem.widgetMetadata)
         }
     }
 
     private class WidgetEditorViewHolder(view: View) : ViewHolder(view) {
-        val moveUpButton: MaterialButton = view.findViewById(R.id.move_up)
-        val moveDownButton: MaterialButton = view.findViewById(R.id.move_down)
-        val heightResizeView: TextView = view.findViewById(R.id.height_resize)
-        val configureButton: TextView = view.findViewById(R.id.configure_widget)
-        val removeButton: TextView = view.findViewById(R.id.remove_widget)
-        val doneButton: TextView = view.findViewById(R.id.done_editing)
+        val configureButton: TextView = view.findViewById(R.id.widget_configure_button)
+        val deleteButton: TextView = view.findViewById(R.id.widget_delete_button)
+        val moveUpButton: MaterialButton = view.findViewById(R.id.widget_move_up_button)
+        val resizeButton: TextView = view.findViewById(R.id.widget_resize_button)
+        val moveDownButton: MaterialButton = view.findViewById(R.id.widget_move_down_button)
+        val doneButton: TextView = view.findViewById(R.id.widget_done_button)
     }
 }
 
@@ -110,11 +113,10 @@ class WidgetEditorViewItem(
 }
 
 interface WidgetEditorViewListener {
-    fun onFinishEditing(widgetMetadata: WidgetMetadata)
-    fun onRemoveWidget(widgetMetadata: WidgetMetadata)
-    fun onConfigureWidget(widgetMetadata: WidgetMetadata)
-    fun onHeightDrag(widgetMetadata: WidgetMetadata, height: Int)
-    fun onHeightRelease(widgetMetadata: WidgetMetadata, height: Int)
+    fun onConfigure(widgetMetadata: WidgetMetadata)
+    fun onDelete(widgetMetadata: WidgetMetadata)
     fun onMoveUp(widgetMetadata: WidgetMetadata)
+    fun onResize(widgetMetadata: WidgetMetadata, height: Int)
     fun onMoveDown(widgetMetadata: WidgetMetadata)
+    fun onDone(widgetMetadata: WidgetMetadata)
 }

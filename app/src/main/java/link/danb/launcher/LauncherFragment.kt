@@ -37,6 +37,8 @@ import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.getLocationOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
@@ -56,6 +58,12 @@ class LauncherFragment : Fragment(), IconViewProvider {
     lateinit var appWidgetManager: AppWidgetManager
 
     @Inject
+    lateinit var appWidgetViewProvider: AppWidgetViewProvider
+
+    @Inject
+    lateinit var widgetSizeUtil: WidgetSizeUtil
+
+    @Inject
     lateinit var launcherMenuProvider: LauncherMenuProvider
 
     private lateinit var appsList: RecyclerView
@@ -64,8 +72,8 @@ class LauncherFragment : Fragment(), IconViewProvider {
         ViewBinderAdapter(
             GroupHeaderViewBinder(),
             ActivityTileViewBinder(activityTileListener),
-            WidgetViewBinder(widgetViewListener),
-            WidgetEditorViewBinder(widgetEditorViewListener),
+            WidgetViewBinder(appWidgetViewProvider, widgetViewListener),
+            WidgetEditorViewBinder(appWidgetViewProvider, widgetSizeUtil, widgetEditorViewListener),
         )
     }
 
@@ -90,11 +98,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
     }
 
     private val widgetEditorViewListener = object : WidgetEditorViewListener {
-        override fun onFinishEditing(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.finishEditing()
-        }
-
-        override fun onConfigureWidget(widgetMetadata: WidgetMetadata) {
+        override fun onConfigure(widgetMetadata: WidgetMetadata) {
             appWidgetHost.startAppWidgetConfigureActivityForResult(
                 this@LauncherFragment.requireActivity(), widgetMetadata.widgetId,/* intentFlags = */
                 0, R.id.app_widget_configure_request_id,/* options = */
@@ -102,34 +106,24 @@ class LauncherFragment : Fragment(), IconViewProvider {
             )
         }
 
-        override fun onRemoveWidget(widgetMetadata: WidgetMetadata) {
+        override fun onDelete(widgetMetadata: WidgetMetadata) {
             widgetViewModel.delete(widgetMetadata.widgetId)
-        }
-
-        override fun onHeightDrag(widgetMetadata: WidgetMetadata, height: Int) {
-            val itemIndex = activityAdapter.currentList.indexOfFirst {
-                it is WidgetViewItem && it.widgetMetadata.widgetId == widgetMetadata.widgetId
-            }
-
-            val viewHolder = appsList.findViewHolderForAdapterPosition(itemIndex) ?: return
-            viewHolder.itemView.layoutParams = viewHolder.itemView.layoutParams.apply {
-                this.height = height.coerceIn(
-                    resources.getDimensionPixelSize(R.dimen.widget_min_height),
-                    resources.getDimensionPixelSize(R.dimen.widget_max_height)
-                )
-            }
-        }
-
-        override fun onHeightRelease(widgetMetadata: WidgetMetadata, height: Int) {
-            widgetViewModel.setHeight(widgetMetadata.widgetId, height)
         }
 
         override fun onMoveUp(widgetMetadata: WidgetMetadata) {
             widgetViewModel.moveUp(widgetMetadata.widgetId)
         }
 
+        override fun onResize(widgetMetadata: WidgetMetadata, height: Int) {
+            widgetViewModel.setHeight(widgetMetadata.widgetId, height)
+        }
+
         override fun onMoveDown(widgetMetadata: WidgetMetadata) {
             widgetViewModel.moveDown(widgetMetadata.widgetId)
+        }
+
+        override fun onDone(widgetMetadata: WidgetMetadata) {
+            widgetViewModel.finishEditing()
         }
     }
 

@@ -19,6 +19,7 @@ class WidgetViewModel @Inject constructor(
     private val application: Application,
     private val launcherDatabase: LauncherDatabase,
     private val appWidgetHost: AppWidgetHost,
+    private val widgetSizeUtil: WidgetSizeUtil,
 ) : ViewModel() {
 
     private val widgetMetadata by lazy {
@@ -60,17 +61,9 @@ class WidgetViewModel @Inject constructor(
 
     fun setHeight(widgetId: Int, height: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            val metadata = widgetMetadata.get().first { it.widgetId == widgetId }
-
             widgetMetadata.put(
-                metadata.copy(
-                    height = height.coerceIn(
-                        application.resources.getDimensionPixelSize(
-                            R.dimen.widget_min_height
-                        ), application.resources.getDimensionPixelSize(
-                            R.dimen.widget_max_height
-                        )
-                    )
+                widgetMetadata.get().first { it.widgetId == widgetId }.copy(
+                    height = widgetSizeUtil.getWidgetHeight(height)
                 )
             )
             refreshInBackground()
