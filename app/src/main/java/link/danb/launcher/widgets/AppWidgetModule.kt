@@ -17,6 +17,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import link.danb.launcher.R
 import javax.inject.Singleton
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -40,12 +42,14 @@ class AppWidgetModule {
 
     private class LauncherAppWidgetHostView(context: Context) : AppWidgetHostView(context) {
 
-        private var isDown = false
-        private var hasLongPressed = false
+        private val touchSlop: Int by lazy { ViewConfiguration.get(context).scaledTouchSlop }
+
+        private var downEvent: MotionEvent? = null
+        private var interceptFutureTouches: Boolean = false
 
         override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
             handleTouchEvent(event)
-            return hasLongPressed
+            return interceptFutureTouches
         }
 
         @SuppressLint("ClickableViewAccessibility")
@@ -57,25 +61,36 @@ class AppWidgetModule {
         private fun handleTouchEvent(event: MotionEvent) {
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    isDown = true
-                    hasLongPressed = false
+                    downEvent = MotionEvent.obtain(event)
                     postDelayed(LONG_PRESS_TIMEOUT) {
                         val finishTime = event.downTime + LONG_PRESS_TIMEOUT
-                        if (isDown && SystemClock.uptimeMillis() > finishTime) {
+                        if (downEvent != null && SystemClock.uptimeMillis() > finishTime) {
                             performLongClick()
-                            hasLongPressed = true
+                            interceptFutureTouches = true
                         }
                     }
                 }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val downEvent = downEvent ?: return
+                    if (downEvent.getDistanceFromTouchEvent(event) >= touchSlop) {
+                        handler.removeCallbacksAndMessages(null)
+                    }
+                }
+
                 MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                    isDown = false
-                    hasLongPressed = false
+                    downEvent?.recycle()
+                    downEvent = null
+                    interceptFutureTouches = false
                 }
             }
         }
 
         companion object {
             private val LONG_PRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout().toLong()
+
+            private fun MotionEvent.getDistanceFromTouchEvent(other: MotionEvent): Int =
+                sqrt((rawX - other.rawX).pow(2) + (rawY - other.rawY).pow(2)).toInt()
         }
     }
 }
