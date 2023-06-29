@@ -24,7 +24,7 @@ import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.ui.LauncherIconDrawable
-import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
@@ -89,7 +89,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             launcherApps.startAppDetailsActivity(
                 viewItem.launcherActivityData.component,
                 viewItem.launcherActivityData.user,
-                view.getLocationOnScreen(),
+                view.getBoundsOnScreen(),
                 view.makeClipRevealAnimation()
             )
             dismiss()
@@ -106,7 +106,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     private val shortcutTileListener = ShortcutTileListener { view, shortcutTileViewItem ->
         launcherApps.startShortcut(
-            shortcutTileViewItem.info, view.getLocationOnScreen(), view.makeClipRevealAnimation()
+            shortcutTileViewItem.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
         )
         dismiss()
     }

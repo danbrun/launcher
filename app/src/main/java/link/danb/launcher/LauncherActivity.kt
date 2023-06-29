@@ -13,7 +13,7 @@ import androidx.core.os.bundleOf
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 
 @AndroidEntryPoint
@@ -56,7 +56,7 @@ class LauncherActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 val view = iconViewProvider?.getIconView(component, user) ?: return@launch
 
-                message.data = bundleOf(EXTRA_ICON_POSITION to view.getLocationOnScreen().toRectF())
+                message.data = bundleOf(EXTRA_ICON_POSITION to view.getBoundsOnScreen().toRectF())
                 message.replyTo.send(message)
             }
         }

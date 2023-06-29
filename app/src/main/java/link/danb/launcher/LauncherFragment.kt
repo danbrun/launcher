@@ -35,7 +35,7 @@ import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
-import link.danb.launcher.utils.getLocationOnScreen
+import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetSizeUtil
@@ -82,7 +82,7 @@ class LauncherFragment : Fragment(), IconViewProvider {
             launcherApps.startMainActivity(
                 activityViewItem.launcherActivityData.component,
                 activityViewItem.launcherActivityData.user,
-                view.getLocationOnScreen(),
+                view.getBoundsOnScreen(),
                 view.makeClipRevealAnimation()
             )
         }
