@@ -12,12 +12,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.list.*
+import link.danb.launcher.list.WidgetHeaderViewItem.WidgetHeaderViewItemFactory
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
 import javax.inject.Inject
 
@@ -25,6 +31,7 @@ import javax.inject.Inject
 class WidgetDialogFragment : BottomSheetDialogFragment() {
 
     private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val widgetDialogViewModel: WidgetDialogViewModel by viewModels()
 
     @Inject
     lateinit var appWidgetHost: AppWidgetHost
@@ -34,6 +41,9 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var appWidgetViewProvider: AppWidgetViewProvider
+
+    @Inject
+    lateinit var widgetHeaderViewItemFactory: WidgetHeaderViewItemFactory
 
     private val launcherApps: LauncherApps by lazy {
         requireContext().getSystemService(LauncherApps::class.java)
@@ -58,6 +68,8 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
         )
     }
 
+    private lateinit var widgetListAdapter: ViewBinderAdapter
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -65,8 +77,8 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
 
         val view = inflater.inflate(R.layout.widget_dialog_fragment, container, false)
 
-        val widgetListAdapter = ViewBinderAdapter(
-            ApplicationHeaderViewBinder(),
+        widgetListAdapter = ViewBinderAdapter(
+            WidgetHeaderViewBinder { widgetDialogViewModel.toggleExpandedPackageName(it.packageName) },
             WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
         )
 
@@ -75,18 +87,29 @@ class WidgetDialogFragment : BottomSheetDialogFragment() {
             adapter = widgetListAdapter
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                widgetDialogViewModel.expandedPackageNames.collect { updateItems(it) }
+            }
+        }
+
+        return view
+    }
+
+    private fun updateItems(expandedPackages: Set<String>) {
         val items = appWidgetManager.installedProviders.groupBy { it.provider.packageName }
             .mapKeys { launcherApps.getApplicationInfo(it.key, 0, myUserHandle()) }
             .toSortedMap(compareBy<ApplicationInfo> { it.loadLabel(packageManager).toString() })
             .flatMap { (appInfo, widgets) ->
                 mutableListOf<ViewItem>().apply {
-                    add(ApplicationHeaderViewItem(requireActivity().application, appInfo))
-                    addAll(widgets.map { WidgetPreviewViewItem(it, myUserHandle()) })
+                    val isExpanded = expandedPackages.contains(appInfo.packageName)
+                    add(widgetHeaderViewItemFactory.create(appInfo, isExpanded))
+                    if (isExpanded) {
+                        addAll(widgets.map { WidgetPreviewViewItem(it, myUserHandle()) })
+                    }
                 }
             }
         widgetListAdapter.submitList(items)
-
-        return view
     }
 
     companion object {

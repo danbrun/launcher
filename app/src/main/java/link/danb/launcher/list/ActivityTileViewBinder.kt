@@ -9,7 +9,7 @@ import link.danb.launcher.R
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.setSize
+import link.danb.launcher.utils.applySize
 
 class ActivityTileViewBinder(private val activityTileListener: ActivityTileListener? = null) :
     ViewBinder {
@@ -25,7 +25,7 @@ class ActivityTileViewBinder(private val activityTileListener: ActivityTileListe
 
         holder.textView.apply {
             text = viewItem.name
-            viewItem.icon.setSize(
+            viewItem.icon.applySize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)

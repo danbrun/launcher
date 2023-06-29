@@ -9,7 +9,7 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.setSize
+import link.danb.launcher.utils.applySize
 
 class ShortcutTileViewBinder(private val shortcutTileListener: ShortcutTileListener? = null) :
     ViewBinder {
@@ -31,7 +31,7 @@ class ShortcutTileViewBinder(private val shortcutTileListener: ShortcutTileListe
 
         holder.textView.apply {
             text = viewItem.name
-            viewItem.icon.setSize(
+            viewItem.icon.applySize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)

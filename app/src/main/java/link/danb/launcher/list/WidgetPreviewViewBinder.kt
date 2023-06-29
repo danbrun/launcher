@@ -77,7 +77,7 @@ class WidgetPreviewViewItem(val providerInfo: AppWidgetProviderInfo, val userHan
     override val viewType: Int = R.id.widget_preview_view_type_id
 
     override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is WidgetPreviewViewItem && providerInfo == other.providerInfo && userHandle == other.userHandle
+        return other is WidgetPreviewViewItem && providerInfo.provider == other.providerInfo.provider && userHandle == other.userHandle
     }
 
     override fun areContentsTheSame(other: ViewItem): Boolean {

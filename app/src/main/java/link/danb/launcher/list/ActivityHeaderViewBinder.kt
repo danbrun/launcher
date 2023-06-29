@@ -12,7 +12,7 @@ import link.danb.launcher.R
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.setSize
+import link.danb.launcher.utils.applySize
 
 class ActivityHeaderViewBinder(
     fragment: Fragment, private val activityHeaderListener: ActivityHeaderListener? = null
@@ -33,7 +33,7 @@ class ActivityHeaderViewBinder(
 
         holder.activityItem.apply {
             text = viewItem.name
-            viewItem.icon.setSize(
+            viewItem.icon.applySize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)
