@@ -165,7 +165,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
                     ?.let { icon -> LauncherIconDrawable(icon) }
                 icon?.setBounds(0, 0, size, size)
 
-                items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon!!))
+                items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon))
             }
         }
 

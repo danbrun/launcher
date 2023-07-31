@@ -31,7 +31,7 @@ class ShortcutTileViewBinder(private val shortcutTileListener: ShortcutTileListe
 
         holder.textView.apply {
             text = viewItem.name
-            viewItem.icon.applySize(
+            viewItem.icon?.applySize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
             setCompoundDrawables(viewItem.icon, null, null, null)
@@ -44,7 +44,7 @@ class ShortcutTileViewBinder(private val shortcutTileListener: ShortcutTileListe
     }
 }
 
-class ShortcutTileViewItem(val info: ShortcutInfo, val name: CharSequence, val icon: Drawable) :
+class ShortcutTileViewItem(val info: ShortcutInfo, val name: CharSequence, val icon: Drawable?) :
     ViewItem {
     override val viewType: Int = R.id.shortcut_tile_view_type_id
 
