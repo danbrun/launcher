@@ -12,6 +12,7 @@ import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.graphics.toRectF
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -20,18 +21,15 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import link.danb.launcher.LauncherActivity.IconViewProvider
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
+import link.danb.launcher.model.GestureContractModel
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
@@ -43,10 +41,11 @@ import link.danb.launcher.widgets.WidgetViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class LauncherFragment : Fragment(), IconViewProvider {
+class LauncherFragment : Fragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val gestureContractModel: GestureContractModel by activityViewModels()
 
     @Inject
     lateinit var launcherApps: LauncherApps
@@ -127,38 +126,6 @@ class LauncherFragment : Fragment(), IconViewProvider {
         }
     }
 
-    override suspend fun getIconView(component: ComponentName, user: UserHandle): View? {
-        // If there is an exact component match, returns that icon view. Otherwise returns the icon
-        // view of the first package match.
-
-        var firstMatchIndex = -1
-
-        for (index in activityAdapter.currentList.indices) {
-            val item = activityAdapter.currentList[index]
-
-            if (item !is ActivityTileViewItem || item.launcherActivityData.user != user) continue
-
-            if (item.launcherActivityData.component == component) {
-                return getViewHolderForAdapterPosition(index)?.itemView
-            }
-
-            if (item.launcherActivityData.component.packageName == component.packageName) {
-                firstMatchIndex = index
-            }
-        }
-
-        return getViewHolderForAdapterPosition(firstMatchIndex)?.itemView
-    }
-
-    private suspend fun getViewHolderForAdapterPosition(position: Int): ViewHolder? {
-        return appsList.findViewHolderForAdapterPosition(position) ?: coroutineScope {
-            // Scroll and delay so the item has a chance to be bound.
-            appsList.scrollToPosition(position)
-            delay(5)
-            appsList.findViewHolderForAdapterPosition(position)
-        }
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -184,6 +151,10 @@ class LauncherFragment : Fragment(), IconViewProvider {
         appsList.outlineProvider = RoundedCornerOutlineProvider(radius)
         view.findViewById<View>(R.id.app_list_background).background =
             InvertedCornerDrawable(radius)
+
+        activityAdapter.onBindViewHolderListener = {
+            maybeAnimationNewIntent()
+        }
 
         view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
 
@@ -214,6 +185,12 @@ class LauncherFragment : Fragment(), IconViewProvider {
                     combine(widgetsFlow, appsFlow) { widgets, apps ->
                         widgets + apps
                     }.collect { activityAdapter.submitList(it) }
+                }
+
+                launch {
+                    gestureContractModel.gestureContract.collect {
+                        maybeAnimationNewIntent()
+                    }
                 }
             }
         }
@@ -263,5 +240,45 @@ class LauncherFragment : Fragment(), IconViewProvider {
                     .map { ActivityTileViewItem(it) })
             }
         }
+    }
+
+    private fun maybeAnimationNewIntent() {
+        val gestureContract = gestureContractModel.gestureContract.value ?: return
+
+        val firstMatchingIndex =
+            getFirstMatchingIndex(gestureContract.componentName, gestureContract.userHandle)
+
+        if (firstMatchingIndex < 0) return
+
+        val view = appsList.findViewHolderForAdapterPosition(firstMatchingIndex)?.itemView
+
+        if (view != null) {
+            gestureContractModel.setBounds(view.getBoundsOnScreen().toRectF())
+        } else {
+            appsList.scrollToPosition(firstMatchingIndex)
+        }
+    }
+
+    private fun getFirstMatchingIndex(component: ComponentName, user: UserHandle): Int {
+        // If there is an exact component match, returns that icon view. Otherwise returns the icon
+        // view of the first package match.
+
+        var firstMatchIndex = -1
+
+        for (index in activityAdapter.currentList.indices) {
+            val item = activityAdapter.currentList[index]
+
+            if (item !is ActivityTileViewItem || item.launcherActivityData.user != user) continue
+
+            if (item.launcherActivityData.component == component) {
+                return index
+            }
+
+            if (item.launcherActivityData.component.packageName == component.packageName) {
+                firstMatchIndex = index
+            }
+        }
+
+        return firstMatchIndex
     }
 }

@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 class ViewBinderAdapter(private vararg val viewBinders: ViewBinder) :
     ListAdapter<ViewItem, ViewHolder>(diffUtilItemCallback) {
 
+    var onBindViewHolderListener: ((Int) -> Unit)? = null
+
     private fun getViewBinder(viewType: Int): ViewBinder {
         return viewBinders.firstOrNull { it.viewType == viewType }
             ?: throw IllegalStateException("View binder not installed for view type.")
@@ -19,6 +21,7 @@ class ViewBinderAdapter(private vararg val viewBinders: ViewBinder) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getViewBinder(getItemViewType(position)).bindViewHolder(holder, getItem(position))
+        onBindViewHolderListener?.invoke(position)
     }
 
     override fun getItemViewType(position: Int): Int {
