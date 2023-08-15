@@ -23,6 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
+import link.danb.launcher.model.ShortcutViewModel
 import link.danb.launcher.ui.LauncherIconDrawable
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.getParcelableCompat
@@ -38,6 +39,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val shortcutViewModel: ShortcutViewModel by activityViewModels()
 
     @Inject
     lateinit var appWidgetHost: AppWidgetHost
@@ -104,11 +106,18 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private val shortcutTileListener = ShortcutTileListener { view, shortcutTileViewItem ->
-        launcherApps.startShortcut(
-            shortcutTileViewItem.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
-        )
-        dismiss()
+    private val shortcutTileListener = object : ShortcutTileListener {
+        override fun onClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
+            launcherApps.startShortcut(
+                shortcutTileViewItem.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
+            )
+            dismiss()
+        }
+
+        override fun onLongClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
+            shortcutViewModel.pinShortcut(shortcutTileViewItem.info)
+            Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->

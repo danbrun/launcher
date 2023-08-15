@@ -25,4 +25,6 @@
     <string name="show_work">Show work apps</string>
     <string name="show_hidden">Show hidden apps</string>
     <string name="hide_hidden">Stop showing hidden apps</string>
+    <string name="pinned_shortcut">Pinned app shortcut</string>
+    <string name="unpinned_shortcut">Unpinned app shortcut</string>
 </resources>

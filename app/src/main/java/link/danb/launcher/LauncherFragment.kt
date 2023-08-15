@@ -6,12 +6,14 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
+import android.content.pm.ShortcutInfo
 import android.os.Bundle
 import android.os.Process.myUserHandle
 import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.graphics.toRectF
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -25,13 +27,16 @@ import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.model.GestureContractModel
+import link.danb.launcher.model.ShortcutViewModel
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.ui.InvertedCornerDrawable
+import link.danb.launcher.ui.LauncherIconDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
@@ -45,6 +50,7 @@ class LauncherFragment : Fragment() {
 
     private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
+    private val shortcutViewModel: ShortcutViewModel by activityViewModels()
     private val gestureContractModel: GestureContractModel by activityViewModels()
 
     @Inject
@@ -72,6 +78,7 @@ class LauncherFragment : Fragment() {
             GroupHeaderViewBinder(),
             ActivityTileViewBinder(activityTileListener),
             WidgetViewBinder(appWidgetViewProvider, widgetViewListener),
+            ShortcutTileViewBinder(shortcutTileListener),
             WidgetEditorViewBinder(appWidgetViewProvider, widgetSizeUtil, widgetEditorViewListener),
         )
     }
@@ -94,6 +101,19 @@ class LauncherFragment : Fragment() {
 
     private val widgetViewListener = WidgetViewListener {
         widgetViewModel.startEditing(it.widgetId)
+    }
+
+    private val shortcutTileListener = object :ShortcutTileListener {
+        override fun onClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
+            launcherApps.startShortcut(
+                shortcutTileViewItem.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
+            )
+        }
+
+        override fun onLongClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
+            Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
+            shortcutViewModel.unpinShortcut(shortcutTileViewItem.info)
+        }
     }
 
     private val widgetEditorViewListener = object : WidgetEditorViewListener {
@@ -176,14 +196,16 @@ class LauncherFragment : Fragment() {
                         ::getWidgetListViewItems
                     )
 
+                    val shortcutsFlow = shortcutViewModel.shortcuts.map(::getShortcutListViewItems)
+
                     val appsFlow = combine(
                         launcherViewModel.launcherActivities,
                         launcherViewModel.activitiesFilter,
                         ::getAppListViewItems
                     )
 
-                    combine(widgetsFlow, appsFlow) { widgets, apps ->
-                        widgets + apps
+                    combine(widgetsFlow, shortcutsFlow, appsFlow) { widgets, shortcuts, apps ->
+                        widgets + shortcuts + apps
                     }.collect { activityAdapter.submitList(it) }
                 }
 
@@ -206,39 +228,44 @@ class LauncherFragment : Fragment() {
 
     private fun getWidgetListViewItems(
         widgets: List<WidgetMetadata>, widgetToEdit: Int?
-    ): List<ViewItem> {
-        return widgets.flatMap {
-            if (it.widgetId == widgetToEdit) {
-                listOf(
-                    WidgetViewItem(it),
-                    WidgetEditorViewItem(it, appWidgetManager.getAppWidgetInfo(it.widgetId))
-                )
-            } else {
-                listOf(WidgetViewItem(it))
-            }
+    ): List<ViewItem> = widgets.flatMap {
+        if (it.widgetId == widgetToEdit) {
+            listOf(
+                WidgetViewItem(it),
+                WidgetEditorViewItem(it, appWidgetManager.getAppWidgetInfo(it.widgetId))
+            )
+        } else {
+            listOf(WidgetViewItem(it))
         }
     }
+
+    private fun getShortcutListViewItems(shortcuts: List<ShortcutInfo>): List<ShortcutTileViewItem> =
+        shortcuts.map { shortcut ->
+            val size = requireContext().resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
+            val icon = launcherApps.getShortcutIconDrawable(shortcut, 0)
+                ?.let { icon -> LauncherIconDrawable(icon) }
+            icon?.setBounds(0, 0, size, size)
+            ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon)
+        }
 
     private fun getAppListViewItems(
         launcherActivities: List<LauncherActivityData>,
         launcherFilters: LauncherViewModel.ActivitiesFilter,
-    ): List<ViewItem> {
-        return launcherActivities.filter {
-            val isWorkActivity = it.user != myUserHandle()
-            val isHiddenActivity = !launcherViewModel.isVisible(it)
-            launcherFilters.showWorkActivities == isWorkActivity && (launcherFilters.showHiddenActivities || !isHiddenActivity)
-        }.groupBy {
-            val initial = it.name.first().uppercaseChar()
-            when {
-                initial.isLetter() -> initial.toString()
-                else -> "..."
-            }
-        }.toSortedMap().flatMap { (groupName, launcherActivities) ->
-            buildList {
-                add(GroupHeaderViewItem(groupName))
-                addAll(launcherActivities.sortedBy { it.name.toString().lowercase() }
-                    .map { ActivityTileViewItem(it) })
-            }
+    ): List<ViewItem> = launcherActivities.filter {
+        val isWorkActivity = it.user != myUserHandle()
+        val isHiddenActivity = !launcherViewModel.isVisible(it)
+        launcherFilters.showWorkActivities == isWorkActivity && (launcherFilters.showHiddenActivities || !isHiddenActivity)
+    }.groupBy {
+        val initial = it.name.first().uppercaseChar()
+        when {
+            initial.isLetter() -> initial.toString()
+            else -> "..."
+        }
+    }.toSortedMap().flatMap { (groupName, launcherActivities) ->
+        buildList {
+            add(GroupHeaderViewItem(groupName))
+            addAll(launcherActivities.sortedBy { it.name.toString().lowercase() }
+                .map { ActivityTileViewItem(it) })
         }
     }
 
