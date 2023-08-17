@@ -213,6 +213,11 @@ class LauncherFragment : Fragment() {
     private fun getShortcutListViewItems(shortcuts: List<ShortcutInfo>): List<ViewItem> =
         shortcuts.map { shortcut ->
             TransparentTileViewItem(LauncherShortcutData(launcherApps, shortcut))
+        }.groupBy { true }.flatMap { (_, shortcuts) ->
+            buildList {
+                add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
+                addAll(shortcuts.sortedBy { it.tileViewData.name.toString().lowercase() })
+            }
         }
 
     private fun getAppListViewItems(
