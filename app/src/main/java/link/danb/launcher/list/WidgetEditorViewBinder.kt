@@ -19,19 +19,16 @@ class WidgetEditorViewBinder(
     private val appWidgetViewProvider: AppWidgetViewProvider,
     private val widgetSizeUtil: WidgetSizeUtil,
     private val widgetEditorViewListener: WidgetEditorViewListener,
-) : ViewBinder {
+) : ViewBinder<WidgetEditorViewHolder, WidgetEditorViewItem> {
 
     override val viewType: Int = R.id.widget_editor_view_type_id
 
-    override fun createViewHolder(parent: ViewGroup): ViewHolder {
+    override fun createViewHolder(parent: ViewGroup): WidgetEditorViewHolder {
         return WidgetEditorViewHolder(parent.inflate(R.layout.widget_editor_view))
     }
 
     @SuppressLint("ClickableViewAccessibility", "Recycle")
-    override fun bindViewHolder(holder: ViewHolder, viewItem: ViewItem) {
-        holder as WidgetEditorViewHolder
-        viewItem as WidgetEditorViewItem
-
+    override fun bindViewHolder(holder: WidgetEditorViewHolder, viewItem: WidgetEditorViewItem) {
         holder.moveUpButton.setOnClickListener {
             widgetEditorViewListener.onMoveUp(viewItem.widgetMetadata)
         }
@@ -87,29 +84,28 @@ class WidgetEditorViewBinder(
             widgetEditorViewListener.onDone(viewItem.widgetMetadata)
         }
     }
+}
 
-    private class WidgetEditorViewHolder(view: View) : ViewHolder(view) {
-        val configureButton: TextView = view.findViewById(R.id.widget_configure_button)
-        val deleteButton: TextView = view.findViewById(R.id.widget_delete_button)
-        val moveUpButton: MaterialButton = view.findViewById(R.id.widget_move_up_button)
-        val resizeButton: TextView = view.findViewById(R.id.widget_resize_button)
-        val moveDownButton: MaterialButton = view.findViewById(R.id.widget_move_down_button)
-        val doneButton: TextView = view.findViewById(R.id.widget_done_button)
-    }
+class WidgetEditorViewHolder(view: View) : ViewHolder(view) {
+    val configureButton: TextView = view.findViewById(R.id.widget_configure_button)
+    val deleteButton: TextView = view.findViewById(R.id.widget_delete_button)
+    val moveUpButton: MaterialButton = view.findViewById(R.id.widget_move_up_button)
+    val resizeButton: TextView = view.findViewById(R.id.widget_resize_button)
+    val moveDownButton: MaterialButton = view.findViewById(R.id.widget_move_down_button)
+    val doneButton: TextView = view.findViewById(R.id.widget_done_button)
 }
 
 class WidgetEditorViewItem(
     val widgetMetadata: WidgetMetadata, val widgetProviderInfo: AppWidgetProviderInfo
 ) : ViewItem {
+
     override val viewType: Int = R.id.widget_editor_view_type_id
 
-    override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is WidgetEditorViewItem && widgetMetadata.widgetId == other.widgetMetadata.widgetId
-    }
+    override fun areItemsTheSame(other: ViewItem): Boolean =
+        other is WidgetEditorViewItem && widgetMetadata.widgetId == other.widgetMetadata.widgetId
 
-    override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is WidgetEditorViewItem && widgetMetadata == other.widgetMetadata
-    }
+    override fun areContentsTheSame(other: ViewItem): Boolean =
+        other is WidgetEditorViewItem && widgetMetadata == other.widgetMetadata
 }
 
 interface WidgetEditorViewListener {

@@ -5,12 +5,12 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 
-class ViewBinderAdapter(private vararg val viewBinders: ViewBinder) :
+class ViewBinderAdapter(private vararg val viewBinders: ViewBinder<*, *>) :
     ListAdapter<ViewItem, ViewHolder>(diffUtilItemCallback) {
 
     var onBindViewHolderListener: ((Int) -> Unit)? = null
 
-    private fun getViewBinder(viewType: Int): ViewBinder {
+    private fun getViewBinder(viewType: Int): ViewBinder<*, *> {
         return viewBinders.firstOrNull { it.viewType == viewType }
             ?: throw IllegalStateException("View binder not installed for view type.")
     }
@@ -41,11 +41,13 @@ class ViewBinderAdapter(private vararg val viewBinders: ViewBinder) :
     }
 }
 
-interface ViewBinder {
+interface ViewBinder<ViewHolderType : ViewHolder, ViewItemType : ViewItem> {
     val viewType: Int
 
-    fun createViewHolder(parent: ViewGroup): ViewHolder
-    fun bindViewHolder(holder: ViewHolder, viewItem: ViewItem)
+    fun createViewHolder(parent: ViewGroup): ViewHolderType
+    fun bindViewHolder(
+        holder: @UnsafeVariance ViewHolderType, viewItem: @UnsafeVariance ViewItemType
+    )
 }
 
 interface ViewItem {

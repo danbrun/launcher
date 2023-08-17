@@ -14,18 +14,16 @@ import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.applySize
 import javax.inject.Inject
 
-class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) : ViewBinder {
+class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
+    ViewBinder<WidgetHeaderViewHolder, WidgetHeaderViewItem> {
 
     override val viewType: Int = R.id.widget_header_view_type_id
 
-    override fun createViewHolder(parent: ViewGroup): ViewHolder {
+    override fun createViewHolder(parent: ViewGroup): WidgetHeaderViewHolder {
         return WidgetHeaderViewHolder(parent.inflate(R.layout.widget_header_view))
     }
 
-    override fun bindViewHolder(holder: ViewHolder, viewItem: ViewItem) {
-        holder as WidgetHeaderViewHolder
-        viewItem as WidgetHeaderViewItem
-
+    override fun bindViewHolder(holder: WidgetHeaderViewHolder, viewItem: WidgetHeaderViewItem) {
         holder.textView.apply {
             val appIconSize = context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             val dropdownIconSize = (resources.displayMetrics.density * 24).toInt()
@@ -44,10 +42,10 @@ class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) : V
             setOnClickListener { onClick.invoke(viewItem.applicationInfo) }
         }
     }
+}
 
-    private class WidgetHeaderViewHolder(view: View) : ViewHolder(view) {
-        val textView = view as TextView
-    }
+class WidgetHeaderViewHolder(view: View) : ViewHolder(view) {
+    val textView = view as TextView
 }
 
 class WidgetHeaderViewItem private constructor(
@@ -56,15 +54,14 @@ class WidgetHeaderViewItem private constructor(
     val icon: Drawable,
     val isExpanded: Boolean
 ) : ViewItem {
+
     override val viewType: Int = R.id.widget_header_view_type_id
 
-    override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is WidgetHeaderViewItem && applicationInfo.packageName == other.applicationInfo.packageName
-    }
+    override fun areItemsTheSame(other: ViewItem): Boolean =
+        other is WidgetHeaderViewItem && applicationInfo.packageName == other.applicationInfo.packageName
 
-    override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is WidgetHeaderViewItem && isExpanded == other.isExpanded
-    }
+    override fun areContentsTheSame(other: ViewItem): Boolean =
+        other is WidgetHeaderViewItem && isExpanded == other.isExpanded
 
     class WidgetHeaderViewItemFactory @Inject constructor(private val application: Application) {
         fun create(applicationInfo: ApplicationInfo, isExpanded: Boolean) = WidgetHeaderViewItem(

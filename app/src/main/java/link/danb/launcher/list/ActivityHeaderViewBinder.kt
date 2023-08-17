@@ -16,21 +16,21 @@ import link.danb.launcher.utils.applySize
 
 class ActivityHeaderViewBinder(
     fragment: Fragment, private val activityHeaderListener: ActivityHeaderListener? = null
-) : ViewBinder {
+) : ViewBinder<ActivityHeaderViewHolder, ActivityHeaderViewItem> {
+
     private val launcherViewModel: LauncherViewModel by fragment.activityViewModels()
 
     override val viewType: Int = R.id.activity_header_view_type_id
 
-    override fun createViewHolder(parent: ViewGroup): ViewHolder {
+    override fun createViewHolder(parent: ViewGroup): ActivityHeaderViewHolder {
         return ActivityHeaderViewHolder(
             parent.inflate(R.layout.activity_details_header_view)
         )
     }
 
-    override fun bindViewHolder(holder: ViewHolder, viewItem: ViewItem) {
-        holder as ActivityHeaderViewHolder
-        viewItem as ActivityHeaderViewItem
-
+    override fun bindViewHolder(
+        holder: ActivityHeaderViewHolder, viewItem: ActivityHeaderViewItem
+    ) {
         holder.activityItem.apply {
             text = viewItem.name
             viewItem.icon.applySize(
@@ -60,16 +60,17 @@ class ActivityHeaderViewBinder(
             activityHeaderListener?.onSettingsButtonClick(it, viewItem)
         }
     }
+}
 
-    private class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
-        val activityItem: TextView = view.findViewById(R.id.activity_item)
-        val visibilityButton: MaterialButton = view.findViewById(R.id.visibility_button)
-        val uninstallButton: MaterialButton = view.findViewById(R.id.uninstall_button)
-        val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
-    }
+class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
+    val activityItem: TextView = view.findViewById(R.id.activity_item)
+    val visibilityButton: MaterialButton = view.findViewById(R.id.visibility_button)
+    val uninstallButton: MaterialButton = view.findViewById(R.id.uninstall_button)
+    val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
 }
 
 class ActivityHeaderViewItem(val launcherActivityData: LauncherActivityData) : ViewItem {
+
     override val viewType: Int = R.id.activity_header_view_type_id
 
     val name: CharSequence
@@ -78,13 +79,11 @@ class ActivityHeaderViewItem(val launcherActivityData: LauncherActivityData) : V
     val icon: Drawable
         get() = launcherActivityData.icon
 
-    override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is ActivityHeaderViewItem && launcherActivityData.component == other.launcherActivityData.component && launcherActivityData.user == other.launcherActivityData.user
-    }
+    override fun areItemsTheSame(other: ViewItem): Boolean =
+        other is ActivityHeaderViewItem && launcherActivityData.component == other.launcherActivityData.component && launcherActivityData.user == other.launcherActivityData.user
 
-    override fun areContentsTheSame(other: ViewItem): Boolean {
-        return other is ActivityHeaderViewItem && launcherActivityData.timestamp == other.launcherActivityData.timestamp
-    }
+    override fun areContentsTheSame(other: ViewItem): Boolean =
+        other is ActivityHeaderViewItem && launcherActivityData.timestamp == other.launcherActivityData.timestamp
 }
 
 interface ActivityHeaderListener {

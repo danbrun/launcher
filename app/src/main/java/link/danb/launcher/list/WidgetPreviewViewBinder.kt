@@ -18,18 +18,16 @@ import link.danb.launcher.widgets.AppWidgetViewProvider
 class WidgetPreviewViewBinder(
     private val appWidgetViewProvider: AppWidgetViewProvider,
     private val widgetPreviewListener: WidgetPreviewListener? = null
-) : ViewBinder {
+) : ViewBinder<WidgetPreviewViewHolder, WidgetPreviewViewItem> {
+
     override val viewType: Int = R.id.widget_preview_view_type_id
 
-    override fun createViewHolder(parent: ViewGroup): ViewHolder {
+    override fun createViewHolder(parent: ViewGroup): WidgetPreviewViewHolder {
         return WidgetPreviewViewHolder(parent.inflate(R.layout.widget_preview_view))
     }
 
     @SuppressLint("ResourceType")
-    override fun bindViewHolder(holder: ViewHolder, viewItem: ViewItem) {
-        holder as WidgetPreviewViewHolder
-        viewItem as WidgetPreviewViewItem
-
+    override fun bindViewHolder(holder: WidgetPreviewViewHolder, viewItem: WidgetPreviewViewItem) {
         holder.itemView.apply {
             isClickable = widgetPreviewListener != null
             setOnClickListener { widgetPreviewListener?.onClick(it, viewItem) }
@@ -63,26 +61,25 @@ class WidgetPreviewViewBinder(
             }
         }
     }
+}
 
-    private class WidgetPreviewViewHolder(view: View) : ViewHolder(view) {
-        val image: ImageView = view.findViewById(R.id.widget_preview)
-        val frame: FrameLayout = view.findViewById(R.id.widget_preview_frame)
-        val label: TextView = view.findViewById(R.id.widget_label)
-        val description: TextView = view.findViewById(R.id.widget_description)
-    }
+class WidgetPreviewViewHolder(view: View) : ViewHolder(view) {
+    val image: ImageView = view.findViewById(R.id.widget_preview)
+    val frame: FrameLayout = view.findViewById(R.id.widget_preview_frame)
+    val label: TextView = view.findViewById(R.id.widget_label)
+    val description: TextView = view.findViewById(R.id.widget_description)
 }
 
 class WidgetPreviewViewItem(val providerInfo: AppWidgetProviderInfo, val userHandle: UserHandle) :
     ViewItem {
+
     override val viewType: Int = R.id.widget_preview_view_type_id
 
-    override fun areItemsTheSame(other: ViewItem): Boolean {
-        return other is WidgetPreviewViewItem && providerInfo.provider == other.providerInfo.provider && userHandle == other.userHandle
-    }
+    override fun areItemsTheSame(other: ViewItem): Boolean =
+        other is WidgetPreviewViewItem && providerInfo.provider == other.providerInfo.provider && userHandle == other.userHandle
 
-    override fun areContentsTheSame(other: ViewItem): Boolean {
-        return true
-    }
+
+    override fun areContentsTheSame(other: ViewItem): Boolean = true
 }
 
 fun interface WidgetPreviewListener {
