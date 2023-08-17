@@ -33,10 +33,11 @@ import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.model.GestureContractModel
+import link.danb.launcher.model.LauncherShortcutData
 import link.danb.launcher.model.ShortcutViewModel
+import link.danb.launcher.model.TileViewData
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.ui.InvertedCornerDrawable
-import link.danb.launcher.ui.LauncherIconDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
@@ -76,44 +77,14 @@ class LauncherFragment : Fragment() {
     private val activityAdapter: ViewBinderAdapter by lazy {
         ViewBinderAdapter(
             GroupHeaderViewBinder(),
-            ActivityTileViewBinder(activityTileListener),
+            TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
             WidgetViewBinder(appWidgetViewProvider, widgetViewListener),
-            ShortcutTileViewBinder(shortcutTileListener),
             WidgetEditorViewBinder(appWidgetViewProvider, widgetSizeUtil, widgetEditorViewListener),
         )
     }
 
-    private val activityTileListener = object : ActivityTileListener {
-        override fun onClick(view: View, activityViewItem: ActivityTileViewItem) {
-            launcherApps.startMainActivity(
-                activityViewItem.launcherActivityData.component,
-                activityViewItem.launcherActivityData.user,
-                view.getBoundsOnScreen(),
-                view.makeClipRevealAnimation()
-            )
-        }
-
-        override fun onLongClick(view: View, activityViewItem: ActivityTileViewItem) {
-            ActivityDetailsDialogFragment.newInstance(activityViewItem.launcherActivityData)
-                .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
-        }
-    }
-
     private val widgetViewListener = WidgetViewListener {
         widgetViewModel.startEditing(it.widgetId)
-    }
-
-    private val shortcutTileListener = object :ShortcutTileListener {
-        override fun onClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
-            launcherApps.startShortcut(
-                shortcutTileViewItem.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
-            )
-        }
-
-        override fun onLongClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
-            Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-            shortcutViewModel.unpinShortcut(shortcutTileViewItem.info)
-        }
     }
 
     private val widgetEditorViewListener = object : WidgetEditorViewListener {
@@ -239,13 +210,9 @@ class LauncherFragment : Fragment() {
         }
     }
 
-    private fun getShortcutListViewItems(shortcuts: List<ShortcutInfo>): List<ShortcutTileViewItem> =
+    private fun getShortcutListViewItems(shortcuts: List<ShortcutInfo>): List<ViewItem> =
         shortcuts.map { shortcut ->
-            val size = requireContext().resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
-            val icon = launcherApps.getShortcutIconDrawable(shortcut, 0)
-                ?.let { icon -> LauncherIconDrawable(icon) }
-            icon?.setBounds(0, 0, size, size)
-            ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon)
+            TransparentTileViewItem(LauncherShortcutData(launcherApps, shortcut))
         }
 
     private fun getAppListViewItems(
@@ -265,7 +232,7 @@ class LauncherFragment : Fragment() {
         buildList {
             add(GroupHeaderViewItem(groupName))
             addAll(launcherActivities.sortedBy { it.name.toString().lowercase() }
-                .map { ActivityTileViewItem(it) })
+                .map { TransparentTileViewItem(it) })
         }
     }
 
@@ -295,17 +262,52 @@ class LauncherFragment : Fragment() {
         for (index in activityAdapter.currentList.indices) {
             val item = activityAdapter.currentList[index]
 
-            if (item !is ActivityTileViewItem || item.launcherActivityData.user != user) continue
+            if (item !is TransparentTileViewItem || item.tileViewData !is LauncherActivityData || item.tileViewData.user != user) continue
 
-            if (item.launcherActivityData.component == component) {
+            if (item.tileViewData.component == component) {
                 return index
             }
 
-            if (item.launcherActivityData.component.packageName == component.packageName) {
+            if (item.tileViewData.component.packageName == component.packageName) {
                 firstMatchIndex = index
             }
         }
 
         return firstMatchIndex
+    }
+
+    private fun onTileClick(view: View, tileViewData: TileViewData) {
+        when (tileViewData) {
+            is LauncherActivityData -> {
+                launcherApps.startMainActivity(
+                    tileViewData.component,
+                    tileViewData.user,
+                    view.getBoundsOnScreen(),
+                    view.makeClipRevealAnimation()
+                )
+            }
+
+            is LauncherShortcutData -> {
+                launcherApps.startShortcut(
+                    tileViewData.shortcutInfo,
+                    view.getBoundsOnScreen(),
+                    view.makeClipRevealAnimation()
+                )
+            }
+        }
+    }
+
+    private fun onTileLongClick(tileViewData: TileViewData) {
+        when (tileViewData) {
+            is LauncherActivityData -> {
+                ActivityDetailsDialogFragment.newInstance(tileViewData)
+                    .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
+            }
+
+            is LauncherShortcutData -> {
+                Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
+                shortcutViewModel.unpinShortcut(tileViewData.shortcutInfo)
+            }
+        }
     }
 }

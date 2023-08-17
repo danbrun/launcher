@@ -22,9 +22,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
+import link.danb.launcher.model.LauncherShortcutData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.model.ShortcutViewModel
-import link.danb.launcher.ui.LauncherIconDrawable
+import link.danb.launcher.model.TileViewData
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.getParcelableCompat
 import link.danb.launcher.utils.makeClipRevealAnimation
@@ -106,20 +107,6 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private val shortcutTileListener = object : ShortcutTileListener {
-        override fun onClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
-            launcherApps.startShortcut(
-                shortcutTileViewItem.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
-            )
-            dismiss()
-        }
-
-        override fun onLongClick(view: View, shortcutTileViewItem: ShortcutTileViewItem) {
-            shortcutViewModel.pinShortcut(shortcutTileViewItem.info)
-            Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
         bindWidgetActivityLauncher.launch(
             AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, launcherActivity.user)
@@ -135,11 +122,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             R.layout.activity_details_dialog_fragment, container, false
         ) as RecyclerView
 
-        val size = requireContext().resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
-
         val adapter = ViewBinderAdapter(
             ActivityHeaderViewBinder(this, activityHeaderListener),
-            ShortcutTileViewBinder(shortcutTileListener),
+            CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
             WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
         )
 
@@ -170,11 +155,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             )
 
             shortcuts?.forEach { shortcut ->
-                val icon = launcherApps.getShortcutIconDrawable(shortcut, 0)
-                    ?.let { icon -> LauncherIconDrawable(icon) }
-                icon?.setBounds(0, 0, size, size)
-
-                items.add(ShortcutTileViewItem(shortcut, shortcut.shortLabel!!, icon))
+                items.add(CardTileViewItem(LauncherShortcutData(launcherApps, shortcut)))
             }
         }
 
@@ -185,6 +166,24 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         adapter.submitList(items as List<ViewItem>?)
 
         return recyclerView
+    }
+
+    private fun onTileClick(view: View, tileViewData: TileViewData) = when (tileViewData) {
+        is LauncherActivityData -> Unit
+        is LauncherShortcutData -> {
+            launcherApps.startShortcut(
+                tileViewData.shortcutInfo, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
+            )
+            dismiss()
+        }
+    }
+
+    private fun onTileLongClick(tileViewData: TileViewData) = when (tileViewData) {
+        is LauncherActivityData -> Unit
+        is LauncherShortcutData -> {
+            shortcutViewModel.pinShortcut(tileViewData.shortcutInfo)
+            Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+        }
     }
 
     companion object {
