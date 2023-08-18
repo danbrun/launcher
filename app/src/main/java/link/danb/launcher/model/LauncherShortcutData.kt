@@ -5,14 +5,16 @@ import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Drawable
 import link.danb.launcher.ui.LauncherIconDrawable
 
-class LauncherShortcutData(launcherApps: LauncherApps, val shortcutInfo: ShortcutInfo) : TileViewData {
+class LauncherShortcutData(launcherApps: LauncherApps, val shortcutInfo: ShortcutInfo) :
+    TileViewData {
 
     override val name: CharSequence by lazy {
         shortcutInfo.shortLabel!!
     }
 
     override val icon: Drawable? by lazy {
-        LauncherIconDrawable(launcherApps.getShortcutBadgedIconDrawable(shortcutInfo, 0))
+        launcherApps.getShortcutBadgedIconDrawable(shortcutInfo, 0)
+            ?.let { LauncherIconDrawable(it) }
     }
 
     override fun areItemsTheSame(other: TileViewData): Boolean =
