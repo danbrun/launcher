@@ -1,6 +1,7 @@
 package link.danb.launcher
 
 import android.content.Intent
+import android.os.Process.myUserHandle
 import android.provider.Settings
 import android.view.Menu
 import android.view.MenuInflater
@@ -32,31 +33,17 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    launcherViewModel.activitiesMetadata.collect {
-                        profileToggle.isVisible = it.hasWorkActivities
-                        visibilityToggle.isVisible = it.hasHiddenActivities
+                    launcherViewModel.launcherActivities.collect { activities ->
+                        profileToggle.isVisible = activities.any { it.user != myUserHandle() }
+                        visibilityToggle.isVisible =
+                            activities.any { launcherViewModel.isVisible(it) }
                     }
                 }
 
                 launch {
-                    launcherViewModel.activitiesFilter.collect {
-                        profileToggle.setTitle(
-                            if (it.showWorkActivities) R.string.show_personal
-                            else R.string.show_work
-                        )
-                        profileToggle.setIcon(
-                            if (it.showWorkActivities) R.drawable.ic_baseline_work_off_24
-                            else R.drawable.ic_baseline_work_24
-                        )
-
-                        visibilityToggle.setTitle(
-                            if (it.showHiddenActivities) R.string.hide_hidden
-                            else R.string.show_hidden
-                        )
-                        visibilityToggle.setIcon(
-                            if (it.showHiddenActivities) R.drawable.ic_baseline_visibility_off_24
-                            else R.drawable.ic_baseline_visibility_24
-                        )
+                    launcherViewModel.showWorkActivities.collect {
+                        profileToggle.setTitle(if (it) R.string.show_personal else R.string.show_work)
+                        profileToggle.setIcon(if (it) R.drawable.ic_baseline_work_off_24 else R.drawable.ic_baseline_work_24)
                     }
                 }
             }
@@ -74,27 +61,27 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
         R.id.profile_toggle -> {
-            launcherViewModel.activitiesFilter.apply {
-                value = value.copy(showWorkActivities = !value.showWorkActivities)
-            }
+            launcherViewModel.toggleWorkActivities()
             true
         }
+
         R.id.visibility_toggle -> {
-            launcherViewModel.activitiesFilter.apply {
-                value = value.copy(showHiddenActivities = !value.showHiddenActivities)
-            }
+            HiddenAppsDialog().show(fragment.childFragmentManager, HiddenAppsDialog.TAG)
             true
         }
+
         R.id.add_widget_button -> {
             WidgetDialogFragment().showNow(
                 fragment.childFragmentManager, WidgetDialogFragment.TAG
             )
             true
         }
+
         R.id.settings_shortcut -> {
             fragment.startActivity(Intent(Settings.ACTION_SETTINGS))
             true
         }
+
         else -> false
     }
 }

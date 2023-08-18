@@ -2,7 +2,6 @@ package link.danb.launcher.model
 
 import android.app.Application
 import android.content.pm.LauncherApps
-import android.os.Process.myUserHandle
 import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,25 +26,17 @@ class LauncherViewModel @Inject constructor(
 
     private val launcherAppsCallback = LauncherAppsCallback()
 
-    private val mutableLauncherActivities = MutableStateFlow<List<LauncherActivityData>>(listOf())
-    val launcherActivities: StateFlow<List<LauncherActivityData>> = mutableLauncherActivities
+    private val _launcherActivities = MutableStateFlow<List<LauncherActivityData>>(listOf())
+    private val _showWorkActivities: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
-    val activitiesMetadata: StateFlow<ActivitiesMetadata> = launcherActivities.map { activities ->
-        ActivitiesMetadata(activities.any { it.user != myUserHandle() },
-            activities.any { it.tags.contains(HIDDEN_TAG) })
-    }.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(), ActivitiesMetadata(
-            hasWorkActivities = false, hasHiddenActivities = false
-        )
-    )
-
-    val activitiesFilter: MutableStateFlow<ActivitiesFilter> =
-        MutableStateFlow(ActivitiesFilter(showWorkActivities = false, showHiddenActivities = false))
+    val launcherActivities: StateFlow<List<LauncherActivityData>> =
+        _launcherActivities.asStateFlow()
+    val showWorkActivities: StateFlow<Boolean> = _showWorkActivities.asStateFlow()
 
     init {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                mutableLauncherActivities.emit(launcherApps.profiles.flatMap {
+                _launcherActivities.emit(launcherApps.profiles.flatMap {
                     launcherApps.getActivityList(
                         null, it
                     )
@@ -92,17 +83,21 @@ class LauncherViewModel @Inject constructor(
         return !launcherActivityData.tags.contains(HIDDEN_TAG)
     }
 
+    fun toggleWorkActivities() {
+        _showWorkActivities.value = !_showWorkActivities.value
+    }
+
     private fun update(packageName: String, user: UserHandle) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                mutableLauncherActivities.value.toMutableList().apply {
+                _launcherActivities.value.toMutableList().apply {
                     removeIf { it.component.packageName == packageName && it.user == user }
                     addAll(launcherApps.getActivityList(packageName, user).map {
                         LauncherActivityData(
                             getApplication(), it, launcherActivityMetadata.get(it)
                         )
                     })
-                    mutableLauncherActivities.emit(toList())
+                    _launcherActivities.emit(toList())
                 }
             }
         }
@@ -147,10 +142,6 @@ class LauncherViewModel @Inject constructor(
             }
         }
     }
-
-    data class ActivitiesMetadata(val hasWorkActivities: Boolean, val hasHiddenActivities: Boolean)
-
-    data class ActivitiesFilter(val showWorkActivities: Boolean, val showHiddenActivities: Boolean)
 
     companion object {
         private const val HIDDEN_TAG = "hidden"

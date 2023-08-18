@@ -171,7 +171,7 @@ class LauncherFragment : Fragment() {
 
                     val appsFlow = combine(
                         launcherViewModel.launcherActivities,
-                        launcherViewModel.activitiesFilter,
+                        launcherViewModel.showWorkActivities,
                         ::getAppListViewItems
                     )
 
@@ -221,12 +221,10 @@ class LauncherFragment : Fragment() {
         }
 
     private fun getAppListViewItems(
-        launcherActivities: List<LauncherActivityData>,
-        launcherFilters: LauncherViewModel.ActivitiesFilter,
+        launcherActivities: List<LauncherActivityData>, showWorkActivities: Boolean
     ): List<ViewItem> = launcherActivities.filter {
         val isWorkActivity = it.user != myUserHandle()
-        val isHiddenActivity = !launcherViewModel.isVisible(it)
-        launcherFilters.showWorkActivities == isWorkActivity && (launcherFilters.showHiddenActivities || !isHiddenActivity)
+        launcherViewModel.isVisible(it) && showWorkActivities == isWorkActivity
     }.groupBy {
         val initial = it.name.first().uppercaseChar()
         when {
