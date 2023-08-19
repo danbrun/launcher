@@ -71,6 +71,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     private val bindWidgetActivityLauncher =
         registerForActivityResult(AppWidgetSetupActivityResultContract()) {
             if (it.success) {
+                Toast.makeText(context, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
                 dismiss()
             } else {
                 Toast.makeText(context, it.errorMessage, Toast.LENGTH_SHORT).show()

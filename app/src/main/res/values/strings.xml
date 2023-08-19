@@ -14,6 +14,11 @@
     <string name="widget_permission_denied">Cannot bind widget without permission</string>
     <string name="widget_configuration_failed">Widget configuration was unsuccessful</string>
 
+    <!-- Notifications -->
+    <string name="pinned_shortcut">Pinned shortcut</string>
+    <string name="unpinned_shortcut">Unpinned shortcut</string>
+    <string name="pinned_widget">Pinned widget</string>
+
     <!-- Actions -->
     <string name="search">Search</string>
     <string name="add_widget">Add widget</string>
@@ -26,6 +31,4 @@
     <string name="show_work">Show work apps</string>
     <string name="show_hidden">Show hidden apps</string>
     <string name="hide_hidden">Stop showing hidden apps</string>
-    <string name="pinned_shortcut">Pinned app shortcut</string>
-    <string name="unpinned_shortcut">Unpinned app shortcut</string>
 </resources>
