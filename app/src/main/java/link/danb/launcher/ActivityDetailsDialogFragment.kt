@@ -177,6 +177,8 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             )
             dismiss()
         }
+
+        else -> Unit
     }
 
     private fun onTileLongClick(tileViewData: TileViewData) = when (tileViewData) {
@@ -185,6 +187,8 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             shortcutViewModel.pinShortcut(tileViewData.shortcutInfo)
             Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
         }
+
+        else -> Unit
     }
 
     companion object {

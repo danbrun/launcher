@@ -11,8 +11,8 @@ import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.applySize
 
 class TransparentTileViewBinder(
-    private val onClick: ((View, TileViewData) -> Unit)?,
-    private val onLongClick: ((View, TileViewData) -> Unit)?
+    private val onClick: ((View, TileViewData) -> Unit)? = null,
+    private val onLongClick: ((View, TileViewData) -> Unit)? = null,
 ) : ViewBinder<TransparentTileViewHolder, TransparentTileViewItem> {
 
     override val viewType: Int = R.id.transparent_tile_view_type_id

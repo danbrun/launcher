@@ -12,7 +12,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 import link.danb.launcher.model.LauncherViewModel
-import link.danb.launcher.widgets.WidgetDialogFragment
+import link.danb.launcher.widgets.PinItemsDialogFragment
 import javax.inject.Inject
 
 class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
@@ -22,7 +22,7 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
 
     private lateinit var profileToggle: MenuItem
     private lateinit var visibilityToggle: MenuItem
-    private lateinit var addWidgetButton: MenuItem
+    private lateinit var pinItemsButton: MenuItem
     private lateinit var settingsShortcut: MenuItem
 
     init {
@@ -55,7 +55,7 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
 
         profileToggle = menu.findItem(R.id.profile_toggle)
         visibilityToggle = menu.findItem(R.id.visibility_toggle)
-        addWidgetButton = menu.findItem(R.id.add_widget_button)
+        pinItemsButton = menu.findItem(R.id.pin_items_button)
         settingsShortcut = menu.findItem(R.id.settings_shortcut)
     }
 
@@ -70,9 +70,9 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
             true
         }
 
-        R.id.add_widget_button -> {
-            WidgetDialogFragment().showNow(
-                fragment.childFragmentManager, WidgetDialogFragment.TAG
+        R.id.pin_items_button -> {
+            PinItemsDialogFragment().showNow(
+                fragment.childFragmentManager, PinItemsDialogFragment.TAG
             )
             true
         }

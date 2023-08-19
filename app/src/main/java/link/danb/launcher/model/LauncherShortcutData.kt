@@ -20,5 +20,8 @@ class LauncherShortcutData(launcherApps: LauncherApps, val shortcutInfo: Shortcu
     override fun areItemsTheSame(other: TileViewData): Boolean =
         other is LauncherShortcutData && shortcutInfo.`package` == other.shortcutInfo.`package` && shortcutInfo.id == other.shortcutInfo.id
 
-    override fun areContentsTheSame(other: TileViewData): Boolean = false
+    override fun areContentsTheSame(other: TileViewData): Boolean {
+        val a = other is LauncherShortcutData && icon.hashCode() == other.icon.hashCode()
+        return a
+    }
 }

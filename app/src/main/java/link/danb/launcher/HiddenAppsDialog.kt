@@ -13,12 +13,16 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import link.danb.launcher.list.ActivityHeaderViewItem
 import link.danb.launcher.list.CardTileViewBinder
 import link.danb.launcher.list.CardTileViewItem
+import link.danb.launcher.list.DialogHeaderViewBinder
+import link.danb.launcher.list.DialogHeaderViewItem
+import link.danb.launcher.list.LoadingSpinnerViewBinder
+import link.danb.launcher.list.LoadingSpinnerViewItem
 import link.danb.launcher.list.ViewBinderAdapter
-import link.danb.launcher.list.WidgetPreviewViewItem
 import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherShortcutData
 import link.danb.launcher.model.LauncherViewModel
@@ -44,8 +48,9 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
             R.layout.hidden_apps_dialog_fragment, container, false
         ) as RecyclerView
 
-        val adapter =
-            ViewBinderAdapter(CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) })
+        val adapter = ViewBinderAdapter(DialogHeaderViewBinder(),
+            LoadingSpinnerViewBinder(),
+            CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) })
 
         val columns = requireContext().resources.getInteger(R.integer.launcher_columns)
 
@@ -57,21 +62,29 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
                     return when (adapter.currentList[position]) {
-                        is ActivityHeaderViewItem, is WidgetPreviewViewItem -> columns
+                        is DialogHeaderViewItem, is LoadingSpinnerViewItem -> columns
                         else -> 1
                     }
                 }
             }
         }
 
+        val headerItems =
+            listOf(DialogHeaderViewItem(requireContext().getString(R.string.hidden_apps)))
+
+        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem()))
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     launcherViewModel.launcherActivities.collect { activities ->
-                        adapter.submitList(activities.filter { !launcherViewModel.isVisible(it) }
-                            .sortedBy { it.name.toString().lowercase() }
-                            .map { CardTileViewItem(it) })
+                        adapter.submitList(
+                            async(Dispatchers.IO) {
+                                headerItems + activities.filter { !launcherViewModel.isVisible(it) }
+                                    .sortedBy { it.name.toString().lowercase() }
+                                    .map { CardTileViewItem(it) }
+                            }.await()
+                        )
                     }
                 }
             }
@@ -93,6 +106,7 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
             }
 
             is LauncherShortcutData -> Unit
+            else -> Unit
         }
     }
 
@@ -104,6 +118,7 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
             }
 
             is LauncherShortcutData -> Unit
+            else -> Unit
         }
     }
 

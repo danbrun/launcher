@@ -297,6 +297,8 @@ class LauncherFragment : Fragment() {
                     view.makeClipRevealAnimation()
                 )
             }
+
+            else -> Unit
         }
     }
 
@@ -311,6 +313,8 @@ class LauncherFragment : Fragment() {
                 Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
                 shortcutViewModel.unpinShortcut(tileViewData.shortcutInfo)
             }
+
+            else -> Unit
         }
     }
 }

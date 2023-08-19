@@ -13,9 +13,9 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/add_widget_button"
-        android:icon="@drawable/ic_baseline_widgets_24"
-        android:title="@string/add_widget"
+        android:id="@+id/pin_items_button"
+        android:icon="@drawable/baseline_push_pin_24"
+        android:title="@string/pin_items"
         app:showAsAction="ifRoom" />
 
     <item
