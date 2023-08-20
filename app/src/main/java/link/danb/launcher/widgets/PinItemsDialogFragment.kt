@@ -22,12 +22,12 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.list.*
 import link.danb.launcher.list.WidgetHeaderViewItem.WidgetHeaderViewItemFactory
+import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.model.ShortcutActivityData
 import link.danb.launcher.model.ShortcutViewModel
 import link.danb.launcher.model.TileViewData
@@ -37,6 +37,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
+    private val launcherViewModel: LauncherViewModel by activityViewModels()
     private val shortcutViewModel: ShortcutViewModel by activityViewModels()
     private val widgetViewModel: WidgetViewModel by activityViewModels()
     private val widgetDialogViewModel: WidgetDialogViewModel by viewModels()
@@ -134,9 +135,12 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                widgetDialogViewModel.expandedPackageNames.collect {
-                    widgetListAdapter.submitList(async(Dispatchers.IO) { getViewItems(it) }.await())
-                }
+                combine(
+                    launcherViewModel.shortcutActivities,
+                    launcherViewModel.showWorkActivities,
+                    widgetDialogViewModel.expandedPackageNames,
+                    this@PinItemsDialogFragment::getViewItems
+                ).collect { widgetListAdapter.submitList(it) }
             }
         }
 
@@ -155,14 +159,18 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
         )
     }
 
-    private fun getViewItems(expandedPackages: Set<String>): List<ViewItem> {
+    private fun getViewItems(
+        shortcutActivities: List<ShortcutActivityData>,
+        showWorkActivities: Boolean,
+        expandedPackages: Set<String>
+    ): List<ViewItem> {
         val items = mutableListOf<ViewItem>()
 
         items.addAll(headerItems)
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
 
-        items.addAll(launcherApps.getShortcutConfigActivityList(null, myUserHandle())
-            .map { CardTileViewItem(ShortcutActivityData(it)) })
+        items.addAll(shortcutActivities.filter { showWorkActivities != (it.user == myUserHandle()) }
+            .sortedBy { it.name.toString().lowercase() }.map { CardTileViewItem(it) })
 
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.widgets)))
 

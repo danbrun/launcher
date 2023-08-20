@@ -29,7 +29,7 @@ class DialogHeaderViewItem(val label: String) : ViewItem {
     override val viewType: Int = R.id.dialog_header_view_type_id
 
     override fun areItemsTheSame(other: ViewItem): Boolean =
-        other is GroupHeaderViewItem && label == other.label
+        other is DialogHeaderViewItem && label == other.label
 
     override fun areContentsTheSame(other: ViewItem): Boolean = true
 }

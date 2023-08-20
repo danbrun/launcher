@@ -27,7 +27,6 @@ import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.list.*
 import link.danb.launcher.model.LauncherActivityData
@@ -167,7 +166,11 @@ class LauncherFragment : Fragment() {
                         ::getWidgetListViewItems
                     )
 
-                    val shortcutsFlow = shortcutViewModel.shortcuts.map(::getShortcutListViewItems)
+                    val shortcutsFlow = combine(
+                        shortcutViewModel.shortcuts,
+                        launcherViewModel.showWorkActivities,
+                        ::getShortcutListViewItems
+                    )
 
                     val appsFlow = combine(
                         launcherViewModel.launcherActivities,
@@ -210,13 +213,15 @@ class LauncherFragment : Fragment() {
         }
     }
 
-    private fun getShortcutListViewItems(shortcuts: List<ShortcutInfo>): List<ViewItem> =
-        shortcuts.map { shortcut ->
-            TransparentTileViewItem(LauncherShortcutData(launcherApps, shortcut))
-        }.groupBy { true }.flatMap { (_, shortcuts) ->
+    private fun getShortcutListViewItems(
+        shortcuts: List<ShortcutInfo>, showWorkActivities: Boolean
+    ): List<ViewItem> = shortcuts.filter { showWorkActivities != (it.userHandle == myUserHandle()) }
+        .groupBy { true }.flatMap { (_, shortcuts) ->
             buildList {
                 add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
-                addAll(shortcuts.sortedBy { it.tileViewData.name.toString().lowercase() })
+                addAll(shortcuts.map {
+                    TransparentTileViewItem(LauncherShortcutData(launcherApps, it))
+                }.sortedBy { it.tileViewData.name.toString().lowercase() })
             }
         }
 
