@@ -1,6 +1,7 @@
 package link.danb.launcher.model
 
 import android.app.Application
+import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
@@ -26,14 +27,13 @@ class LauncherViewModel @Inject constructor(
 
     private val launcherAppsCallback = LauncherAppsCallback()
 
-    private val _launcherActivities = MutableStateFlow<List<LauncherActivityData>>(listOf())
+    private val _launcherActivities = MutableStateFlow<List<ActivityData>>(listOf())
     private val _showWorkActivities: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    private val _shortcutActivities = MutableStateFlow<List<ShortcutActivityData>>(listOf())
+    private val _shortcutActivities = MutableStateFlow<List<LauncherActivityInfo>>(listOf())
 
-    val launcherActivities: StateFlow<List<LauncherActivityData>> =
-        _launcherActivities.asStateFlow()
+    val launcherActivities: StateFlow<List<ActivityData>> = _launcherActivities.asStateFlow()
     val showWorkActivities: StateFlow<Boolean> = _showWorkActivities.asStateFlow()
-    val shortcutActivities: StateFlow<List<ShortcutActivityData>> =
+    val shortcutActivities: StateFlow<List<LauncherActivityInfo>> =
         _shortcutActivities.asStateFlow()
 
     init {
@@ -44,12 +44,11 @@ class LauncherViewModel @Inject constructor(
                         null, it
                     )
                 }.map {
-                    LauncherActivityData(getApplication(), it, launcherActivityMetadata.get(it))
+                    ActivityData(it, launcherActivityMetadata.get(it))
                 })
 
                 _shortcutActivities.emit(launcherApps.profiles.flatMap { user ->
                     launcherApps.getShortcutConfigActivityList(null, user)
-                        .map { ShortcutActivityData(getApplication(), it, user) }
                 })
             }
         }
@@ -63,32 +62,35 @@ class LauncherViewModel @Inject constructor(
         launcherApps.unregisterCallback(launcherAppsCallback)
     }
 
-    /** Sets the list of tags to associate with the given [LauncherActivityData] */
-    fun updateTags(launcherActivityData: LauncherActivityData, tags: Set<String>) {
+    /** Sets the list of tags to associate with the given [ActivityData] */
+    fun updateTags(activityData: ActivityData, tags: Set<String>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 launcherActivityMetadata.put(
                     LauncherActivityMetadata(
-                        launcherActivityData.component, launcherActivityData.user, tags
+                        activityData.info.componentName, activityData.info.user, tags
                     )
                 )
-                update(launcherActivityData.component.packageName, launcherActivityData.user)
+                update(
+                    activityData.info.componentName.packageName, activityData.info.user
+                )
             }
         }
     }
 
     /** Sets the visibility of the given app. */
-    fun setVisibility(launcherActivityData: LauncherActivityData, isVisible: Boolean) {
+    fun setVisibility(info: LauncherActivityInfo, isVisible: Boolean) {
+        val activityData = launcherActivities.value.first { it.info == info }
         if (isVisible) {
-            updateTags(launcherActivityData, launcherActivityData.tags.minus(HIDDEN_TAG))
+            updateTags(activityData, activityData.metadata.tags.minus(HIDDEN_TAG))
         } else {
-            updateTags(launcherActivityData, launcherActivityData.tags.plus(HIDDEN_TAG))
+            updateTags(activityData, activityData.metadata.tags.plus(HIDDEN_TAG))
         }
     }
 
     /** Returns true if the given app is visible. */
-    fun isVisible(launcherActivityData: LauncherActivityData): Boolean {
-        return !launcherActivityData.tags.contains(HIDDEN_TAG)
+    fun isVisible(info: LauncherActivityInfo): Boolean {
+        return !launcherActivities.value.first { it.info == info }.metadata.tags.contains(HIDDEN_TAG)
     }
 
     fun toggleWorkActivities() {
@@ -99,20 +101,16 @@ class LauncherViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 _launcherActivities.value.toMutableList().apply {
-                    removeIf { it.component.packageName == packageName && it.user == user }
+                    removeIf { it.info.componentName.packageName == packageName && it.info.user == user }
                     addAll(launcherApps.getActivityList(packageName, user).map {
-                        LauncherActivityData(
-                            getApplication(), it, launcherActivityMetadata.get(it)
-                        )
+                        ActivityData(it, launcherActivityMetadata.get(it))
                     })
                     _launcherActivities.emit(toList())
                 }
 
                 _shortcutActivities.value.toMutableList().apply {
-                    removeIf { it.launcherActivityInfo.componentName.packageName == packageName }
-                    addAll(launcherApps.getShortcutConfigActivityList(packageName, user).map {
-                        ShortcutActivityData(getApplication(), it, user)
-                    })
+                    removeIf { it.componentName.packageName == packageName }
+                    addAll(launcherApps.getShortcutConfigActivityList(packageName, user))
                 }
             }
         }
@@ -157,6 +155,10 @@ class LauncherViewModel @Inject constructor(
             }
         }
     }
+
+    data class ActivityData(
+        val info: LauncherActivityInfo, val metadata: LauncherActivityMetadata
+    )
 
     companion object {
         private const val HIDDEN_TAG = "hidden"

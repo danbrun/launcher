@@ -29,12 +29,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.list.*
-import link.danb.launcher.model.LauncherActivityData
+import link.danb.launcher.model.ActivityTileData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.model.GestureContractModel
-import link.danb.launcher.model.LauncherShortcutData
+import link.danb.launcher.model.LauncherIconProvider
+import link.danb.launcher.model.LauncherViewModel.ActivityData
+import link.danb.launcher.model.ShortcutTileData
 import link.danb.launcher.model.ShortcutViewModel
-import link.danb.launcher.model.TileViewData
+import link.danb.launcher.model.TileData
 import link.danb.launcher.model.WidgetMetadata
 import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
@@ -70,6 +72,9 @@ class LauncherFragment : Fragment() {
 
     @Inject
     lateinit var launcherMenuProvider: LauncherMenuProvider
+
+    @Inject
+    lateinit var launcherIconProvider: LauncherIconProvider
 
     private lateinit var appsList: RecyclerView
 
@@ -220,18 +225,20 @@ class LauncherFragment : Fragment() {
             buildList {
                 add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
                 addAll(shortcuts.map {
-                    TransparentTileViewItem(LauncherShortcutData(launcherApps, it))
-                }.sortedBy { it.tileViewData.name.toString().lowercase() })
+                    TileViewItem.transparentTileViewItem(
+                        ShortcutTileData(it), it.shortLabel!!, launcherIconProvider.get(it)
+                    )
+                }.sortedBy { it.name.toString().lowercase() })
             }
         }
 
     private fun getAppListViewItems(
-        launcherActivities: List<LauncherActivityData>, showWorkActivities: Boolean
+        launcherActivities: List<ActivityData>, showWorkActivities: Boolean
     ): List<ViewItem> = launcherActivities.filter {
-        val isWorkActivity = it.user != myUserHandle()
-        launcherViewModel.isVisible(it) && showWorkActivities == isWorkActivity
+        val isWorkActivity = it.info.user != myUserHandle()
+        launcherViewModel.isVisible(it.info) && showWorkActivities == isWorkActivity
     }.groupBy {
-        val initial = it.name.first().uppercaseChar()
+        val initial = it.info.label.first().uppercaseChar()
         when {
             initial.isLetter() -> initial.toString()
             else -> "..."
@@ -239,8 +246,11 @@ class LauncherFragment : Fragment() {
     }.toSortedMap().flatMap { (groupName, launcherActivities) ->
         buildList {
             add(GroupHeaderViewItem(groupName))
-            addAll(launcherActivities.sortedBy { it.name.toString().lowercase() }
-                .map { TransparentTileViewItem(it) })
+            addAll(launcherActivities.sortedBy { it.info.label.toString().lowercase() }.map {
+                TileViewItem.transparentTileViewItem(
+                    ActivityTileData(it.info), it.info.label, launcherIconProvider.get(it.info)
+                )
+            })
         }
     }
 
@@ -270,13 +280,13 @@ class LauncherFragment : Fragment() {
         for (index in activityAdapter.currentList.indices) {
             val item = activityAdapter.currentList[index]
 
-            if (item !is TransparentTileViewItem || item.tileViewData !is LauncherActivityData || item.tileViewData.user != user) continue
+            if (item !is TileViewItem || item.data !is ActivityTileData || item.data.info.user != user) continue
 
-            if (item.tileViewData.component == component) {
+            if (item.data.info.componentName == component) {
                 return index
             }
 
-            if (item.tileViewData.component.packageName == component.packageName) {
+            if (item.data.info.componentName.packageName == component.packageName) {
                 firstMatchIndex = index
             }
         }
@@ -284,42 +294,36 @@ class LauncherFragment : Fragment() {
         return firstMatchIndex
     }
 
-    private fun onTileClick(view: View, tileViewData: TileViewData) {
+    private fun onTileClick(view: View, tileViewData: TileData) {
         when (tileViewData) {
-            is LauncherActivityData -> {
+            is ActivityTileData -> {
                 launcherApps.startMainActivity(
-                    tileViewData.component,
-                    tileViewData.user,
+                    tileViewData.info.componentName,
+                    tileViewData.info.user,
                     view.getBoundsOnScreen(),
                     view.makeClipRevealAnimation()
                 )
             }
 
-            is LauncherShortcutData -> {
+            is ShortcutTileData -> {
                 launcherApps.startShortcut(
-                    tileViewData.shortcutInfo,
-                    view.getBoundsOnScreen(),
-                    view.makeClipRevealAnimation()
+                    tileViewData.info, view.getBoundsOnScreen(), view.makeClipRevealAnimation()
                 )
             }
-
-            else -> Unit
         }
     }
 
-    private fun onTileLongClick(tileViewData: TileViewData) {
+    private fun onTileLongClick(tileViewData: TileData) {
         when (tileViewData) {
-            is LauncherActivityData -> {
-                ActivityDetailsDialogFragment.newInstance(tileViewData)
+            is ActivityTileData -> {
+                ActivityDetailsDialogFragment.newInstance(tileViewData.info)
                     .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
             }
 
-            is LauncherShortcutData -> {
+            is ShortcutTileData -> {
                 Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-                shortcutViewModel.unpinShortcut(tileViewData.shortcutInfo)
+                shortcutViewModel.unpinShortcut(tileViewData.info)
             }
-
-            else -> Unit
         }
     }
 }

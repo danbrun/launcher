@@ -34,9 +34,9 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
             fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     launcherViewModel.launcherActivities.collect { activities ->
-                        profileToggle.isVisible = activities.any { it.user != myUserHandle() }
+                        profileToggle.isVisible = activities.any { it.info.user != myUserHandle() }
                         visibilityToggle.isVisible =
-                            activities.any { launcherViewModel.isVisible(it) }
+                            activities.any { launcherViewModel.isVisible(it.info) }
                     }
                 }
 

@@ -17,16 +17,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import link.danb.launcher.list.CardTileViewBinder
-import link.danb.launcher.list.CardTileViewItem
 import link.danb.launcher.list.DialogHeaderViewBinder
 import link.danb.launcher.list.DialogHeaderViewItem
 import link.danb.launcher.list.LoadingSpinnerViewBinder
 import link.danb.launcher.list.LoadingSpinnerViewItem
+import link.danb.launcher.list.TileViewItem
 import link.danb.launcher.list.ViewBinderAdapter
-import link.danb.launcher.model.LauncherActivityData
-import link.danb.launcher.model.LauncherShortcutData
+import link.danb.launcher.model.ActivityTileData
+import link.danb.launcher.model.LauncherIconProvider
 import link.danb.launcher.model.LauncherViewModel
-import link.danb.launcher.model.TileViewData
+import link.danb.launcher.model.ShortcutTileData
+import link.danb.launcher.model.TileData
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
 import javax.inject.Inject
@@ -38,6 +39,9 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var launcherApps: LauncherApps
+
+    @Inject
+    lateinit var launcherIconProvider: LauncherIconProvider
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -80,9 +84,14 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
                     launcherViewModel.launcherActivities.collect { activities ->
                         adapter.submitList(
                             async(Dispatchers.IO) {
-                                headerItems + activities.filter { !launcherViewModel.isVisible(it) }
-                                    .sortedBy { it.name.toString().lowercase() }
-                                    .map { CardTileViewItem(it) }
+                                headerItems + activities.filter { !launcherViewModel.isVisible(it.info) }
+                                    .sortedBy { it.info.label.toString().lowercase() }.map {
+                                        TileViewItem.cardTileViewItem(
+                                            ActivityTileData(it.info),
+                                            it.info.label,
+                                            launcherIconProvider.get(it.info)
+                                        )
+                                    }
                             }.await()
                         )
                     }
@@ -93,32 +102,30 @@ class HiddenAppsDialog : BottomSheetDialogFragment() {
         return recyclerView
     }
 
-    private fun onTileClick(view: View, tileViewData: TileViewData) {
-        when (tileViewData) {
-            is LauncherActivityData -> {
+    private fun onTileClick(view: View, tileData: TileData) {
+        when (tileData) {
+            is ActivityTileData -> {
                 launcherApps.startMainActivity(
-                    tileViewData.component,
-                    tileViewData.user,
+                    tileData.info.componentName,
+                    tileData.info.user,
                     view.getBoundsOnScreen(),
                     view.makeClipRevealAnimation()
                 )
                 dismiss()
             }
 
-            is LauncherShortcutData -> Unit
-            else -> Unit
+            is ShortcutTileData -> throw NotImplementedError()
         }
     }
 
-    private fun onTileLongClick(tileViewData: TileViewData) {
-        when (tileViewData) {
-            is LauncherActivityData -> {
-                ActivityDetailsDialogFragment.newInstance(tileViewData)
+    private fun onTileLongClick(tileData: TileData) {
+        when (tileData) {
+            is ActivityTileData -> {
+                ActivityDetailsDialogFragment.newInstance(tileData.info)
                     .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
             }
 
-            is LauncherShortcutData -> Unit
-            else -> Unit
+            is ShortcutTileData -> throw NotImplementedError()
         }
     }
 

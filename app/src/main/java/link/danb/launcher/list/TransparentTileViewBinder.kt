@@ -5,15 +5,15 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
-import link.danb.launcher.model.TileViewData
+import link.danb.launcher.model.TileData
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.applySize
 
 class TransparentTileViewBinder(
-    private val onClick: ((View, TileViewData) -> Unit)? = null,
-    private val onLongClick: ((View, TileViewData) -> Unit)? = null,
-) : ViewBinder<TransparentTileViewHolder, TransparentTileViewItem> {
+    private val onClick: ((View, TileData) -> Unit)? = null,
+    private val onLongClick: ((View, TileData) -> Unit)? = null,
+) : ViewBinder<TransparentTileViewHolder, TileViewItem> {
 
     override val viewType: Int = R.id.transparent_tile_view_type_id
 
@@ -22,16 +22,16 @@ class TransparentTileViewBinder(
     }
 
     override fun bindViewHolder(
-        holder: TransparentTileViewHolder, viewItem: TransparentTileViewItem
+        holder: TransparentTileViewHolder, viewItem: TileViewItem
     ) {
         holder.textView.apply {
-            text = viewItem.tileViewData.name
-            viewItem.tileViewData.icon?.applySize(
+            text = viewItem.name
+            viewItem.icon.value.applySize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
-            setCompoundDrawables(viewItem.tileViewData.icon, null, null, null)
-            setOnClickListener { onClick?.invoke(it, viewItem.tileViewData) }
-            setOnLongClickListener { onLongClick?.invoke(it, viewItem.tileViewData); true }
+            setCompoundDrawables(viewItem.icon.value, null, null, null)
+            setOnClickListener { onClick?.invoke(it, viewItem.data) }
+            setOnLongClickListener { onLongClick?.invoke(it, viewItem.data); true }
             clipToOutline = true
             outlineProvider =
                 RoundedCornerOutlineProvider(resources.getDimensionPixelSize(R.dimen.app_item_corner_radius))
@@ -41,15 +41,4 @@ class TransparentTileViewBinder(
 
 class TransparentTileViewHolder(view: View) : ViewHolder(view) {
     val textView: TextView = view as TextView
-}
-
-class TransparentTileViewItem(val tileViewData: TileViewData) : ViewItem {
-
-    override val viewType: Int = R.id.transparent_tile_view_type_id
-
-    override fun areItemsTheSame(other: ViewItem): Boolean =
-        other is TransparentTileViewItem && tileViewData.areItemsTheSame(other.tileViewData)
-
-    override fun areContentsTheSame(other: ViewItem): Boolean =
-        other is TransparentTileViewItem && tileViewData.areContentsTheSame(other.tileViewData)
 }

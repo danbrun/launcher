@@ -3,6 +3,7 @@ package link.danb.launcher.widgets
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.pm.ApplicationInfo
+import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -27,10 +28,11 @@ import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.list.*
 import link.danb.launcher.list.WidgetHeaderViewItem.WidgetHeaderViewItemFactory
+import link.danb.launcher.model.ActivityTileData
+import link.danb.launcher.model.LauncherIconProvider
 import link.danb.launcher.model.LauncherViewModel
-import link.danb.launcher.model.ShortcutActivityData
 import link.danb.launcher.model.ShortcutViewModel
-import link.danb.launcher.model.TileViewData
+import link.danb.launcher.model.TileData
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
 import javax.inject.Inject
 
@@ -53,6 +55,9 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var widgetHeaderViewItemFactory: WidgetHeaderViewItemFactory
+
+    @Inject
+    lateinit var launcherIconProvider: LauncherIconProvider
 
     private val launcherApps: LauncherApps by lazy {
         requireContext().getSystemService(LauncherApps::class.java)
@@ -121,7 +126,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int =
                 when (widgetListAdapter.currentList[position]) {
-                    is CardTileViewItem -> 1
+                    is TileViewItem -> 1
                     else -> gridLayoutManager.spanCount
                 }
         }
@@ -147,20 +152,18 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
         return view
     }
 
-    private fun onTileClick(tileViewData: TileViewData) {
-        if (tileViewData !is ShortcutActivityData) return
+    private fun onTileClick(tileData: TileData) {
+        if (tileData !is ActivityTileData) return
 
         shortcutActivityLauncher.launch(
             IntentSenderRequest.Builder(
-                launcherApps.getShortcutConfigActivityIntent(
-                    tileViewData.launcherActivityInfo
-                )!!
+                launcherApps.getShortcutConfigActivityIntent(tileData.info)!!
             ).build()
         )
     }
 
     private fun getViewItems(
-        shortcutActivities: List<ShortcutActivityData>,
+        shortcutActivities: List<LauncherActivityInfo>,
         showWorkActivities: Boolean,
         expandedPackages: Set<String>
     ): List<ViewItem> {
@@ -170,14 +173,19 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
 
         items.addAll(shortcutActivities.filter { showWorkActivities != (it.user == myUserHandle()) }
-            .sortedBy { it.name.toString().lowercase() }.map { CardTileViewItem(it) })
+            .sortedBy { it.label.toString().lowercase() }.map {
+                TileViewItem.cardTileViewItem(
+                    ActivityTileData(it), it.label, launcherIconProvider.get(it)
+                )
+            })
 
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.widgets)))
 
         val widgetItems = appWidgetManager.installedProviders.groupBy { it.provider.packageName }
             .mapKeys { launcherApps.getApplicationInfo(it.key, 0, myUserHandle()) }
-            .toSortedMap(compareBy<ApplicationInfo> { it.loadLabel(packageManager).toString() })
-            .flatMap { (appInfo, widgets) ->
+            .toSortedMap(compareBy<ApplicationInfo> {
+                it.loadLabel(packageManager).toString().lowercase()
+            }).flatMap { (appInfo, widgets) ->
                 mutableListOf<ViewItem>().apply {
                     val isExpanded = expandedPackages.contains(appInfo.packageName)
                     add(widgetHeaderViewItemFactory.create(appInfo, isExpanded))

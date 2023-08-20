@@ -1,5 +1,6 @@
 package link.danb.launcher.list
 
+import android.content.pm.LauncherActivityInfo
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
@@ -9,7 +10,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
-import link.danb.launcher.model.LauncherActivityData
 import link.danb.launcher.model.LauncherViewModel
 import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.applySize
@@ -41,7 +41,7 @@ class ActivityHeaderViewBinder(
 
         holder.visibilityButton.apply {
             setIconResource(
-                if (launcherViewModel.isVisible(viewItem.launcherActivityData)) {
+                if (launcherViewModel.isVisible(viewItem.info)) {
                     R.drawable.ic_baseline_visibility_off_24
                 } else {
                     R.drawable.ic_baseline_visibility_24
@@ -69,21 +69,20 @@ class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
     val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
 }
 
-class ActivityHeaderViewItem(val launcherActivityData: LauncherActivityData) : ViewItem {
+class ActivityHeaderViewItem(val info: LauncherActivityInfo, lazyIcon: Lazy<Drawable>) : ViewItem {
 
     override val viewType: Int = R.id.activity_header_view_type_id
 
     val name: CharSequence
-        get() = launcherActivityData.name
+        get() = info.label
 
-    val icon: Drawable
-        get() = launcherActivityData.icon
+    val icon: Drawable by lazyIcon
 
     override fun areItemsTheSame(other: ViewItem): Boolean =
-        other is ActivityHeaderViewItem && launcherActivityData.component == other.launcherActivityData.component && launcherActivityData.user == other.launcherActivityData.user
+        other is ActivityHeaderViewItem && info.componentName == other.info.componentName && info.user == other.info.user
 
     override fun areContentsTheSame(other: ViewItem): Boolean =
-        other is ActivityHeaderViewItem && launcherActivityData.timestamp == other.launcherActivityData.timestamp
+        other is ActivityHeaderViewItem && name == other.name && icon == other.icon
 }
 
 interface ActivityHeaderListener {
