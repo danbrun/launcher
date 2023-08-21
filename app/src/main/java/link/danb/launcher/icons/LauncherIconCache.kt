@@ -2,11 +2,13 @@ package link.danb.launcher.icons
 
 import android.app.Application
 import android.content.ComponentName
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Drawable
 import android.os.Process.myUserHandle
+import android.os.UserHandle
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,6 +18,7 @@ class LauncherIconCache @Inject constructor(
 ) {
 
     private val activityIcons: MutableMap<ActivityHandle, Lazy<Drawable>> = mutableMapOf()
+    private val applicationIcons: MutableMap<ApplicationHandle, Lazy<Drawable>> = mutableMapOf()
     private val shortcutIcons: MutableMap<ShortcutHandle, Lazy<Drawable>> = mutableMapOf()
 
     fun get(info: LauncherActivityInfo): Lazy<Drawable> =
@@ -23,6 +26,15 @@ class LauncherIconCache @Inject constructor(
             lazy {
                 application.packageManager.getUserBadgedIcon(
                     LauncherIconDrawable(info.getIcon(0)), info.user
+                )
+            }
+        }
+
+    fun get(info: ApplicationInfo, user: UserHandle): Lazy<Drawable> =
+        applicationIcons.getOrPut(ApplicationHandle(info, user)) {
+            lazy {
+                application.packageManager.getUserBadgedIcon(
+                    LauncherIconDrawable(application.packageManager.getApplicationIcon(info)), user
                 )
             }
         }
@@ -41,7 +53,13 @@ class LauncherIconCache @Inject constructor(
         )
     }
 
-    data class ShortcutHandle(val pkg: String, val id: String, val isWorkProfile: Boolean) {
+    data class ApplicationHandle(val packageName: String, val isWorkProfile: Boolean) {
+        constructor(info: ApplicationInfo, user: UserHandle) : this(
+            info.packageName, user == myUserHandle()
+        )
+    }
+
+    data class ShortcutHandle(val packageName: String, val id: String, val isWorkProfile: Boolean) {
         constructor(info: ShortcutInfo) : this(
             info.`package`, info.id, info.userHandle == myUserHandle()
         )

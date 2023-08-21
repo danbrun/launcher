@@ -208,7 +208,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
             }).flatMap { (appInfo, widgets) ->
                 mutableListOf<ViewItem>().apply {
                     val isExpanded = expandedPackages.contains(appInfo.packageName)
-                    add(widgetHeaderViewItemFactory.create(appInfo, isExpanded))
+                    add(widgetHeaderViewItemFactory.create(appInfo, myUserHandle(), isExpanded))
                     if (isExpanded) {
                         addAll(widgets.map { WidgetPreviewViewItem(it, myUserHandle()) })
                     }
