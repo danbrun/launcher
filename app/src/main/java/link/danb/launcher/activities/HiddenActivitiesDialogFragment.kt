@@ -85,7 +85,12 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
                     activitiesViewModel.launcherActivities.collect { activities ->
                         adapter.submitList(
                             async(Dispatchers.IO) {
-                                headerItems + activities.filter { !activitiesViewModel.isVisible(it.info) }
+                                headerItems + activities.filter { it.metadata.isHidden }
+                                    .also {
+                                        if (it.isEmpty()) {
+                                            dismiss()
+                                        }
+                                    }
                                     .sortedBy { it.info.label.toString().lowercase() }.map {
                                         TileViewItem.cardTileViewItem(
                                             ActivityTileData(it.info),

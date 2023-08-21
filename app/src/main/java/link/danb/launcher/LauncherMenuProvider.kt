@@ -37,8 +37,7 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
                 launch {
                     activitiesViewModel.launcherActivities.collect { activities ->
                         profileToggle.isVisible = activities.any { it.info.user != myUserHandle() }
-                        visibilityToggle.isVisible =
-                            activities.any { activitiesViewModel.isVisible(it.info) }
+                        visibilityToggle.isVisible = activities.any { it.metadata.isHidden }
                     }
                 }
 

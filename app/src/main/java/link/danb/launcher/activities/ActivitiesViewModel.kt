@@ -56,34 +56,31 @@ class ActivitiesViewModel @Inject constructor(
     }
 
     /** Sets the list of tags to associate with the given [ActivityData] */
-    fun updateTags(activityData: ActivityData, tags: Set<String>) {
+    // May use this again soon so leaving it for now.
+    @Suppress("unused")
+    fun updateTags(info: LauncherActivityInfo, tags: Set<String>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 launcherActivityMetadata.put(
-                    ActivityMetadata(
-                        activityData.info.componentName, activityData.info.user, tags
-                    )
+                    launcherActivityMetadata.get(info).copy(tags = tags)
                 )
-                update(
-                    activityData.info.componentName.packageName, activityData.info.user
-                )
+                update(info)
             }
         }
     }
 
     /** Sets the visibility of the given app. */
-    fun setVisibility(info: LauncherActivityInfo, isVisible: Boolean) {
-        val activityData = launcherActivities.value.first { it.info == info }
-        if (isVisible) {
-            updateTags(activityData, activityData.metadata.tags.minus(HIDDEN_TAG))
-        } else {
-            updateTags(activityData, activityData.metadata.tags.plus(HIDDEN_TAG))
+    fun setIsHidden(info: LauncherActivityInfo, isHidden: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            launcherActivityMetadata.put(
+                launcherActivityMetadata.get(info).copy(isHidden = isHidden)
+            )
+            update(info)
         }
     }
 
-    /** Returns true if the given app is visible. */
-    fun isVisible(info: LauncherActivityInfo): Boolean {
-        return !launcherActivities.value.first { it.info == info }.metadata.tags.contains(HIDDEN_TAG)
+    private fun update(info: LauncherActivityInfo) {
+        update(info.componentName.packageName, info.user)
     }
 
     private fun update(packageName: String, user: UserHandle) {
@@ -143,8 +140,4 @@ class ActivitiesViewModel @Inject constructor(
     data class ActivityData(
         val info: LauncherActivityInfo, val metadata: ActivityMetadata
     )
-
-    companion object {
-        private const val HIDDEN_TAG = "hidden"
-    }
 }

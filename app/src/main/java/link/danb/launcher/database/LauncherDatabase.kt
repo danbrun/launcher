@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import org.json.JSONArray
 import javax.inject.Singleton
 
-@Database(entities = [ActivityMetadata::class, WidgetMetadata::class], version = 2)
+@Database(entities = [ActivityMetadata::class, WidgetMetadata::class], version = 3)
 @TypeConverters(StringSetConverter::class)
 abstract class LauncherDatabase : RoomDatabase() {
 

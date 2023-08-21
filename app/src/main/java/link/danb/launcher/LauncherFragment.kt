@@ -249,8 +249,7 @@ class LauncherFragment : Fragment() {
     private fun getAppListViewItems(
         launcherActivities: List<ActivityData>, showWorkActivities: Boolean
     ): List<ViewItem> = launcherActivities.filter {
-        val isWorkActivity = it.info.user != myUserHandle()
-        activitiesViewModel.isVisible(it.info) && showWorkActivities == isWorkActivity
+        !it.metadata.isHidden && showWorkActivities == (it.info.user != myUserHandle())
     }.groupBy {
         val initial = it.info.label.first().uppercaseChar()
         when {

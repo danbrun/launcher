@@ -90,18 +90,18 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     private val activityHeaderListener = object : ActivityHeaderListener {
         override fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-            val packageName = viewItem.info.componentName.packageName
+            val packageName = viewItem.data.info.componentName.packageName
             view.context.startActivity(
                 Intent(Intent.ACTION_DELETE).setData(Uri.parse("package:$packageName"))
-                    .putExtra(Intent.EXTRA_USER, viewItem.info.user)
+                    .putExtra(Intent.EXTRA_USER, viewItem.data.info.user)
             )
             dismiss()
         }
 
         override fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
             launcherApps.startAppDetailsActivity(
-                viewItem.info.componentName,
-                viewItem.info.user,
+                viewItem.data.info.componentName,
+                viewItem.data.info.user,
                 view.getBoundsOnScreen(),
                 view.makeClipRevealAnimation()
             )
@@ -109,9 +109,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
 
         override fun onVisibilityButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-            activitiesViewModel.setVisibility(
-                viewItem.info, !activitiesViewModel.isVisible(viewItem.info)
-            )
+            activitiesViewModel.setIsHidden(viewItem.data.info, !viewItem.data.metadata.isHidden)
             dismiss()
         }
     }
@@ -132,7 +130,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         ) as RecyclerView
 
         val adapter = ViewBinderAdapter(
-            ActivityHeaderViewBinder(this, activityHeaderListener),
+            ActivityHeaderViewBinder(activityHeaderListener),
             CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
             WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
         )
@@ -155,9 +153,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
 
         val items = mutableListOf<ViewItem>(
-            ActivityHeaderViewItem(
-                launcherActivity.info, launcherIconCache.get(launcherActivity.info)
-            )
+            ActivityHeaderViewItem(launcherActivity, launcherIconCache.get(launcherActivity.info))
         )
 
         if (!userManager.isQuietModeEnabled(launcherActivity.info.user)) {

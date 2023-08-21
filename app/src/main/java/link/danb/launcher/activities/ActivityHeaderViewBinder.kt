@@ -1,25 +1,21 @@
 package link.danb.launcher.activities
 
-import android.content.pm.LauncherActivityInfo
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
+import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.utils.inflate
 import link.danb.launcher.utils.applySize
 
 class ActivityHeaderViewBinder(
-    fragment: Fragment, private val activityHeaderListener: ActivityHeaderListener? = null
+    private val activityHeaderListener: ActivityHeaderListener? = null
 ) : ViewBinder<ActivityHeaderViewHolder, ActivityHeaderViewItem> {
-
-    private val activitiesViewModel: ActivitiesViewModel by fragment.activityViewModels()
 
     override val viewType: Int = R.id.activity_header_view_type_id
 
@@ -42,7 +38,7 @@ class ActivityHeaderViewBinder(
 
         holder.visibilityButton.apply {
             setIconResource(
-                if (activitiesViewModel.isVisible(viewItem.info)) {
+                if (!viewItem.data.metadata.isHidden) {
                     R.drawable.ic_baseline_visibility_off_24
                 } else {
                     R.drawable.ic_baseline_visibility_24
@@ -70,17 +66,17 @@ class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
     val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
 }
 
-class ActivityHeaderViewItem(val info: LauncherActivityInfo, lazyIcon: Lazy<Drawable>) : ViewItem {
+class ActivityHeaderViewItem(val data: ActivityData, lazyIcon: Lazy<Drawable>) : ViewItem {
 
     override val viewType: Int = R.id.activity_header_view_type_id
 
     val name: CharSequence
-        get() = info.label
+        get() = data.info.label
 
     val icon: Drawable by lazyIcon
 
     override fun areItemsTheSame(other: ViewItem): Boolean =
-        other is ActivityHeaderViewItem && info.componentName == other.info.componentName && info.user == other.info.user
+        other is ActivityHeaderViewItem && data.info.componentName == other.data.info.componentName && data.info.user == other.data.info.user
 
     override fun areContentsTheSame(other: ViewItem): Boolean =
         other is ActivityHeaderViewItem && name == other.name && icon == other.icon
