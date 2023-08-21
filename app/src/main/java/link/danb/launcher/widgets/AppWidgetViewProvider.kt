@@ -37,13 +37,10 @@ class AppWidgetViewProvider @Inject constructor(
         (activity as AppCompatActivity).lifecycle.addObserver(lifecycleObserver)
     }
 
-    fun getView(widgetId: Int): AppWidgetHostView {
-        if (!widgetViews.containsKey(widgetId)) {
-            widgetViews[widgetId] = appWidgetHost.createView(
-                activity.applicationContext, widgetId, appWidgetManager.getAppWidgetInfo(widgetId)
-            )
-        }
-        return widgetViews[widgetId]!!
+    fun getView(widgetId: Int): AppWidgetHostView = widgetViews.getOrPut(widgetId) {
+        appWidgetHost.createView(
+            activity.applicationContext, widgetId, appWidgetManager.getAppWidgetInfo(widgetId)
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

@@ -6,7 +6,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
-import link.danb.launcher.model.GestureContractModel
+import link.danb.launcher.gestures.GestureContractModel
 
 @AndroidEntryPoint
 class LauncherActivity : AppCompatActivity() {

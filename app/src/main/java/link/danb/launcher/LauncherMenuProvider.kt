@@ -11,14 +11,16 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
-import link.danb.launcher.model.LauncherViewModel
-import link.danb.launcher.widgets.PinItemsDialogFragment
+import link.danb.launcher.activities.HiddenActivitiesDialogFragment
+import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.work.WorkProfileViewModel
 import javax.inject.Inject
 
 class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
     DefaultLifecycleObserver, MenuProvider {
 
-    private val launcherViewModel: LauncherViewModel by fragment.activityViewModels()
+    private val activitiesViewModel: ActivitiesViewModel by fragment.activityViewModels()
+    private val workProfileViewModel: WorkProfileViewModel by fragment.activityViewModels()
 
     private lateinit var profileToggle: MenuItem
     private lateinit var visibilityToggle: MenuItem
@@ -33,15 +35,15 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    launcherViewModel.launcherActivities.collect { activities ->
+                    activitiesViewModel.launcherActivities.collect { activities ->
                         profileToggle.isVisible = activities.any { it.info.user != myUserHandle() }
                         visibilityToggle.isVisible =
-                            activities.any { launcherViewModel.isVisible(it.info) }
+                            activities.any { activitiesViewModel.isVisible(it.info) }
                     }
                 }
 
                 launch {
-                    launcherViewModel.showWorkActivities.collect {
+                    workProfileViewModel.showWorkActivities.collect {
                         profileToggle.setTitle(if (it) R.string.show_personal else R.string.show_work)
                         profileToggle.setIcon(if (it) R.drawable.ic_baseline_work_off_24 else R.drawable.ic_baseline_work_24)
                     }
@@ -61,12 +63,12 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
         R.id.profile_toggle -> {
-            launcherViewModel.toggleWorkActivities()
+            workProfileViewModel.toggleWorkActivities()
             true
         }
 
         R.id.visibility_toggle -> {
-            HiddenAppsDialog().show(fragment.childFragmentManager, HiddenAppsDialog.TAG)
+            HiddenActivitiesDialogFragment().show(fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG)
             true
         }
 

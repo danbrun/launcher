@@ -28,35 +28,46 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import link.danb.launcher.list.*
-import link.danb.launcher.model.ActivityTileData
-import link.danb.launcher.model.LauncherViewModel
-import link.danb.launcher.model.GestureContractModel
-import link.danb.launcher.model.LauncherIconProvider
-import link.danb.launcher.model.LauncherViewModel.ActivityData
-import link.danb.launcher.model.ShortcutTileData
-import link.danb.launcher.model.ShortcutViewModel
-import link.danb.launcher.model.TileData
-import link.danb.launcher.model.WidgetMetadata
+import link.danb.launcher.activities.ActivityDetailsDialogFragment
+import link.danb.launcher.tiles.ActivityTileData
+import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.gestures.GestureContractModel
+import link.danb.launcher.icons.LauncherIconCache
+import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
+import link.danb.launcher.tiles.ShortcutTileData
+import link.danb.launcher.shortcuts.ShortcutsViewModel
+import link.danb.launcher.tiles.TileData
+import link.danb.launcher.database.WidgetMetadata
+import link.danb.launcher.tiles.TileViewItem
+import link.danb.launcher.tiles.TransparentTileViewBinder
+import link.danb.launcher.ui.GroupHeaderViewBinder
+import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
+import link.danb.launcher.ui.ViewBinderAdapter
+import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.WidgetEditorViewBinder
+import link.danb.launcher.widgets.WidgetEditorViewItem
+import link.danb.launcher.widgets.WidgetEditorViewListener
 import link.danb.launcher.widgets.WidgetSizeUtil
-import link.danb.launcher.widgets.WidgetViewModel
+import link.danb.launcher.widgets.WidgetViewBinder
+import link.danb.launcher.widgets.WidgetViewItem
+import link.danb.launcher.widgets.WidgetViewListener
+import link.danb.launcher.widgets.WidgetsViewModel
+import link.danb.launcher.work.WorkProfileViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
-    private val launcherViewModel: LauncherViewModel by activityViewModels()
-    private val widgetViewModel: WidgetViewModel by activityViewModels()
-    private val shortcutViewModel: ShortcutViewModel by activityViewModels()
+    private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
     private val gestureContractModel: GestureContractModel by activityViewModels()
-
-    @Inject
-    lateinit var launcherApps: LauncherApps
+    private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
+    private val widgetsViewModel: WidgetsViewModel by activityViewModels()
+    private val workProfileViewModel: WorkProfileViewModel by activityViewModels()
 
     @Inject
     lateinit var appWidgetHost: AppWidgetHost
@@ -68,13 +79,16 @@ class LauncherFragment : Fragment() {
     lateinit var appWidgetViewProvider: AppWidgetViewProvider
 
     @Inject
-    lateinit var widgetSizeUtil: WidgetSizeUtil
+    lateinit var launcherApps: LauncherApps
+
+    @Inject
+    lateinit var launcherIconCache: LauncherIconCache
 
     @Inject
     lateinit var launcherMenuProvider: LauncherMenuProvider
 
     @Inject
-    lateinit var launcherIconProvider: LauncherIconProvider
+    lateinit var widgetSizeUtil: WidgetSizeUtil
 
     private lateinit var appsList: RecyclerView
 
@@ -88,7 +102,7 @@ class LauncherFragment : Fragment() {
     }
 
     private val widgetViewListener = WidgetViewListener {
-        widgetViewModel.startEditing(it.widgetId)
+        widgetsViewModel.startEditing(it.widgetId)
     }
 
     private val widgetEditorViewListener = object : WidgetEditorViewListener {
@@ -101,23 +115,23 @@ class LauncherFragment : Fragment() {
         }
 
         override fun onDelete(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.delete(widgetMetadata.widgetId)
+            widgetsViewModel.delete(widgetMetadata.widgetId)
         }
 
         override fun onMoveUp(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.moveUp(widgetMetadata.widgetId)
+            widgetsViewModel.moveUp(widgetMetadata.widgetId)
         }
 
         override fun onResize(widgetMetadata: WidgetMetadata, height: Int) {
-            widgetViewModel.setHeight(widgetMetadata.widgetId, height)
+            widgetsViewModel.setHeight(widgetMetadata.widgetId, height)
         }
 
         override fun onMoveDown(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.moveDown(widgetMetadata.widgetId)
+            widgetsViewModel.moveDown(widgetMetadata.widgetId)
         }
 
         override fun onDone(widgetMetadata: WidgetMetadata) {
-            widgetViewModel.finishEditing()
+            widgetsViewModel.finishEditing()
         }
     }
 
@@ -166,20 +180,20 @@ class LauncherFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     val widgetsFlow = combine(
-                        widgetViewModel.widgets,
-                        widgetViewModel.widgetToEdit,
+                        widgetsViewModel.widgets,
+                        widgetsViewModel.widgetToEdit,
                         ::getWidgetListViewItems
                     )
 
                     val shortcutsFlow = combine(
-                        shortcutViewModel.shortcuts,
-                        launcherViewModel.showWorkActivities,
+                        shortcutsViewModel.shortcuts,
+                        workProfileViewModel.showWorkActivities,
                         ::getShortcutListViewItems
                     )
 
                     val appsFlow = combine(
-                        launcherViewModel.launcherActivities,
-                        launcherViewModel.showWorkActivities,
+                        activitiesViewModel.launcherActivities,
+                        workProfileViewModel.showWorkActivities,
                         ::getAppListViewItems
                     )
 
@@ -202,7 +216,7 @@ class LauncherFragment : Fragment() {
     override fun onStart() {
         super.onStart()
 
-        widgetViewModel.refresh()
+        widgetsViewModel.refresh()
     }
 
     private fun getWidgetListViewItems(
@@ -226,7 +240,7 @@ class LauncherFragment : Fragment() {
                 add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
                 addAll(shortcuts.map {
                     TileViewItem.transparentTileViewItem(
-                        ShortcutTileData(it), it.shortLabel!!, launcherIconProvider.get(it)
+                        ShortcutTileData(it), it.shortLabel!!, launcherIconCache.get(it)
                     )
                 }.sortedBy { it.name.toString().lowercase() })
             }
@@ -236,7 +250,7 @@ class LauncherFragment : Fragment() {
         launcherActivities: List<ActivityData>, showWorkActivities: Boolean
     ): List<ViewItem> = launcherActivities.filter {
         val isWorkActivity = it.info.user != myUserHandle()
-        launcherViewModel.isVisible(it.info) && showWorkActivities == isWorkActivity
+        activitiesViewModel.isVisible(it.info) && showWorkActivities == isWorkActivity
     }.groupBy {
         val initial = it.info.label.first().uppercaseChar()
         when {
@@ -248,7 +262,7 @@ class LauncherFragment : Fragment() {
             add(GroupHeaderViewItem(groupName))
             addAll(launcherActivities.sortedBy { it.info.label.toString().lowercase() }.map {
                 TileViewItem.transparentTileViewItem(
-                    ActivityTileData(it.info), it.info.label, launcherIconProvider.get(it.info)
+                    ActivityTileData(it.info), it.info.label, launcherIconCache.get(it.info)
                 )
             })
         }
@@ -322,7 +336,7 @@ class LauncherFragment : Fragment() {
 
             is ShortcutTileData -> {
                 Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-                shortcutViewModel.unpinShortcut(tileViewData.info)
+                shortcutsViewModel.unpinShortcut(tileViewData.info)
             }
         }
     }

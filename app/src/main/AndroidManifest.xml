@@ -38,17 +38,27 @@
 
         <activity
             android:name=".widgets.AppWidgetSetupActivity"
+            android:autoRemoveFromRecents="true"
             android:excludeFromRecents="true"
             android:exported="false"
             android:theme="@style/Theme.NoDisplay" />
 
         <activity
-            android:name=".ConfirmPinItemActivity"
+            android:name=".shortcuts.ConfirmPinShortcutActivity"
             android:autoRemoveFromRecents="true"
             android:excludeFromRecents="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".widgets.ConfirmPinWidgetActivity"
+            android:autoRemoveFromRecents="true"
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.content.pm.action.CONFIRM_PIN_APPWIDGET" />
             </intent-filter>
         </activity>
