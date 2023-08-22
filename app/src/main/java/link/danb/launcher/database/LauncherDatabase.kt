@@ -1,16 +1,22 @@
 package link.danb.launcher.database
 
 import android.app.Application
+import android.content.ComponentName
+import android.os.UserHandle
+import android.os.UserManager
 import androidx.room.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import org.json.JSONArray
+import javax.inject.Inject
 import javax.inject.Singleton
 
-@Database(entities = [ActivityMetadata::class, WidgetMetadata::class], version = 3)
-@TypeConverters(StringSetConverter::class)
+@Database(entities = [ActivityMetadata::class, WidgetMetadata::class], version = 4)
+@TypeConverters(
+    ComponentNameConverter::class, UserHandleConverter::class, StringSetConverter::class
+)
 abstract class LauncherDatabase : RoomDatabase() {
 
     abstract fun launcherActivityMetadata(): ActivityMetadata.DataAccessObject
@@ -23,10 +29,12 @@ abstract class LauncherDatabase : RoomDatabase() {
 
         @Provides
         @Singleton
-        fun getDatabase(application: Application): LauncherDatabase {
+        fun getDatabase(
+            application: Application, userHandleConverter: UserHandleConverter
+        ): LauncherDatabase {
             return Room.databaseBuilder(
                 application, LauncherDatabase::class.java, DATABASE_NAME
-            ).fallbackToDestructiveMigration().build()
+            ).addTypeConverter(userHandleConverter).fallbackToDestructiveMigration().build()
         }
     }
 
@@ -50,4 +58,22 @@ class StringSetConverter {
             }
         }
     }
+}
+
+class ComponentNameConverter {
+    @TypeConverter
+    fun toString(componentName: ComponentName) = componentName.flattenToString()
+
+    @TypeConverter
+    fun toComponentName(string: String) = ComponentName.unflattenFromString(string)
+}
+
+@ProvidedTypeConverter
+@Singleton
+class UserHandleConverter @Inject constructor(private val userManager: UserManager) {
+    @TypeConverter
+    fun toLong(userHandle: UserHandle): Long = userManager.getSerialNumberForUser(userHandle)
+
+    @TypeConverter
+    fun toUserHandle(long: Long): UserHandle = userManager.getUserForSerialNumber(long)
 }

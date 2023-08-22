@@ -7,6 +7,7 @@ import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process.myUserHandle
+import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -158,7 +159,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 combine(
                     activitiesViewModel.launcherActivities,
-                    workProfileViewModel.showWorkActivities,
+                    workProfileViewModel.currentUser,
                     widgetDialogViewModel.expandedPackageNames,
                     this@PinItemsDialogFragment::getViewItems
                 ).collect { widgetListAdapter.submitList(it) }
@@ -180,7 +181,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
     private fun getViewItems(
         shortcutActivities: List<ActivitiesViewModel.ActivityData>,
-        showWorkActivities: Boolean,
+        currentUser: UserHandle,
         expandedPackages: Set<String>
     ): List<ViewItem> {
         val items = mutableListOf<ViewItem>()
@@ -188,16 +189,15 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
         items.addAll(headerItems)
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
 
-        items.addAll(shortcutActivities.filter { showWorkActivities != (it.info.user == myUserHandle()) }
-            .flatMap {
-                launcherApps.getShortcutConfigActivityList(
-                    it.info.componentName.packageName, it.info.user
-                )
-            }.sortedBy { it.label.toString().lowercase() }.map {
-                TileViewItem.cardTileViewItem(
-                    ActivityTileData(it), it.label, launcherIconCache.get(it)
-                )
-            })
+        items.addAll(shortcutActivities.filter { it.info.user == currentUser }.flatMap {
+            launcherApps.getShortcutConfigActivityList(
+                it.info.componentName.packageName, it.info.user
+            )
+        }.sortedBy { it.label.toString().lowercase() }.map {
+            TileViewItem.cardTileViewItem(
+                ActivityTileData(it), it.label, launcherIconCache.get(it)
+            )
+        })
 
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.widgets)))
 

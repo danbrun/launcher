@@ -10,6 +10,8 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -35,16 +37,19 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    activitiesViewModel.launcherActivities.collect { activities ->
+                    combine(
+                        activitiesViewModel.launcherActivities, workProfileViewModel.currentUser
+                    ) { activities, currentUser ->
                         profileToggle.isVisible = activities.any { it.info.user != myUserHandle() }
-                        visibilityToggle.isVisible = activities.any { it.metadata.isHidden }
-                    }
+                        visibilityToggle.isVisible =
+                            activities.any { it.metadata.isHidden && it.info.user == currentUser }
+                    }.collect()
                 }
 
                 launch {
-                    workProfileViewModel.showWorkActivities.collect {
-                        profileToggle.setTitle(if (it) R.string.show_personal else R.string.show_work)
-                        profileToggle.setIcon(if (it) R.drawable.ic_baseline_work_off_24 else R.drawable.ic_baseline_work_24)
+                    workProfileViewModel.currentUser.collect {
+                        profileToggle.setTitle(if (it == myUserHandle()) R.string.show_work else R.string.show_personal)
+                        profileToggle.setIcon(if (it == myUserHandle()) R.drawable.ic_baseline_work_24 else R.drawable.ic_baseline_work_off_24)
                     }
                 }
             }
@@ -67,7 +72,9 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
         }
 
         R.id.visibility_toggle -> {
-            HiddenActivitiesDialogFragment().show(fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG)
+            HiddenActivitiesDialogFragment().show(
+                fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG
+            )
             true
         }
 

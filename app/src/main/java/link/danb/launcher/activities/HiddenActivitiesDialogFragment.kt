@@ -15,6 +15,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.tiles.CardTileViewBinder
@@ -30,12 +31,14 @@ import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.tiles.TileData
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.work.WorkProfileViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
     private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
+    private val workProfileViewModel: WorkProfileViewModel by activityViewModels()
 
     @Inject
     lateinit var launcherApps: LauncherApps
@@ -52,8 +55,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
             R.layout.hidden_activities_dialog_fragment, container, false
         ) as RecyclerView
 
-        val adapter = ViewBinderAdapter(
-            DialogHeaderViewBinder(),
+        val adapter = ViewBinderAdapter(DialogHeaderViewBinder(),
             LoadingSpinnerViewBinder(),
             CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) })
 
@@ -82,22 +84,25 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    activitiesViewModel.launcherActivities.collect { activities ->
+                    combine(
+                        activitiesViewModel.launcherActivities,
+                        workProfileViewModel.currentUser
+                    ) { activities, currentUser ->
+                        activities.filter { it.metadata.isHidden && it.metadata.userHandle == currentUser }
+                    }.collect { activities ->
                         adapter.submitList(
                             async(Dispatchers.IO) {
-                                headerItems + activities.filter { it.metadata.isHidden }
-                                    .also {
-                                        if (it.isEmpty()) {
-                                            dismiss()
-                                        }
+                                headerItems + activities.also {
+                                    if (it.isEmpty()) {
+                                        dismiss()
                                     }
-                                    .sortedBy { it.info.label.toString().lowercase() }.map {
-                                        TileViewItem.cardTileViewItem(
-                                            ActivityTileData(it.info),
-                                            it.info.label,
-                                            launcherIconCache.get(it.info)
-                                        )
-                                    }
+                                }.sortedBy { it.info.label.toString().lowercase() }.map {
+                                    TileViewItem.cardTileViewItem(
+                                        ActivityTileData(it.info),
+                                        it.info.label,
+                                        launcherIconCache.get(it.info)
+                                    )
+                                }
                             }.await()
                         )
                     }

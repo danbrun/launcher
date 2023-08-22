@@ -1,6 +1,9 @@
 package link.danb.launcher.work
 
 import android.app.Application
+import android.content.pm.LauncherApps
+import android.os.Process.myUserHandle
+import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,14 +12,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @HiltViewModel
-class WorkProfileViewModel @Inject constructor(application: Application) :
-    AndroidViewModel(application) {
+class WorkProfileViewModel @Inject constructor(
+    application: Application, private val launcherApps: LauncherApps
+) : AndroidViewModel(application) {
 
-    private val _showWorkActivities: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val _currentUser: MutableStateFlow<UserHandle> = MutableStateFlow(myUserHandle())
 
-    val showWorkActivities: StateFlow<Boolean> = _showWorkActivities.asStateFlow()
+    val currentUser: StateFlow<UserHandle> = _currentUser.asStateFlow()
 
     fun toggleWorkActivities() {
-        _showWorkActivities.value = !_showWorkActivities.value
+        _currentUser.value =
+            launcherApps.profiles.firstOrNull { it != _currentUser.value } ?: myUserHandle()
     }
 }

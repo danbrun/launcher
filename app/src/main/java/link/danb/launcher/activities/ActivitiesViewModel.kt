@@ -40,9 +40,7 @@ class ActivitiesViewModel @Inject constructor(
                     launcherApps.getActivityList(
                         null, it
                     )
-                }.map {
-                    ActivityData(it, launcherActivityMetadata.get(it))
-                })
+                }.map { ActivityData(it, getMetadata(it)) })
             }
         }
 
@@ -61,9 +59,7 @@ class ActivitiesViewModel @Inject constructor(
     fun updateTags(info: LauncherActivityInfo, tags: Set<String>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                launcherActivityMetadata.put(
-                    launcherActivityMetadata.get(info).copy(tags = tags)
-                )
+                launcherActivityMetadata.put(getMetadata(info).copy(tags = tags))
                 update(info)
             }
         }
@@ -72,12 +68,15 @@ class ActivitiesViewModel @Inject constructor(
     /** Sets the visibility of the given app. */
     fun setIsHidden(info: LauncherActivityInfo, isHidden: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            launcherActivityMetadata.put(
-                launcherActivityMetadata.get(info).copy(isHidden = isHidden)
-            )
+            launcherActivityMetadata.put(getMetadata(info).copy(isHidden = isHidden))
             update(info)
         }
     }
+
+    private fun getMetadata(info: LauncherActivityInfo): ActivityMetadata =
+        launcherActivityMetadata.get(info.componentName, info.user) ?: ActivityMetadata(
+            info.componentName, info.user, isHidden = false, tags = setOf()
+        )
 
     private fun update(info: LauncherActivityInfo) {
         update(info.componentName.packageName, info.user)
@@ -89,7 +88,7 @@ class ActivitiesViewModel @Inject constructor(
                 _launcherActivities.value.toMutableList().apply {
                     removeIf { it.info.componentName.packageName == packageName && it.info.user == user }
                     addAll(launcherApps.getActivityList(packageName, user).map {
-                        ActivityData(it, launcherActivityMetadata.get(it))
+                        ActivityData(it, getMetadata(it))
                     })
                     _launcherActivities.emit(toList())
                 }

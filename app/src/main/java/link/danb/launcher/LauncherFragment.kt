@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.os.Bundle
-import android.os.Process.myUserHandle
 import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
@@ -187,13 +186,13 @@ class LauncherFragment : Fragment() {
 
                     val shortcutsFlow = combine(
                         shortcutsViewModel.shortcuts,
-                        workProfileViewModel.showWorkActivities,
+                        workProfileViewModel.currentUser,
                         ::getShortcutListViewItems
                     )
 
                     val appsFlow = combine(
                         activitiesViewModel.launcherActivities,
-                        workProfileViewModel.showWorkActivities,
+                        workProfileViewModel.currentUser,
                         ::getAppListViewItems
                     )
 
@@ -233,9 +232,9 @@ class LauncherFragment : Fragment() {
     }
 
     private fun getShortcutListViewItems(
-        shortcuts: List<ShortcutInfo>, showWorkActivities: Boolean
-    ): List<ViewItem> = shortcuts.filter { showWorkActivities != (it.userHandle == myUserHandle()) }
-        .groupBy { true }.flatMap { (_, shortcuts) ->
+        shortcuts: List<ShortcutInfo>, currentUser: UserHandle
+    ): List<ViewItem> = shortcuts.filter { it.userHandle == currentUser }.groupBy { true }
+        .flatMap { (_, shortcuts) ->
             buildList {
                 add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
                 addAll(shortcuts.map {
@@ -247,9 +246,9 @@ class LauncherFragment : Fragment() {
         }
 
     private fun getAppListViewItems(
-        launcherActivities: List<ActivityData>, showWorkActivities: Boolean
+        launcherActivities: List<ActivityData>, currentUser: UserHandle
     ): List<ViewItem> = launcherActivities.filter {
-        !it.metadata.isHidden && showWorkActivities == (it.info.user != myUserHandle())
+        !it.metadata.isHidden && it.info.user == currentUser
     }.groupBy {
         val initial = it.info.label.first().uppercaseChar()
         when {
