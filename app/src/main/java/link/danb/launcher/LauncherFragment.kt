@@ -183,6 +183,7 @@ class LauncherFragment : Fragment() {
                     val widgetsFlow = combine(
                         widgetsViewModel.widgets,
                         widgetsViewModel.widgetToEdit,
+                        profilesModel.activeProfile,
                         ::getWidgetListViewItems
                     )
 
@@ -221,8 +222,11 @@ class LauncherFragment : Fragment() {
     }
 
     private fun getWidgetListViewItems(
-        widgets: List<WidgetMetadata>, widgetToEdit: Int?
+        widgets: List<WidgetMetadata>, widgetToEdit: Int?, activeProfile: UserHandle
     ): List<ViewItem> = widgets.flatMap {
+        val info = appWidgetManager.getAppWidgetInfo(it.widgetId)
+        if (info.profile != activeProfile) return@flatMap listOf()
+
         if (it.widgetId == widgetToEdit) {
             listOf(
                 WidgetViewItem(it),
@@ -234,8 +238,8 @@ class LauncherFragment : Fragment() {
     }
 
     private fun getShortcutListViewItems(
-        shortcuts: List<ShortcutInfo>, currentUser: UserHandle
-    ): List<ViewItem> = shortcuts.filter { it.userHandle == currentUser }.groupBy { true }
+        shortcuts: List<ShortcutInfo>, activeProfile: UserHandle
+    ): List<ViewItem> = shortcuts.filter { it.userHandle == activeProfile }.groupBy { true }
         .flatMap { (_, shortcuts) ->
             buildList {
                 add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
@@ -248,9 +252,9 @@ class LauncherFragment : Fragment() {
         }
 
     private fun getAppListViewItems(
-        launcherActivities: List<ActivityData>, currentUser: UserHandle
+        launcherActivities: List<ActivityData>, activeProfile: UserHandle
     ): List<ViewItem> = launcherActivities.filter {
-        !it.metadata.isHidden && it.info.user == currentUser
+        !it.metadata.isHidden && it.info.user == activeProfile
     }.groupBy {
         val initial = it.info.label.first().uppercaseChar()
         when {
