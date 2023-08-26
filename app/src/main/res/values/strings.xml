@@ -21,6 +21,7 @@
     <string name="pinned_shortcut">Pinned shortcut</string>
     <string name="unpinned_shortcut">Unpinned shortcut</string>
     <string name="pinned_widget">Pinned widget</string>
+    <string name="work_profile_enabled">Work profile turned on</string>
 
     <!-- Actions -->
     <string name="search">Search</string>
@@ -35,4 +36,6 @@
     <string name="show_work">Show work apps</string>
     <string name="show_hidden">Show hidden apps</string>
     <string name="hide_hidden">Stop showing hidden apps</string>
+    <string name="turn_on">Turn on</string>
+    <string name="turn_on_work_profile">Turn on work profile?</string>
 </resources>

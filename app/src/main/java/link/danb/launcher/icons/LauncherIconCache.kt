@@ -7,7 +7,6 @@ import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Drawable
-import android.os.Process.myUserHandle
 import android.os.UserHandle
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,21 +46,15 @@ class LauncherIconCache @Inject constructor(
         }
     }
 
-    data class ActivityHandle(val componentName: ComponentName, val isWorkProfile: Boolean) {
-        constructor(info: LauncherActivityInfo) : this(
-            info.componentName, info.user == myUserHandle()
-        )
+    data class ActivityHandle(val componentName: ComponentName, val user: UserHandle) {
+        constructor(info: LauncherActivityInfo) : this(info.componentName, info.user)
     }
 
-    data class ApplicationHandle(val packageName: String, val isWorkProfile: Boolean) {
-        constructor(info: ApplicationInfo, user: UserHandle) : this(
-            info.packageName, user == myUserHandle()
-        )
+    data class ApplicationHandle(val packageName: String, val user: UserHandle) {
+        constructor(info: ApplicationInfo, user: UserHandle) : this(info.packageName, user)
     }
 
-    data class ShortcutHandle(val packageName: String, val id: String, val isWorkProfile: Boolean) {
-        constructor(info: ShortcutInfo) : this(
-            info.`package`, info.id, info.userHandle == myUserHandle()
-        )
+    data class ShortcutHandle(val packageName: String, val id: String, val user: UserHandle) {
+        constructor(info: ShortcutInfo) : this(info.`package`, info.id, info.userHandle)
     }
 }

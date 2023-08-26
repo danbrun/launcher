@@ -10,7 +10,6 @@ import android.content.pm.LauncherApps.ShortcutQuery
 import android.net.Uri
 import android.os.Bundle
 import android.os.UserHandle
-import android.os.UserManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,8 +30,10 @@ import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
+import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.getParcelableCompat
+import link.danb.launcher.utils.isPersonalProfile
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
@@ -66,7 +67,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     lateinit var launcherIconCache: LauncherIconCache
 
     @Inject
-    lateinit var userManager: UserManager
+    lateinit var profilesModel: ProfilesModel
 
     private val launcherActivity by lazy {
         val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
@@ -156,7 +157,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             ActivityHeaderViewItem(launcherActivity, launcherIconCache.get(launcherActivity.info))
         )
 
-        if (!userManager.isQuietModeEnabled(launcherActivity.info.user)) {
+        if (launcherActivity.info.user.isPersonalProfile() || profilesModel.workProfileData.value.isEnabled) {
             val shortcuts = launcherApps.getShortcuts(
                 ShortcutQuery().setQueryFlags(
                     ShortcutQuery.FLAG_MATCH_DYNAMIC or ShortcutQuery.FLAG_MATCH_MANIFEST

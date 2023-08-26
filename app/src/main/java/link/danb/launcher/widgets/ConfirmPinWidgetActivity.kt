@@ -3,7 +3,6 @@ package link.danb.launcher.widgets
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.PinItemRequest
 import android.os.Bundle
-import android.os.Process.myUserHandle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,6 +37,6 @@ class ConfirmPinWidgetActivity : AppCompatActivity() {
         val info = pinItemRequest.getAppWidgetProviderInfo(this) ?: return
 
         pinItemRequest.accept()
-        bindWidgetActivityLauncher.launch(AppWidgetSetupInput(info, myUserHandle()))
+        bindWidgetActivityLauncher.launch(AppWidgetSetupInput(info, info.profile))
     }
 }

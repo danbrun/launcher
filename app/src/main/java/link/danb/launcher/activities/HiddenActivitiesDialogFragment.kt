@@ -29,22 +29,24 @@ import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.tiles.TileData
+import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
-import link.danb.launcher.work.WorkProfileViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
     private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
-    private val workProfileViewModel: WorkProfileViewModel by activityViewModels()
 
     @Inject
     lateinit var launcherApps: LauncherApps
 
     @Inject
     lateinit var launcherIconCache: LauncherIconCache
+
+    @Inject
+    lateinit var profilesModel: ProfilesModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -85,8 +87,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     combine(
-                        activitiesViewModel.launcherActivities,
-                        workProfileViewModel.currentUser
+                        activitiesViewModel.launcherActivities, profilesModel.activeProfile
                     ) { activities, currentUser ->
                         activities.filter { it.metadata.isHidden && it.metadata.userHandle == currentUser }
                     }.collect { activities ->

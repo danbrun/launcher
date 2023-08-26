@@ -1,28 +1,32 @@
 package link.danb.launcher
 
 import android.content.Intent
-import android.os.Process.myUserHandle
 import android.provider.Settings
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.activities.ActivitiesViewModel
-import link.danb.launcher.work.WorkProfileViewModel
+import link.danb.launcher.profiles.EnableWorkProfileDialogBuilder
+import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.utils.isPersonalProfile
 import javax.inject.Inject
 
-class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
-    DefaultLifecycleObserver, MenuProvider {
+class LauncherMenuProvider @Inject constructor(
+    private val fragment: Fragment,
+    private val profilesModel: ProfilesModel,
+    private val enableWorkProfileDialogBuilder: EnableWorkProfileDialogBuilder
+) : DefaultLifecycleObserver, MenuProvider {
 
     private val activitiesViewModel: ActivitiesViewModel by fragment.activityViewModels()
-    private val workProfileViewModel: WorkProfileViewModel by fragment.activityViewModels()
 
     private lateinit var profileToggle: MenuItem
     private lateinit var visibilityToggle: MenuItem
@@ -38,18 +42,42 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
             fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     combine(
-                        activitiesViewModel.launcherActivities, workProfileViewModel.currentUser
-                    ) { activities, currentUser ->
-                        profileToggle.isVisible = activities.any { it.info.user != myUserHandle() }
-                        visibilityToggle.isVisible =
-                            activities.any { it.metadata.isHidden && it.info.user == currentUser }
-                    }.collect()
+                        activitiesViewModel.launcherActivities, profilesModel.activeProfile
+                    ) { activities, activeProfile ->
+                        Pair(activities.any { !it.info.user.isPersonalProfile() },
+                            activities.any { it.metadata.isHidden && it.info.user == activeProfile })
+                    }.collect { (hasWorkProfileApps, hasHiddenApps) ->
+                        profileToggle.isVisible = hasWorkProfileApps
+                        visibilityToggle.isVisible = hasHiddenApps
+                    }
                 }
 
                 launch {
-                    workProfileViewModel.currentUser.collect {
-                        profileToggle.setTitle(if (it == myUserHandle()) R.string.show_work else R.string.show_personal)
-                        profileToggle.setIcon(if (it == myUserHandle()) R.drawable.ic_baseline_work_24 else R.drawable.ic_baseline_work_off_24)
+                    combine(
+                        profilesModel.workProfileData,
+                        profilesModel.activeProfile,
+                    ) { workProfileData, activeProfile ->
+                        WorkProfileToggleData(
+                            workProfileData.user != null,
+                            if (activeProfile.isPersonalProfile()) {
+                                if (workProfileData.isEnabled) {
+                                    R.drawable.ic_baseline_work_24
+                                } else {
+                                    R.drawable.ic_baseline_work_off_24
+                                }
+                            } else {
+                                R.drawable.baseline_person_24
+                            },
+                            if (activeProfile.isPersonalProfile()) {
+                                R.string.show_work
+                            } else {
+                                R.string.show_personal
+                            },
+                        )
+                    }.collect { data ->
+                        profileToggle.isVisible = data.show
+                        profileToggle.setTitle(data.title)
+                        profileToggle.setIcon(data.icon)
                     }
                 }
             }
@@ -67,7 +95,12 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
         R.id.profile_toggle -> {
-            workProfileViewModel.toggleWorkActivities()
+            if (!profilesModel.activeProfile.value.isPersonalProfile() || profilesModel.workProfileData.value.isEnabled) {
+                profilesModel.toggleActiveProfile()
+            } else {
+                enableWorkProfileDialogBuilder.getEnableWorkProfileDialogBuilder(fragment.requireContext())
+                    .show()
+            }
             true
         }
 
@@ -92,4 +125,8 @@ class LauncherMenuProvider @Inject constructor(private val fragment: Fragment) :
 
         else -> false
     }
+
+    data class WorkProfileToggleData(
+        val show: Boolean, @DrawableRes val icon: Int, @StringRes val title: Int
+    )
 }

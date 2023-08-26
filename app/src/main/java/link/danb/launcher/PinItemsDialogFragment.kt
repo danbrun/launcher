@@ -6,7 +6,6 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Process.myUserHandle
 import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
@@ -41,6 +40,7 @@ import link.danb.launcher.ui.LoadingSpinnerViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
+import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
 import link.danb.launcher.widgets.AppWidgetViewProvider
@@ -50,7 +50,6 @@ import link.danb.launcher.widgets.WidgetPreviewListener
 import link.danb.launcher.widgets.WidgetPreviewViewBinder
 import link.danb.launcher.widgets.WidgetPreviewViewItem
 import link.danb.launcher.widgets.WidgetsViewModel
-import link.danb.launcher.work.WorkProfileViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -60,7 +59,6 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
     private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
     private val widgetsViewModel: WidgetsViewModel by activityViewModels()
     private val widgetDialogViewModel: WidgetDialogViewModel by viewModels()
-    private val workProfileViewModel: WorkProfileViewModel by activityViewModels()
 
     @Inject
     lateinit var appWidgetHost: AppWidgetHost
@@ -79,6 +77,9 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var launcherApps: LauncherApps
+
+    @Inject
+    lateinit var profilesModel: ProfilesModel
 
     private val packageManager: PackageManager by lazy { requireContext().packageManager }
 
@@ -111,7 +112,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
     private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
         bindWidgetActivityLauncher.launch(
-            AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, myUserHandle())
+            AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, profilesModel.activeProfile.value)
         )
     }
 
@@ -159,7 +160,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 combine(
                     activitiesViewModel.launcherActivities,
-                    workProfileViewModel.currentUser,
+                    profilesModel.activeProfile,
                     widgetDialogViewModel.expandedPackageNames,
                     this@PinItemsDialogFragment::getViewItems
                 ).collect { widgetListAdapter.submitList(it) }
@@ -181,7 +182,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
     private fun getViewItems(
         shortcutActivities: List<ActivitiesViewModel.ActivityData>,
-        currentUser: UserHandle,
+        activeProfile: UserHandle,
         expandedPackages: Set<String>
     ): List<ViewItem> {
         val items = mutableListOf<ViewItem>()
@@ -189,7 +190,7 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
         items.addAll(headerItems)
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
 
-        items.addAll(shortcutActivities.filter { it.info.user == currentUser }.flatMap {
+        items.addAll(shortcutActivities.filter { it.info.user == activeProfile }.flatMap {
             launcherApps.getShortcutConfigActivityList(
                 it.info.componentName.packageName, it.info.user
             )
@@ -201,16 +202,18 @@ class PinItemsDialogFragment : BottomSheetDialogFragment() {
 
         items.add(GroupHeaderViewItem(requireContext().getString(R.string.widgets)))
 
-        val widgetItems = appWidgetManager.installedProviders.groupBy { it.provider.packageName }
-            .mapKeys { launcherApps.getApplicationInfo(it.key, 0, myUserHandle()) }
+        val user = profilesModel.activeProfile.value
+        val widgetItems = appWidgetManager.getInstalledProvidersForProfile(user)
+            .groupBy { it.provider.packageName }
+            .mapKeys { launcherApps.getApplicationInfo(it.key, 0, user) }
             .toSortedMap(compareBy<ApplicationInfo> {
                 it.loadLabel(packageManager).toString().lowercase()
             }).flatMap { (appInfo, widgets) ->
                 mutableListOf<ViewItem>().apply {
                     val isExpanded = expandedPackages.contains(appInfo.packageName)
-                    add(widgetHeaderViewItemFactory.create(appInfo, myUserHandle(), isExpanded))
+                    add(widgetHeaderViewItemFactory.create(appInfo, user, isExpanded))
                     if (isExpanded) {
-                        addAll(widgets.map { WidgetPreviewViewItem(it, myUserHandle()) })
+                        addAll(widgets.map { WidgetPreviewViewItem(it, user) })
                     }
                 }
             }

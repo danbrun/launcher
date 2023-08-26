@@ -45,6 +45,7 @@ import link.danb.launcher.ui.InvertedCornerDrawable
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
+import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.utils.getBoundsOnScreen
 import link.danb.launcher.utils.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetViewProvider
@@ -56,7 +57,6 @@ import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetViewItem
 import link.danb.launcher.widgets.WidgetViewListener
 import link.danb.launcher.widgets.WidgetsViewModel
-import link.danb.launcher.work.WorkProfileViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -66,7 +66,6 @@ class LauncherFragment : Fragment() {
     private val gestureContractModel: GestureContractModel by activityViewModels()
     private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
     private val widgetsViewModel: WidgetsViewModel by activityViewModels()
-    private val workProfileViewModel: WorkProfileViewModel by activityViewModels()
 
     @Inject
     lateinit var appWidgetHost: AppWidgetHost
@@ -85,6 +84,9 @@ class LauncherFragment : Fragment() {
 
     @Inject
     lateinit var launcherMenuProvider: LauncherMenuProvider
+
+    @Inject
+    lateinit var profilesModel: ProfilesModel
 
     @Inject
     lateinit var widgetSizeUtil: WidgetSizeUtil
@@ -186,13 +188,13 @@ class LauncherFragment : Fragment() {
 
                     val shortcutsFlow = combine(
                         shortcutsViewModel.shortcuts,
-                        workProfileViewModel.currentUser,
+                        profilesModel.activeProfile,
                         ::getShortcutListViewItems
                     )
 
                     val appsFlow = combine(
                         activitiesViewModel.launcherActivities,
-                        workProfileViewModel.currentUser,
+                        profilesModel.activeProfile,
                         ::getAppListViewItems
                     )
 
