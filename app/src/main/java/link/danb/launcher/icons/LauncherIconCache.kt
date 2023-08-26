@@ -8,6 +8,7 @@ import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
+import link.danb.launcher.LauncherAppsCallback
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,6 +20,14 @@ class LauncherIconCache @Inject constructor(
     private val activityIcons: MutableMap<ActivityHandle, Lazy<Drawable>> = mutableMapOf()
     private val applicationIcons: MutableMap<ApplicationHandle, Lazy<Drawable>> = mutableMapOf()
     private val shortcutIcons: MutableMap<ShortcutHandle, Lazy<Drawable>> = mutableMapOf()
+
+    init {
+        launcherApps.registerCallback(LauncherAppsCallback { packageName: String, user: UserHandle ->
+            activityIcons.keys.removeIf { it.componentName.packageName == packageName && it.user == user }
+            applicationIcons.keys.removeIf { it.packageName == packageName && it.user == user }
+            shortcutIcons.keys.removeIf { it.packageName == packageName && it.user == user }
+        })
+    }
 
     fun get(info: LauncherActivityInfo): Lazy<Drawable> =
         activityIcons.getOrPut(ActivityHandle(info)) {

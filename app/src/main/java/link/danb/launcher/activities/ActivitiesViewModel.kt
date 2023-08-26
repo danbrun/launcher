@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import link.danb.launcher.LauncherAppsCallback
 import link.danb.launcher.database.ActivityMetadata
 import link.danb.launcher.database.LauncherDatabase
 import javax.inject.Inject
@@ -27,7 +28,7 @@ class ActivitiesViewModel @Inject constructor(
         launcherDatabase.launcherActivityMetadata()
     }
 
-    private val launcherAppsCallback = LauncherAppsCallback()
+    private val launcherAppsCallback = LauncherAppsCallback(this::update)
 
     private val _launcherActivities = MutableStateFlow<List<ActivityData>>(listOf())
 
@@ -91,46 +92,6 @@ class ActivitiesViewModel @Inject constructor(
                         ActivityData(it, getMetadata(it))
                     })
                     _launcherActivities.emit(toList())
-                }
-            }
-        }
-    }
-
-    inner class LauncherAppsCallback : LauncherApps.Callback() {
-        override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
-            updateSinglePackage(packageName, user)
-        }
-
-        override fun onPackageAdded(packageName: String?, user: UserHandle?) {
-            updateSinglePackage(packageName, user)
-        }
-
-        override fun onPackageChanged(packageName: String?, user: UserHandle?) {
-            updateSinglePackage(packageName, user)
-        }
-
-        override fun onPackagesAvailable(
-            packageName: Array<out String>?, user: UserHandle?, replacing: Boolean
-        ) {
-            updateMultiplePackages(packageName, user)
-        }
-
-        override fun onPackagesUnavailable(
-            packageName: Array<out String>?, user: UserHandle?, replacing: Boolean
-        ) {
-            updateMultiplePackages(packageName, user)
-        }
-
-        private fun updateSinglePackage(packageName: String?, user: UserHandle?) {
-            if (packageName != null && user != null) {
-                update(packageName, user)
-            }
-        }
-
-        private fun updateMultiplePackages(packageName: Array<out String>?, user: UserHandle?) {
-            if (user != null) {
-                packageName?.forEach {
-                    update(it, user)
                 }
             }
         }
