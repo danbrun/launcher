@@ -75,7 +75,11 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         }
 
     private val headerItems by lazy {
-        listOf(DialogHeaderViewItem(requireContext().getString(R.string.shortcuts)))
+        listOf(
+            DialogHeaderViewItem(
+                requireContext().getString(R.string.shortcuts), R.drawable.baseline_push_pin_24
+            )
+        )
     }
 
     override fun onCreateView(

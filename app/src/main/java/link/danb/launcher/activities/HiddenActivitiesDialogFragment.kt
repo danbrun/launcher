@@ -78,8 +78,12 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
             }
         }
 
-        val headerItems =
-            listOf(DialogHeaderViewItem(requireContext().getString(R.string.hidden_apps)))
+        val headerItems = listOf(
+            DialogHeaderViewItem(
+                requireContext().getString(R.string.hidden_apps),
+                R.drawable.ic_baseline_visibility_24
+            )
+        )
 
         adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem()))
 

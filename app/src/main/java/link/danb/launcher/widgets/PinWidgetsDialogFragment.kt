@@ -83,7 +83,11 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private val headerItems by lazy {
-        listOf(DialogHeaderViewItem(requireContext().getString(R.string.widgets)))
+        listOf(
+            DialogHeaderViewItem(
+                requireContext().getString(R.string.widgets), R.drawable.ic_baseline_widgets_24
+            )
+        )
     }
 
     private lateinit var widgetListAdapter: ViewBinderAdapter
