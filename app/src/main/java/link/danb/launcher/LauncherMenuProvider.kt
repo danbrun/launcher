@@ -17,7 +17,9 @@ import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.profiles.EnableWorkProfileDialogBuilder
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.utils.isPersonalProfile
+import link.danb.launcher.widgets.PinWidgetsDialogFragment
 import javax.inject.Inject
 
 class LauncherMenuProvider @Inject constructor(
@@ -30,7 +32,8 @@ class LauncherMenuProvider @Inject constructor(
 
     private lateinit var profileToggle: MenuItem
     private lateinit var visibilityToggle: MenuItem
-    private lateinit var pinItemsButton: MenuItem
+    private lateinit var pinShortcutButton: MenuItem
+    private lateinit var pinWidgetButton: MenuItem
     private lateinit var settingsShortcut: MenuItem
 
     init {
@@ -89,7 +92,8 @@ class LauncherMenuProvider @Inject constructor(
 
         profileToggle = menu.findItem(R.id.profile_toggle)
         visibilityToggle = menu.findItem(R.id.visibility_toggle)
-        pinItemsButton = menu.findItem(R.id.pin_items_button)
+        pinShortcutButton = menu.findItem(R.id.pin_shortcut_button)
+        pinWidgetButton = menu.findItem(R.id.pin_widget_button)
         settingsShortcut = menu.findItem(R.id.settings_shortcut)
     }
 
@@ -111,9 +115,16 @@ class LauncherMenuProvider @Inject constructor(
             true
         }
 
-        R.id.pin_items_button -> {
-            PinItemsDialogFragment().showNow(
-                fragment.childFragmentManager, PinItemsDialogFragment.TAG
+        R.id.pin_shortcut_button -> {
+            PinShortcutsDialogFragment().showNow(
+                fragment.childFragmentManager, PinShortcutsDialogFragment.TAG
+            )
+            true
+        }
+
+        R.id.pin_widget_button -> {
+            PinWidgetsDialogFragment().showNow(
+                fragment.childFragmentManager, PinWidgetsDialogFragment.TAG
             )
             true
         }

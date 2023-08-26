@@ -127,7 +127,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         super.onCreateView(inflater, container, savedInstanceState)
 
         val recyclerView = inflater.inflate(
-            R.layout.activity_details_dialog_fragment, container, false
+            R.layout.recycler_view_dialog_fragment, container, false
         ) as RecyclerView
 
         val adapter = ViewBinderAdapter(
