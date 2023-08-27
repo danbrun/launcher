@@ -11,7 +11,7 @@ import android.os.UserManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import link.danb.launcher.utils.isPersonalProfile
+import link.danb.launcher.extensions.isPersonalProfile
 import javax.inject.Inject
 import javax.inject.Singleton
 

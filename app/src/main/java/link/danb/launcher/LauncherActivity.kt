@@ -15,6 +15,7 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.launcher_activity)
 
         if (savedInstanceState == null) {
@@ -31,6 +32,7 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
         gestureContractModel.onNewIntent(intent)
     }
 }

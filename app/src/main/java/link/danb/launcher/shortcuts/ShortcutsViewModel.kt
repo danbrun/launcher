@@ -9,10 +9,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import link.danb.launcher.extensions.packageName
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.profiles.ProfilesModel.WorkProfileData
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,47 +23,54 @@ class ShortcutsViewModel @Inject constructor(
     private val profilesModel: ProfilesModel,
 ) : AndroidViewModel(application) {
 
-    private val _shortcuts: MutableStateFlow<List<ShortcutInfo>> = MutableStateFlow(listOf())
+    private val _pinnedShortcuts: MutableStateFlow<List<ShortcutInfo>> = MutableStateFlow(listOf())
 
-    val shortcuts = _shortcuts.asStateFlow()
+    val pinnedShortcuts: StateFlow<List<ShortcutInfo>> = _pinnedShortcuts.asStateFlow()
 
     init {
         viewModelScope.launch {
-            profilesModel.workProfileData.collect { workProfileData ->
-                _shortcuts.value = getShortcuts(workProfileData)
-            }
+            profilesModel.activeProfile.collect(::update)
         }
+    }
+
+    fun getShortcuts(packageName: String, user: UserHandle): List<ShortcutInfo> {
+        val (workProfile, isWorkProfileEnabled) = profilesModel.workProfileData.value
+        if (user == workProfile && !isWorkProfileEnabled) return listOf()
+
+        return launcherApps.getShortcuts(ShortcutQuery().setPackage(packageName), user) ?: listOf()
     }
 
     fun pinShortcut(shortcutInfo: ShortcutInfo) {
         setPinnedShortcuts(
-            shortcutInfo, getPinnedShortcuts(shortcutInfo.`package`) + shortcutInfo.id
+            shortcutInfo, getPinnedShortcutIds(shortcutInfo.packageName) + shortcutInfo.id
         )
     }
 
     fun unpinShortcut(shortcutInfo: ShortcutInfo) {
         setPinnedShortcuts(
-            shortcutInfo, getPinnedShortcuts(shortcutInfo.`package`) - shortcutInfo.id
+            shortcutInfo, getPinnedShortcutIds(shortcutInfo.packageName) - shortcutInfo.id
         )
     }
 
-    private fun getPinnedShortcuts(packageName: String): Set<String> =
-        _shortcuts.value.filter { it.`package` == packageName }.map { it.id }.toSet()
+    private fun getPinnedShortcutIds(packageName: String): Set<String> =
+        getPinnedShortcuts(packageName).map { it.id }.toSet()
+
+    private fun getPinnedShortcuts(packageName: String): Set<ShortcutInfo> =
+        launcherApps.getShortcuts(
+            ShortcutQuery().setPackage(packageName).setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
+            profilesModel.activeProfile.value
+        )?.toSet() ?: setOf()
 
     private fun setPinnedShortcuts(shortcutInfo: ShortcutInfo, shortcutIds: Set<String>) {
         launcherApps.pinShortcuts(
             shortcutInfo.`package`, shortcutIds.toList(), shortcutInfo.userHandle
         )
-        _shortcuts.value = getShortcuts(profilesModel.workProfileData.value)
+        update(profilesModel.activeProfile.value)
     }
 
-    private fun getShortcuts(workProfileData: WorkProfileData): List<ShortcutInfo> = buildList {
-        addAll(getShortcuts(ProfilesModel.personalProfile))
-        workProfileData.user?.takeIf { workProfileData.isEnabled }
-            ?.let { addAll(getShortcuts(it)) }
+    private fun update(user: UserHandle) {
+        _pinnedShortcuts.value = launcherApps.getShortcuts(
+            ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED), user
+        )!!
     }
-
-    private fun getShortcuts(user: UserHandle): List<ShortcutInfo> = launcherApps.getShortcuts(
-        ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED), user
-    )!!
 }

@@ -8,7 +8,7 @@ import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
-import link.danb.launcher.LauncherAppsCallback
+import link.danb.launcher.apps.LauncherAppsCallback
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,7 +33,8 @@ class LauncherIconCache @Inject constructor(
         activityIcons.getOrPut(ActivityHandle(info)) {
             lazy {
                 application.packageManager.getUserBadgedIcon(
-                    LauncherIconDrawable(info.getIcon(0)), info.user
+                    LauncherIconDrawable(info.getIcon(application.resources.displayMetrics.densityDpi)),
+                    info.user
                 )
             }
         }
@@ -50,7 +51,11 @@ class LauncherIconCache @Inject constructor(
     fun get(info: ShortcutInfo): Lazy<Drawable> = shortcutIcons.getOrPut(ShortcutHandle(info)) {
         lazy {
             application.packageManager.getUserBadgedIcon(
-                LauncherIconDrawable(launcherApps.getShortcutIconDrawable(info, 0)), info.userHandle
+                LauncherIconDrawable(
+                    launcherApps.getShortcutIconDrawable(
+                        info, application.resources.displayMetrics.densityDpi
+                    )
+                ), info.userHandle
             )
         }
     }

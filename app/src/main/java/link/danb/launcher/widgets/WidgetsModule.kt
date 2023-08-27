@@ -22,7 +22,7 @@ import kotlin.math.sqrt
 
 @Module
 @InstallIn(SingletonComponent::class)
-class AppWidgetModule {
+class WidgetsModule {
 
     @Provides
     @Singleton

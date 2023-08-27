@@ -74,14 +74,6 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
         widgetsViewModel.refresh()
     }
 
-    private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
-        bindWidgetActivityLauncher.launch(
-            AppWidgetSetupInput(
-                widgetPreviewViewItem.providerInfo, profilesModel.activeProfile.value
-            )
-        )
-    }
-
     private val headerItems by lazy {
         listOf(
             DialogHeaderViewItem(
@@ -90,40 +82,38 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
         )
     }
 
-    private lateinit var widgetListAdapter: ViewBinderAdapter
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        val view = inflater.inflate(
+        val recyclerView = inflater.inflate(
             R.layout.recycler_view_dialog_fragment, container, false
         ) as RecyclerView
 
-        widgetListAdapter = ViewBinderAdapter(
+        val adapter = ViewBinderAdapter(
             DialogHeaderViewBinder(),
             LoadingSpinnerViewBinder(),
             WidgetHeaderViewBinder { widgetDialogViewModel.toggleExpandedPackageName(it.packageName) },
-            WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
+            WidgetPreviewViewBinder(appWidgetViewProvider, ::onWidgetPreviewClick)
         )
 
-        view.apply {
+        recyclerView.apply {
+            this.adapter = adapter
             layoutManager = LinearLayoutManager(context)
-            adapter = widgetListAdapter
         }
 
-        widgetListAdapter.submitList(headerItems + listOf(LoadingSpinnerViewItem()))
+        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem))
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 widgetDialogViewModel.expandedPackageNames.collect {
-                    widgetListAdapter.submitList(getViewItems(it))
+                    adapter.submitList(getViewItems(it))
                 }
             }
         }
 
-        return view
+        return recyclerView
     }
 
     private fun getViewItems(expandedPackages: Set<String>): List<ViewItem> = buildList {
@@ -146,6 +136,14 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
             }
 
         addAll(widgetItems)
+    }
+
+    private fun onWidgetPreviewClick(view: View, widgetPreviewViewItem: WidgetPreviewViewItem) {
+        bindWidgetActivityLauncher.launch(
+            AppWidgetSetupInput(
+                widgetPreviewViewItem.providerInfo, profilesModel.activeProfile.value
+            )
+        )
     }
 
     companion object {

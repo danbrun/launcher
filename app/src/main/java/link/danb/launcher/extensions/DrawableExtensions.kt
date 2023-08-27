@@ -1,4 +1,4 @@
-package link.danb.launcher.utils
+package link.danb.launcher.extensions
 
 import android.graphics.drawable.Drawable
 

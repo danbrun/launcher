@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
-import link.danb.launcher.utils.inflate
+import link.danb.launcher.extensions.inflate
 
 class GroupHeaderViewBinder : ViewBinder<GroupHeaderViewHolder, GroupHeaderViewItem> {
 

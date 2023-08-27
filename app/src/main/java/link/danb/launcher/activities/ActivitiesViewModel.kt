@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import link.danb.launcher.LauncherAppsCallback
+import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.database.ActivityMetadata
 import link.danb.launcher.database.LauncherDatabase
 import javax.inject.Inject
@@ -84,15 +84,12 @@ class ActivitiesViewModel @Inject constructor(
     }
 
     private fun update(packageName: String, user: UserHandle) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                _launcherActivities.value.toMutableList().apply {
-                    removeIf { it.info.componentName.packageName == packageName && it.info.user == user }
-                    addAll(launcherApps.getActivityList(packageName, user).map {
-                        ActivityData(it, getMetadata(it))
-                    })
-                    _launcherActivities.emit(toList())
-                }
+        viewModelScope.launch(Dispatchers.IO) {
+            _launcherActivities.value.toMutableList().apply {
+                removeIf { it.info.componentName.packageName == packageName && it.info.user == user }
+                addAll(launcherApps.getActivityList(packageName, user)
+                    .map { ActivityData(it, getMetadata(it)) })
+                _launcherActivities.emit(toList())
             }
         }
     }

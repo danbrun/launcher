@@ -12,8 +12,8 @@ import link.danb.launcher.R
 import link.danb.launcher.database.WidgetMetadata
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.setLayoutSize
+import link.danb.launcher.extensions.inflate
+import link.danb.launcher.extensions.setLayoutSize
 
 class WidgetEditorViewBinder(
     private val appWidgetViewProvider: AppWidgetViewProvider,

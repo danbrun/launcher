@@ -1,4 +1,4 @@
-package link.danb.launcher
+package link.danb.launcher.apps
 
 import android.content.pm.LauncherApps
 import android.os.UserHandle

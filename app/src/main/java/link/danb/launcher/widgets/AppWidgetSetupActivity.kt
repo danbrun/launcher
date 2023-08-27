@@ -14,7 +14,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.R
-import link.danb.launcher.utils.getParcelableCompat
+import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.widgets.AppWidgetSetupActivity.Companion.EXTRA_WIDGET_HANDLE
 import link.danb.launcher.widgets.AppWidgetSetupActivity.Companion.EXTRA_WIDGET_PROVIDER
 import link.danb.launcher.widgets.AppWidgetSetupActivity.Companion.EXTRA_WIDGET_USER

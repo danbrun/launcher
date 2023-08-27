@@ -46,8 +46,8 @@ import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.utils.getBoundsOnScreen
-import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.extensions.getBoundsOnScreen
+import link.danb.launcher.extensions.makeClipRevealAnimation
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetEditorViewItem
@@ -55,7 +55,6 @@ import link.danb.launcher.widgets.WidgetEditorViewListener
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetViewItem
-import link.danb.launcher.widgets.WidgetViewListener
 import link.danb.launcher.widgets.WidgetsViewModel
 import javax.inject.Inject
 
@@ -97,13 +96,9 @@ class LauncherFragment : Fragment() {
         ViewBinderAdapter(
             GroupHeaderViewBinder(),
             TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-            WidgetViewBinder(appWidgetViewProvider, widgetViewListener),
+            WidgetViewBinder(appWidgetViewProvider) { widgetsViewModel.startEditing(it.widgetId) },
             WidgetEditorViewBinder(appWidgetViewProvider, widgetSizeUtil, widgetEditorViewListener),
         )
-    }
-
-    private val widgetViewListener = WidgetViewListener {
-        widgetsViewModel.startEditing(it.widgetId)
     }
 
     private val widgetEditorViewListener = object : WidgetEditorViewListener {
@@ -188,7 +183,7 @@ class LauncherFragment : Fragment() {
                     )
 
                     val shortcutsFlow = combine(
-                        shortcutsViewModel.shortcuts,
+                        shortcutsViewModel.pinnedShortcuts,
                         profilesModel.activeProfile,
                         ::getShortcutListViewItems
                     )

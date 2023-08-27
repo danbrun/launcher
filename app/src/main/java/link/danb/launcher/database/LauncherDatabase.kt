@@ -1,16 +1,11 @@
 package link.danb.launcher.database
 
 import android.app.Application
-import android.content.ComponentName
-import android.os.UserHandle
-import android.os.UserManager
 import androidx.room.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import org.json.JSONArray
-import javax.inject.Inject
 import javax.inject.Singleton
 
 @Database(entities = [ActivityMetadata::class, WidgetMetadata::class], version = 4)
@@ -41,39 +36,4 @@ abstract class LauncherDatabase : RoomDatabase() {
     companion object {
         private const val DATABASE_NAME = "launcher_database"
     }
-}
-
-class StringSetConverter {
-    @TypeConverter
-    fun toJson(stringSet: Set<String>): String {
-        return JSONArray(stringSet).toString()
-    }
-
-    @TypeConverter
-    fun toStringSet(json: String): Set<String> {
-        return buildSet {
-            val array = JSONArray(json)
-            for (i in 0 until array.length()) {
-                add(array.getString(i))
-            }
-        }
-    }
-}
-
-class ComponentNameConverter {
-    @TypeConverter
-    fun toString(componentName: ComponentName) = componentName.flattenToString()
-
-    @TypeConverter
-    fun toComponentName(string: String) = ComponentName.unflattenFromString(string)
-}
-
-@ProvidedTypeConverter
-@Singleton
-class UserHandleConverter @Inject constructor(private val userManager: UserManager) {
-    @TypeConverter
-    fun toLong(userHandle: UserHandle): Long = userManager.getSerialNumberForUser(userHandle)
-
-    @TypeConverter
-    fun toUserHandle(long: Long): UserHandle = userManager.getUserForSerialNumber(long)
 }

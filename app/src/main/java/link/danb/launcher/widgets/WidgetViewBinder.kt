@@ -9,14 +9,14 @@ import link.danb.launcher.R
 import link.danb.launcher.database.WidgetMetadata
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.removeFromParent
-import link.danb.launcher.utils.setLayoutSize
-import link.danb.launcher.utils.updateAppWidgetSize
+import link.danb.launcher.extensions.inflate
+import link.danb.launcher.extensions.removeFromParent
+import link.danb.launcher.extensions.setLayoutSize
+import link.danb.launcher.extensions.updateAppWidgetSize
 
 class WidgetViewBinder(
     private val appWidgetViewProvider: AppWidgetViewProvider,
-    private val widgetViewListener: WidgetViewListener,
+    private val onLongClick: ((WidgetMetadata) -> Unit)?,
 ) : ViewBinder<WidgetViewHolder, WidgetViewItem> {
 
     override val viewType: Int = R.id.widget_view_type_id
@@ -32,7 +32,7 @@ class WidgetViewBinder(
                 Resources.getSystem().displayMetrics.widthPixels, viewItem.widgetMetadata.height
             )
             setOnLongClickListener {
-                widgetViewListener.onLongClick(viewItem.widgetMetadata)
+                onLongClick?.invoke(viewItem.widgetMetadata)
                 true
             }
             holder.widgetFrame.run {
@@ -57,8 +57,4 @@ class WidgetViewItem(val widgetMetadata: WidgetMetadata) : ViewItem {
 
     override fun areContentsTheSame(other: ViewItem): Boolean =
         other is WidgetViewItem && widgetMetadata == other.widgetMetadata
-}
-
-fun interface WidgetViewListener {
-    fun onLongClick(widgetMetadata: WidgetMetadata)
 }

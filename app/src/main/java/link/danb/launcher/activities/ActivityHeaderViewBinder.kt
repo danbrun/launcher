@@ -10,11 +10,13 @@ import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.applySize
+import link.danb.launcher.extensions.inflate
+import link.danb.launcher.extensions.applySize
 
 class ActivityHeaderViewBinder(
-    private val activityHeaderListener: ActivityHeaderListener? = null
+    private val onVisibilityButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
+    private val onUninstallButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
+    private val onSettingsButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
 ) : ViewBinder<ActivityHeaderViewHolder, ActivityHeaderViewItem> {
 
     override val viewType: Int = R.id.activity_header_view_type_id
@@ -44,18 +46,12 @@ class ActivityHeaderViewBinder(
                     R.drawable.ic_baseline_visibility_24
                 }
             )
-            setOnClickListener {
-                activityHeaderListener?.onVisibilityButtonClick(it, viewItem)
-            }
+            setOnClickListener { onVisibilityButtonClick?.invoke(it, viewItem) }
         }
 
-        holder.uninstallButton.setOnClickListener {
-            activityHeaderListener?.onUninstallButtonClick(it, viewItem)
-        }
+        holder.uninstallButton.setOnClickListener { onUninstallButtonClick?.invoke(it, viewItem) }
 
-        holder.settingsButton.setOnClickListener {
-            activityHeaderListener?.onSettingsButtonClick(it, viewItem)
-        }
+        holder.settingsButton.setOnClickListener { onSettingsButtonClick?.invoke(it, viewItem) }
     }
 }
 
@@ -81,10 +77,4 @@ class ActivityHeaderViewItem(val data: ActivityData, private val lazyIcon: Lazy<
 
     override fun areContentsTheSame(other: ViewItem): Boolean =
         other is ActivityHeaderViewItem && name == other.name && lazyIcon == other.lazyIcon
-}
-
-interface ActivityHeaderListener {
-    fun onVisibilityButtonClick(view: View, viewItem: ActivityHeaderViewItem)
-    fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem)
-    fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem)
 }

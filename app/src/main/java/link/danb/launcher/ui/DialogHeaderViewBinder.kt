@@ -7,7 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
-import link.danb.launcher.utils.inflate
+import link.danb.launcher.extensions.inflate
 
 class DialogHeaderViewBinder : ViewBinder<DialogHeaderViewHolder, DialogHeaderViewItem> {
 

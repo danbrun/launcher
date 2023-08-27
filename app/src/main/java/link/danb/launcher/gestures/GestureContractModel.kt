@@ -11,7 +11,8 @@ import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import link.danb.launcher.utils.getParcelableCompat
+import kotlinx.coroutines.flow.asStateFlow
+import link.danb.launcher.extensions.getParcelableCompat
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,7 +20,8 @@ class GestureContractModel @Inject constructor(application: Application) :
     AndroidViewModel(application) {
 
     private val _gestureContract: MutableStateFlow<GestureContract?> = MutableStateFlow(null)
-    val gestureContract: StateFlow<GestureContract?> = _gestureContract
+
+    val gestureContract: StateFlow<GestureContract?> = _gestureContract.asStateFlow()
 
     fun onNewIntent(intent: Intent) {
         val extras = intent.getBundleExtra(EXTRA_GESTURE_CONTRACT) ?: return

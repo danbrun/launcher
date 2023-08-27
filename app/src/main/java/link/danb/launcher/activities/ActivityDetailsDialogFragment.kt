@@ -6,7 +6,6 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
-import android.content.pm.LauncherApps.ShortcutQuery
 import android.net.Uri
 import android.os.Bundle
 import android.os.UserHandle
@@ -15,11 +14,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.icons.LauncherIconCache
@@ -31,14 +33,13 @@ import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.utils.getBoundsOnScreen
-import link.danb.launcher.utils.getParcelableCompat
-import link.danb.launcher.utils.isPersonalProfile
-import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.extensions.getBoundsOnScreen
+import link.danb.launcher.extensions.getParcelableCompat
+import link.danb.launcher.extensions.makeClipRevealAnimation
+import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
 import link.danb.launcher.widgets.AppWidgetViewProvider
-import link.danb.launcher.widgets.WidgetPreviewListener
 import link.danb.launcher.widgets.WidgetPreviewViewBinder
 import link.danb.launcher.widgets.WidgetPreviewViewItem
 import link.danb.launcher.widgets.WidgetsViewModel
@@ -89,38 +90,6 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             widgetsViewModel.refresh()
         }
 
-    private val activityHeaderListener = object : ActivityHeaderListener {
-        override fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-            val packageName = viewItem.data.info.componentName.packageName
-            view.context.startActivity(
-                Intent(Intent.ACTION_DELETE).setData(Uri.parse("package:$packageName"))
-                    .putExtra(Intent.EXTRA_USER, viewItem.data.info.user)
-            )
-            dismiss()
-        }
-
-        override fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-            launcherApps.startAppDetailsActivity(
-                viewItem.data.info.componentName,
-                viewItem.data.info.user,
-                view.getBoundsOnScreen(),
-                view.makeClipRevealAnimation()
-            )
-            dismiss()
-        }
-
-        override fun onVisibilityButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-            activitiesViewModel.setIsHidden(viewItem.data.info, !viewItem.data.metadata.isHidden)
-            dismiss()
-        }
-    }
-
-    private val widgetPreviewListener = WidgetPreviewListener { _, widgetPreviewViewItem ->
-        bindWidgetActivityLauncher.launch(
-            AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, launcherActivity.info.user)
-        )
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -131,56 +100,80 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         ) as RecyclerView
 
         val adapter = ViewBinderAdapter(
-            ActivityHeaderViewBinder(activityHeaderListener),
-            CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-            WidgetPreviewViewBinder(appWidgetViewProvider, widgetPreviewListener)
+            ActivityHeaderViewBinder(
+                ::onVisibilityButtonClick, ::onUninstallButtonClick, ::onSettingsButtonClick
+            ),
+            CardTileViewBinder(::onTileClick, ::onTileLongClick),
+            WidgetPreviewViewBinder(appWidgetViewProvider, ::onWidgetPreviewClick),
         )
 
-        val columns = requireContext().resources.getInteger(R.integer.launcher_columns)
-
-        recyclerView.adapter = adapter
-        recyclerView.isNestedScrollingEnabled = true
-        recyclerView.layoutManager = GridLayoutManager(
-            context, columns
-        ).apply {
-            spanSizeLookup = object : SpanSizeLookup() {
-                override fun getSpanSize(position: Int): Int {
-                    return when (adapter.currentList[position]) {
-                        is ActivityHeaderViewItem, is WidgetPreviewViewItem -> columns
-                        else -> 1
-                    }
-                }
+        val gridLayoutManager = GridLayoutManager(
+            context, requireContext().resources.getInteger(R.integer.launcher_columns)
+        ).setSpanSizeProvider { position, spanCount ->
+            when (adapter.currentList[position]) {
+                is ActivityHeaderViewItem, is WidgetPreviewViewItem -> spanCount
+                else -> 1
             }
         }
 
-        val items = mutableListOf<ViewItem>(
-            ActivityHeaderViewItem(launcherActivity, launcherIconCache.get(launcherActivity.info))
-        )
-
-        if (launcherActivity.info.user.isPersonalProfile() || profilesModel.workProfileData.value.isEnabled) {
-            val shortcuts = launcherApps.getShortcuts(
-                ShortcutQuery().setQueryFlags(
-                    ShortcutQuery.FLAG_MATCH_DYNAMIC or ShortcutQuery.FLAG_MATCH_MANIFEST
-                ).setPackage(launcherActivity.info.componentName.packageName),
-                launcherActivity.info.user
-            )
-
-            shortcuts?.forEach {
-                items.add(
-                    TileViewItem.cardTileViewItem(
-                        ShortcutTileData(it), it.shortLabel!!, launcherIconCache.get(it)
-                    )
-                )
-            }
+        recyclerView.apply {
+            this.adapter = adapter
+            layoutManager = gridLayoutManager
         }
 
-        appWidgetManager.getInstalledProvidersForPackage(
-            launcherActivity.info.componentName.packageName, launcherActivity.info.user
-        ).forEach { items.add(WidgetPreviewViewItem(it, launcherActivity.info.user)) }
-
-        adapter.submitList(items as List<ViewItem>?)
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                profilesModel.activeProfile.collect { adapter.submitList(getViewItems(it)) }
+            }
+        }
 
         return recyclerView
+    }
+
+    private fun getViewItems(activeProfile: UserHandle): List<ViewItem> = buildList {
+        add(ActivityHeaderViewItem(launcherActivity, launcherIconCache.get(launcherActivity.info)))
+
+        shortcutsViewModel.pinnedShortcuts.value.filter { it.userHandle == profilesModel.activeProfile.value }
+
+        val shortcuts = shortcutsViewModel.getShortcuts(
+            launcherActivity.info.componentName.packageName, activeProfile
+        ).map {
+            TileViewItem.cardTileViewItem(
+                ShortcutTileData(it), it.shortLabel!!, launcherIconCache.get(it)
+            )
+        }
+
+        addAll(shortcuts)
+
+        val widgets = appWidgetManager.getInstalledProvidersForPackage(
+            launcherActivity.info.componentName.packageName, launcherActivity.info.user
+        ).map { WidgetPreviewViewItem(it, launcherActivity.info.user) }
+
+        addAll(widgets)
+    }
+
+    private fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
+        val packageName = viewItem.data.info.componentName.packageName
+        view.context.startActivity(
+            Intent(Intent.ACTION_DELETE).setData(Uri.parse("package:$packageName"))
+                .putExtra(Intent.EXTRA_USER, viewItem.data.info.user)
+        )
+        dismiss()
+    }
+
+    private fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
+        launcherApps.startAppDetailsActivity(
+            viewItem.data.info.componentName,
+            viewItem.data.info.user,
+            view.getBoundsOnScreen(),
+            view.makeClipRevealAnimation()
+        )
+        dismiss()
+    }
+
+    private fun onVisibilityButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
+        activitiesViewModel.setIsHidden(viewItem.data.info, !viewItem.data.metadata.isHidden)
+        dismiss()
     }
 
     private fun onTileClick(view: View, tileData: TileData) = when (tileData) {
@@ -193,12 +186,18 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun onTileLongClick(tileData: TileData) = when (tileData) {
+    private fun onTileLongClick(view: View, tileData: TileData) = when (tileData) {
         is ActivityTileData -> throw NotImplementedError()
         is ShortcutTileData -> {
             shortcutsViewModel.pinShortcut(tileData.info)
             Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun onWidgetPreviewClick(view: View, widgetPreviewViewItem: WidgetPreviewViewItem) {
+        bindWidgetActivityLauncher.launch(
+            AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, launcherActivity.info.user)
+        )
     }
 
     companion object {

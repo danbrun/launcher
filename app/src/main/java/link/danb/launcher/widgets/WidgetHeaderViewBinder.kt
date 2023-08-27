@@ -13,8 +13,8 @@ import link.danb.launcher.R
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.applySize
+import link.danb.launcher.extensions.inflate
+import link.danb.launcher.extensions.applySize
 import javax.inject.Inject
 
 class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :

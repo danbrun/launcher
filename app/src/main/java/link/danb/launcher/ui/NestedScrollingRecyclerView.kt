@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import android.widget.ListView
 import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
-import link.danb.launcher.utils.isTouchWithinBounds
+import link.danb.launcher.extensions.isTouchWithinBounds
 
 class NestedScrollingRecyclerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null

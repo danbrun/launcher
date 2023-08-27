@@ -7,8 +7,8 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
-import link.danb.launcher.utils.inflate
-import link.danb.launcher.utils.applySize
+import link.danb.launcher.extensions.inflate
+import link.danb.launcher.extensions.applySize
 
 class TransparentTileViewBinder(
     private val onClick: ((View, TileData) -> Unit)? = null,

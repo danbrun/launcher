@@ -14,11 +14,11 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.utils.inflate
+import link.danb.launcher.extensions.inflate
 
 class WidgetPreviewViewBinder(
     private val appWidgetViewProvider: AppWidgetViewProvider,
-    private val widgetPreviewListener: WidgetPreviewListener? = null
+    private val onClick: ((View, WidgetPreviewViewItem) -> Unit)? = null
 ) : ViewBinder<WidgetPreviewViewHolder, WidgetPreviewViewItem> {
 
     override val viewType: Int = R.id.widget_preview_view_type_id
@@ -30,12 +30,12 @@ class WidgetPreviewViewBinder(
     @SuppressLint("ResourceType")
     override fun bindViewHolder(holder: WidgetPreviewViewHolder, viewItem: WidgetPreviewViewItem) {
         holder.itemView.apply {
-            isClickable = widgetPreviewListener != null
-            setOnClickListener { widgetPreviewListener?.onClick(it, viewItem) }
+            isClickable = onClick != null
+            setOnClickListener { onClick?.invoke(it, viewItem) }
         }
 
         holder.frame.removeAllViews()
-        holder.frame.setOnClickListener { widgetPreviewListener?.onClick(it, viewItem) }
+        holder.frame.setOnClickListener { onClick?.invoke(it, viewItem) }
         holder.image.setImageDrawable(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && viewItem.providerInfo.previewLayout != Resources.ID_NULL) {
             holder.frame.addView(appWidgetViewProvider.createPreview(viewItem.providerInfo))
@@ -81,8 +81,4 @@ class WidgetPreviewViewItem(val providerInfo: AppWidgetProviderInfo, val userHan
 
 
     override fun areContentsTheSame(other: ViewItem): Boolean = true
-}
-
-fun interface WidgetPreviewListener {
-    fun onClick(view: View, widgetPreviewViewItem: WidgetPreviewViewItem)
 }

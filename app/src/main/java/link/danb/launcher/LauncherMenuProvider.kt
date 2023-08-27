@@ -18,7 +18,7 @@ import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.profiles.EnableWorkProfileDialogBuilder
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
-import link.danb.launcher.utils.isPersonalProfile
+import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
 import javax.inject.Inject
 

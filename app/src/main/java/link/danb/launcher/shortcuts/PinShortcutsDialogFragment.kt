@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.activityViewModels
@@ -25,6 +26,7 @@ import link.danb.launcher.R
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
@@ -59,20 +61,9 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     @Inject
     lateinit var profilesModel: ProfilesModel
 
-    private val shortcutActivityLauncher =
-        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
-            if (it.data == null) return@registerForActivityResult
-            val pinItemRequest =
-                launcherApps.getPinItemRequest(it.data) ?: return@registerForActivityResult
-            if (!pinItemRequest.isValid) return@registerForActivityResult
-            if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return@registerForActivityResult
-            val info = pinItemRequest.shortcutInfo ?: return@registerForActivityResult
-
-            pinItemRequest.accept()
-            shortcutsViewModel.pinShortcut(info)
-            Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
-            dismiss()
-        }
+    private val shortcutActivityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(), ::onPinShortcutActivityResult
+    )
 
     private val headerItems by lazy {
         listOf(
@@ -87,7 +78,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        val view = inflater.inflate(
+        val recyclerView = inflater.inflate(
             R.layout.recycler_view_dialog_fragment, container, false
         ) as RecyclerView
 
@@ -95,25 +86,24 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
             DialogHeaderViewBinder(),
             GroupHeaderViewBinder(),
             LoadingSpinnerViewBinder(),
-            CardTileViewBinder({ _, it -> onTileClick(it) }),
+            CardTileViewBinder(::onTileClick),
         )
 
         val gridLayoutManager = GridLayoutManager(
             context, requireContext().resources.getInteger(R.integer.launcher_columns)
-        )
-        gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int = when (adapter.currentList[position]) {
+        ).setSpanSizeProvider { position, spanCount ->
+            when (adapter.currentList[position]) {
                 is TileViewItem -> 1
-                else -> gridLayoutManager.spanCount
+                else -> spanCount
             }
         }
 
-        view.apply {
-            layoutManager = gridLayoutManager
+        recyclerView.apply {
             this.adapter = adapter
+            layoutManager = gridLayoutManager
         }
 
-        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem()))
+        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem))
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -125,17 +115,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
             }
         }
 
-        return view
-    }
-
-    private fun onTileClick(tileData: TileData) {
-        if (tileData !is ActivityTileData) return
-
-        shortcutActivityLauncher.launch(
-            IntentSenderRequest.Builder(
-                launcherApps.getShortcutConfigActivityIntent(tileData.info)!!
-            ).build()
-        )
+        return recyclerView
     }
 
     private fun getViewItems(
@@ -152,6 +132,31 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
                 ActivityTileData(it), it.label, launcherIconCache.get(it)
             )
         })
+    }
+
+    private fun onTileClick(view: View, tileData: TileData) {
+        if (tileData !is ActivityTileData) return
+
+        shortcutActivityLauncher.launch(
+            IntentSenderRequest.Builder(
+                launcherApps.getShortcutConfigActivityIntent(tileData.info)!!
+            ).build()
+        )
+    }
+
+    private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
+        if (activityResult.data == null) return
+
+        val pinItemRequest = launcherApps.getPinItemRequest(activityResult.data) ?: return
+        if (!pinItemRequest.isValid) return
+        if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
+
+        val info = pinItemRequest.shortcutInfo ?: return
+
+        pinItemRequest.accept()
+        shortcutsViewModel.pinShortcut(info)
+        Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+        dismiss()
     }
 
     companion object {

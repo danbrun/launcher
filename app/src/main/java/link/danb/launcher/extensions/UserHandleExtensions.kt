@@ -1,4 +1,4 @@
-package link.danb.launcher.utils
+package link.danb.launcher.extensions
 
 import android.os.UserHandle
 import link.danb.launcher.profiles.ProfilesModel

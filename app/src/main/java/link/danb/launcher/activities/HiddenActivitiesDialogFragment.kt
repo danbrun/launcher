@@ -2,6 +2,7 @@ package link.danb.launcher.activities
 
 import android.content.pm.LauncherApps
 import android.os.Bundle
+import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
+import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
@@ -30,8 +32,9 @@ import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.tiles.TileData
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.utils.getBoundsOnScreen
-import link.danb.launcher.utils.makeClipRevealAnimation
+import link.danb.launcher.ui.ViewItem
+import link.danb.launcher.extensions.getBoundsOnScreen
+import link.danb.launcher.extensions.makeClipRevealAnimation
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -47,6 +50,12 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var profilesModel: ProfilesModel
+
+    private val header by lazy {
+        DialogHeaderViewItem(
+            requireContext().getString(R.string.hidden_apps), R.drawable.ic_baseline_visibility_24
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -78,14 +87,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
             }
         }
 
-        val headerItems = listOf(
-            DialogHeaderViewItem(
-                requireContext().getString(R.string.hidden_apps),
-                R.drawable.ic_baseline_visibility_24
-            )
-        )
-
-        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem()))
+        adapter.submitList(listOf(header, LoadingSpinnerViewItem))
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -93,29 +95,29 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
                     combine(
                         activitiesViewModel.launcherActivities, profilesModel.activeProfile
                     ) { activities, currentUser ->
-                        activities.filter { it.metadata.isHidden && it.metadata.userHandle == currentUser }
-                    }.collect { activities ->
-                        adapter.submitList(
-                            async(Dispatchers.IO) {
-                                headerItems + activities.also {
-                                    if (it.isEmpty()) {
-                                        dismiss()
-                                    }
-                                }.sortedBy { it.info.label.toString().lowercase() }.map {
-                                    TileViewItem.cardTileViewItem(
-                                        ActivityTileData(it.info),
-                                        it.info.label,
-                                        launcherIconCache.get(it.info)
-                                    )
-                                }
-                            }.await()
-                        )
-                    }
+                        async(Dispatchers.IO) { getViewItems(activities, currentUser) }.await()
+                    }.collect(adapter::submitList)
                 }
             }
         }
 
         return recyclerView
+    }
+
+    private fun getViewItems(
+        activities: List<ActivityData>, activeProfile: UserHandle
+    ): List<ViewItem> = buildList {
+        add(header)
+
+        val activityItems =
+            activities.filter { it.metadata.isHidden && it.metadata.userHandle == activeProfile }
+                .sortedBy { it.info.label.toString().lowercase() }.map {
+                    TileViewItem.cardTileViewItem(
+                        ActivityTileData(it.info), it.info.label, launcherIconCache.get(it.info)
+                    )
+                }
+
+        addAll(activityItems)
     }
 
     private fun onTileClick(view: View, tileData: TileData) {
