@@ -8,7 +8,7 @@ class TileViewItem private constructor(
     override val viewType: Int,
     val data: TileData,
     val name: CharSequence,
-    val icon: Lazy<Drawable>,
+    val icon: Drawable,
 ) : ViewItem {
 
     override fun areItemsTheSame(other: ViewItem): Boolean =
@@ -19,11 +19,11 @@ class TileViewItem private constructor(
 
     companion object {
         fun cardTileViewItem(
-            data: TileData, name: CharSequence, icon: Lazy<Drawable>
+            data: TileData, name: CharSequence, icon: Drawable
         ) = TileViewItem(R.id.card_tile_view_type_id, data, name, icon)
 
         fun transparentTileViewItem(
-            data: TileData, name: CharSequence, icon: Lazy<Drawable>
+            data: TileData, name: CharSequence, icon: Drawable
         ) = TileViewItem(R.id.transparent_tile_view_type_id, data, name, icon)
     }
 }

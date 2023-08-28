@@ -104,7 +104,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         return recyclerView
     }
 
-    private fun getViewItems(
+    private suspend fun getViewItems(
         activities: List<ActivityData>, activeProfile: UserHandle
     ): List<ViewItem> = buildList {
         add(header)

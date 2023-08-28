@@ -26,10 +26,10 @@ class TransparentTileViewBinder(
     ) {
         holder.textView.apply {
             text = viewItem.name
-            viewItem.icon.value.applySize(
+            viewItem.icon.applySize(
                 context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
             )
-            setCompoundDrawables(viewItem.icon.value, null, null, null)
+            setCompoundDrawables(viewItem.icon, null, null, null)
             setOnClickListener { onClick?.invoke(it, viewItem.data) }
             setOnLongClickListener { onLongClick?.invoke(it, viewItem.data); true }
             clipToOutline = true

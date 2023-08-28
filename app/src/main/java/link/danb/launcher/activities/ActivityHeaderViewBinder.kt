@@ -62,7 +62,7 @@ class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
     val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
 }
 
-class ActivityHeaderViewItem(val data: ActivityData, private val lazyIcon: Lazy<Drawable>) :
+class ActivityHeaderViewItem(val data: ActivityData, val icon: Drawable) :
     ViewItem {
 
     override val viewType: Int = R.id.activity_header_view_type_id
@@ -70,11 +70,9 @@ class ActivityHeaderViewItem(val data: ActivityData, private val lazyIcon: Lazy<
     val name: CharSequence
         get() = data.info.label
 
-    val icon: Drawable by lazyIcon
-
     override fun areItemsTheSame(other: ViewItem): Boolean =
         other is ActivityHeaderViewItem && data.info.componentName == other.data.info.componentName && data.info.user == other.data.info.user
 
     override fun areContentsTheSame(other: ViewItem): Boolean =
-        other is ActivityHeaderViewItem && name == other.name && lazyIcon == other.lazyIcon
+        other is ActivityHeaderViewItem && name == other.name && icon == other.icon
 }

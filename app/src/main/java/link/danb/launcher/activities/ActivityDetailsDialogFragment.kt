@@ -130,7 +130,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         return recyclerView
     }
 
-    private fun getViewItems(activeProfile: UserHandle): List<ViewItem> = buildList {
+    private suspend fun getViewItems(activeProfile: UserHandle): List<ViewItem> = buildList {
         add(ActivityHeaderViewItem(launcherActivity, launcherIconCache.get(launcherActivity.info)))
 
         shortcutsViewModel.pinnedShortcuts.value.filter { it.userHandle == profilesModel.activeProfile.value }

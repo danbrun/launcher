@@ -232,7 +232,7 @@ class LauncherFragment : Fragment() {
         }
     }
 
-    private fun getShortcutListViewItems(
+    private suspend fun getShortcutListViewItems(
         shortcuts: List<ShortcutInfo>, activeProfile: UserHandle
     ): List<ViewItem> = shortcuts.filter { it.userHandle == activeProfile }.groupBy { true }
         .flatMap { (_, shortcuts) ->
@@ -246,7 +246,7 @@ class LauncherFragment : Fragment() {
             }
         }
 
-    private fun getAppListViewItems(
+    private suspend fun getAppListViewItems(
         launcherActivities: List<ActivityData>, activeProfile: UserHandle
     ): List<ViewItem> = launcherActivities.filter {
         !it.metadata.isHidden && it.info.user == activeProfile

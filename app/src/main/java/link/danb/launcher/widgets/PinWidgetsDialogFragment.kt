@@ -116,7 +116,7 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
         return recyclerView
     }
 
-    private fun getViewItems(expandedPackages: Set<String>): List<ViewItem> = buildList {
+    private suspend fun getViewItems(expandedPackages: Set<String>): List<ViewItem> = buildList {
         addAll(headerItems)
 
         val user = profilesModel.activeProfile.value

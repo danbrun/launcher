@@ -118,7 +118,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         return recyclerView
     }
 
-    private fun getViewItems(
+    private suspend fun getViewItems(
         shortcutActivities: List<ActivitiesViewModel.ActivityData>, activeProfile: UserHandle
     ): List<ViewItem> = buildList {
         addAll(headerItems)

@@ -15,6 +15,7 @@ import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.extensions.inflate
 import link.danb.launcher.extensions.applySize
+import link.danb.launcher.icons.LauncherIconCache.ApplicationInfoWithUser
 import javax.inject.Inject
 
 class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
@@ -46,7 +47,7 @@ class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
             if (viewItem.isExpanded) R.drawable.baseline_expand_less_24 else R.drawable.baseline_expand_more_24
 
         setCompoundDrawablesRelative(
-            viewItem.icon.value.applySize(appIconSize),
+            viewItem.icon.applySize(appIconSize),
             null,
             ContextCompat.getDrawable(context, dropdownDrawableRes)?.applySize(dropdownIconSize),
             null
@@ -61,7 +62,7 @@ class WidgetHeaderViewHolder(view: View) : ViewHolder(view) {
 class WidgetHeaderViewItem private constructor(
     val applicationInfo: ApplicationInfo,
     val name: CharSequence,
-    val icon: Lazy<Drawable>,
+    val icon: Drawable,
     var isExpanded: Boolean
 ) : ViewItem {
 
@@ -76,11 +77,11 @@ class WidgetHeaderViewItem private constructor(
     class WidgetHeaderViewItemFactory @Inject constructor(
         private val application: Application, private val launcherIconCache: LauncherIconCache
     ) {
-        fun create(info: ApplicationInfo, user: UserHandle, isExpanded: Boolean) =
+        suspend fun create(info: ApplicationInfo, user: UserHandle, isExpanded: Boolean) =
             WidgetHeaderViewItem(
                 info,
                 info.loadLabel(application.packageManager),
-                launcherIconCache.get(info, user),
+                launcherIconCache.get(ApplicationInfoWithUser(info, user)),
                 isExpanded
             )
     }
