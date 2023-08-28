@@ -11,6 +11,5 @@ class EnableWorkProfileDialogBuilder @Inject constructor(private val profilesMod
         MaterialAlertDialogBuilder(context).setTitle(R.string.turn_on_work_profile)
             .setPositiveButton(R.string.turn_on) { _, _ ->
                 profilesModel.setWorkProfileEnabled(true)
-                profilesModel.toggleActiveProfile(true)
             }.setNegativeButton(android.R.string.cancel, null)
 }

@@ -10,7 +10,7 @@ import dagger.hilt.components.SingletonComponent
 
 @Module
 @InstallIn(SingletonComponent::class)
-class ProfileModule {
+class ProfilesModule {
 
     @Provides
     fun getUserManager(application: Application): UserManager = application.getSystemService()!!

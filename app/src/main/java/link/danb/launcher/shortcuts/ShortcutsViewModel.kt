@@ -37,7 +37,11 @@ class ShortcutsViewModel @Inject constructor(
         val (workProfile, isWorkProfileEnabled) = profilesModel.workProfileData.value
         if (user == workProfile && !isWorkProfileEnabled) return listOf()
 
-        return launcherApps.getShortcuts(ShortcutQuery().setPackage(packageName), user) ?: listOf()
+        return launcherApps.getShortcuts(
+            ShortcutQuery().setPackage(packageName)
+                .setQueryFlags(ShortcutQuery.FLAG_MATCH_DYNAMIC or ShortcutQuery.FLAG_MATCH_MANIFEST),
+            user
+        ) ?: listOf()
     }
 
     fun pinShortcut(shortcutInfo: ShortcutInfo) {

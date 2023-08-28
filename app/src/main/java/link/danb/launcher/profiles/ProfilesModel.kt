@@ -30,6 +30,8 @@ class ProfilesModel @Inject constructor(
         }
     }
 
+    private var switchToWorkProfileWhenAvailable: Boolean = false
+
     init {
         application.registerReceiver(broadcastReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
@@ -45,6 +47,7 @@ class ProfilesModel @Inject constructor(
     val activeProfile: StateFlow<UserHandle> = _activeProfile.asStateFlow()
 
     fun setWorkProfileEnabled(isEnabled: Boolean) {
+        switchToWorkProfileWhenAvailable = isEnabled
         _workProfileData.value.user?.let { userManager.requestQuietModeEnabled(!isEnabled, it) }
     }
 
@@ -63,6 +66,9 @@ class ProfilesModel @Inject constructor(
 
         if (_activeProfile.value == workProfile && !isWorkProfileEnabled) {
             _activeProfile.value = personalProfile
+        } else if (isWorkProfileEnabled && workProfile != null && switchToWorkProfileWhenAvailable) {
+            switchToWorkProfileWhenAvailable = false
+            _activeProfile.value = workProfile
         }
     }
 
