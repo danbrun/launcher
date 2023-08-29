@@ -6,12 +6,19 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 /** Drawable for rendering icons in a custom shape. */
-class LauncherIconDrawable(private val icon: Drawable) : Drawable() {
+class LauncherIconDrawable private constructor(private val icon: Drawable) : Drawable() {
 
-    private val palette: Palette by lazy {
-        Palette.from(icon.toBitmap()).generate()
+    private lateinit var palette: Palette
+
+    init {
+        if (icon !is AdaptiveIconDrawable) {
+            palette = Palette.from(icon.toBitmap()).generate()
+        }
     }
 
     override fun draw(canvas: Canvas) {
@@ -34,8 +41,7 @@ class LauncherIconDrawable(private val icon: Drawable) : Drawable() {
     override fun setColorFilter(colorFilter: ColorFilter?) {}
 
     @Deprecated(
-        "Deprecated in Java",
-        ReplaceWith("PixelFormat.TRANSPARENT", "android.graphics.PixelFormat")
+        "Deprecated in Java", ReplaceWith("PixelFormat.TRANSPARENT", "android.graphics.PixelFormat")
     )
     override fun getOpacity(): Int = PixelFormat.TRANSPARENT
 
@@ -86,5 +92,8 @@ class LauncherIconDrawable(private val icon: Drawable) : Drawable() {
     companion object {
         private const val RADIUS_FRACTION = 0.25f
         private const val LEGACY_INSET_FRACTION = 0.1f
+
+        suspend fun create(icon: Drawable): LauncherIconDrawable =
+            coroutineScope { async(Dispatchers.IO) { LauncherIconDrawable(icon) }.await() }
     }
 }

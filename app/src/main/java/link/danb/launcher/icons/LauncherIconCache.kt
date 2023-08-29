@@ -42,7 +42,7 @@ class LauncherIconCache @Inject constructor(
         icons.getOrPut(iconHandle) {
             async(Dispatchers.IO) {
                 application.packageManager.getUserBadgedIcon(
-                    LauncherIconDrawable(loadIcon(info)), iconHandle.user
+                    LauncherIconDrawable.create(loadIcon(info)), iconHandle.user
                 )
             }.await()
         }
