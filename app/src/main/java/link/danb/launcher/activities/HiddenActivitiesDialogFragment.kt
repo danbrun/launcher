@@ -19,7 +19,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
-import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
@@ -105,12 +104,12 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
     }
 
     private suspend fun getViewItems(
-        activities: List<ActivityData>, activeProfile: UserHandle
+        activities: List<ActivityInfoWithData>, activeProfile: UserHandle
     ): List<ViewItem> = buildList {
         add(header)
 
         val activityItems =
-            activities.filter { it.metadata.isHidden && it.metadata.userHandle == activeProfile }
+            activities.filter { it.data.isHidden && it.data.userHandle == activeProfile }
                 .sortedBy { it.info.label.toString().lowercase() }.map {
                     TileViewItem.cardTileViewItem(
                         ActivityTileData(it.info), it.info.label, launcherIconCache.get(it.info)

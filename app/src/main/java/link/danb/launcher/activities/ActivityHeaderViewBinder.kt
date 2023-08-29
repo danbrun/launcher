@@ -7,7 +7,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
-import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.extensions.inflate
@@ -40,7 +39,7 @@ class ActivityHeaderViewBinder(
 
         holder.visibilityButton.apply {
             setIconResource(
-                if (!viewItem.data.metadata.isHidden) {
+                if (!viewItem.data.data.isHidden) {
                     R.drawable.ic_baseline_visibility_off_24
                 } else {
                     R.drawable.ic_baseline_visibility_24
@@ -62,7 +61,7 @@ class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
     val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
 }
 
-class ActivityHeaderViewItem(val data: ActivityData, val icon: Drawable) :
+class ActivityHeaderViewItem(val data: ActivityInfoWithData, val icon: Drawable) :
     ViewItem {
 
     override val viewType: Int = R.id.activity_header_view_type_id

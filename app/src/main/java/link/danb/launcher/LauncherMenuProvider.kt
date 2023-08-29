@@ -48,7 +48,7 @@ class LauncherMenuProvider @Inject constructor(
                         activitiesViewModel.launcherActivities, profilesModel.activeProfile
                     ) { activities, activeProfile ->
                         Pair(activities.any { !it.info.user.isPersonalProfile() },
-                            activities.any { it.metadata.isHidden && it.info.user == activeProfile })
+                            activities.any { it.data.isHidden && it.info.user == activeProfile })
                     }.collect { (hasWorkProfileApps, hasHiddenApps) ->
                         profileToggle.isVisible = hasWorkProfileApps
                         visibilityToggle.isVisible = hasHiddenApps

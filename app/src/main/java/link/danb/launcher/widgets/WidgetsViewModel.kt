@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.database.LauncherDatabase
-import link.danb.launcher.database.WidgetMetadata
+import link.danb.launcher.database.WidgetData
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,14 +22,12 @@ class WidgetsViewModel @Inject constructor(
     private val widgetSizeUtil: WidgetSizeUtil,
 ) : ViewModel() {
 
-    private val widgetMetadata by lazy {
-        launcherDatabase.widgetMetadata()
-    }
+    private val widgetData by lazy { launcherDatabase.widgetData() }
 
-    private val _widgets: MutableStateFlow<List<WidgetMetadata>> = MutableStateFlow(listOf())
-    val widgets: StateFlow<List<WidgetMetadata>> = _widgets
-
+    private val _widgets: MutableStateFlow<List<WidgetData>> = MutableStateFlow(listOf())
     private val _widgetToEdit: MutableStateFlow<Int?> = MutableStateFlow(null)
+
+    val widgets: StateFlow<List<WidgetData>> = _widgets
     val widgetToEdit: StateFlow<Int?> = _widgetToEdit
 
     fun startEditing(widgetId: Int) {
@@ -61,8 +59,8 @@ class WidgetsViewModel @Inject constructor(
 
     fun setHeight(widgetId: Int, height: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            widgetMetadata.put(
-                widgetMetadata.get().first { it.widgetId == widgetId }.copy(
+            widgetData.put(
+                widgetData.get().first { it.widgetId == widgetId }.copy(
                     height = widgetSizeUtil.getWidgetHeight(height)
                 )
             )
@@ -72,7 +70,7 @@ class WidgetsViewModel @Inject constructor(
 
     private fun adjustPosition(widgetId: Int, positionChange: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            val widgets = widgetMetadata.get().sortedBy { it.position }.toMutableList()
+            val widgets = widgetData.get().sortedBy { it.position }.toMutableList()
             val widget = widgets.first { it.widgetId == widgetId }
             val originalPosition = widgets.indexOf(widget)
             val targetPosition = originalPosition + positionChange
@@ -81,7 +79,7 @@ class WidgetsViewModel @Inject constructor(
                 widgets[originalPosition] = widgets[targetPosition]
                 widgets[targetPosition] = widget
                 widgets.indices.forEach {
-                    widgetMetadata.put(widgets[it].copy(position = it))
+                    widgetData.put(widgets[it].copy(position = it))
                 }
                 refreshInBackground()
             }
@@ -89,13 +87,13 @@ class WidgetsViewModel @Inject constructor(
     }
 
     private fun refreshInBackground() {
-        var widgetMetadataList = widgetMetadata.get()
+        var widgetMetadataList = widgetData.get()
         val widgetIds = appWidgetHost.appWidgetIds.toList()
 
         // Remove metadata for any unbound widgets.
         widgetMetadataList = widgetMetadataList.filter {
             if (!widgetIds.contains(it.widgetId)) {
-                widgetMetadata.delete(it)
+                widgetData.delete(it)
                 false
             } else {
                 true
@@ -106,8 +104,8 @@ class WidgetsViewModel @Inject constructor(
         var position = widgetMetadataList.maxOfOrNull { it.position } ?: 0
         widgetIds.forEach { widgetId ->
             if (widgetMetadataList.none { it.widgetId == widgetId }) {
-                widgetMetadata.put(
-                    WidgetMetadata(
+                widgetData.put(
+                    WidgetData(
                         widgetId,
                         position++,
                         height = application.resources.getDimensionPixelSize(R.dimen.widget_min_height)
@@ -116,6 +114,6 @@ class WidgetsViewModel @Inject constructor(
             }
         }
 
-        _widgets.value = widgetMetadata.get().sortedBy { it.position }
+        _widgets.value = widgetData.get().sortedBy { it.position }
     }
 }

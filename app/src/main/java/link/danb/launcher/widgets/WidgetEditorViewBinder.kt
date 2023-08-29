@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
-import link.danb.launcher.database.WidgetMetadata
+import link.danb.launcher.database.WidgetData
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.extensions.inflate
@@ -30,11 +30,11 @@ class WidgetEditorViewBinder(
     @SuppressLint("ClickableViewAccessibility", "Recycle")
     override fun bindViewHolder(holder: WidgetEditorViewHolder, viewItem: WidgetEditorViewItem) {
         holder.moveUpButton.setOnClickListener {
-            widgetEditorViewListener.onMoveUp(viewItem.widgetMetadata)
+            widgetEditorViewListener.onMoveUp(viewItem.widgetData)
         }
 
         holder.moveDownButton.setOnClickListener {
-            widgetEditorViewListener.onMoveDown(viewItem.widgetMetadata)
+            widgetEditorViewListener.onMoveDown(viewItem.widgetData)
         }
 
         var downEvent: MotionEvent? = null
@@ -47,16 +47,16 @@ class WidgetEditorViewBinder(
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    appWidgetViewProvider.getView(viewItem.widgetMetadata.widgetId)
-                        .setLayoutSize(height = widgetSizeUtil.getWidgetHeight(viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()))
+                    appWidgetViewProvider.getView(viewItem.widgetData.widgetId)
+                        .setLayoutSize(height = widgetSizeUtil.getWidgetHeight(viewItem.widgetData.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()))
                     downEvent != null
                 }
 
                 MotionEvent.ACTION_UP -> {
                     view.parent.requestDisallowInterceptTouchEvent(false)
                     widgetEditorViewListener.onResize(
-                        viewItem.widgetMetadata,
-                        viewItem.widgetMetadata.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
+                        viewItem.widgetData,
+                        viewItem.widgetData.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
                     )
                     downEvent!!.recycle()
                     downEvent = null
@@ -73,15 +73,15 @@ class WidgetEditorViewBinder(
             View.GONE
         }
         holder.configureButton.setOnClickListener {
-            widgetEditorViewListener.onConfigure(viewItem.widgetMetadata)
+            widgetEditorViewListener.onConfigure(viewItem.widgetData)
         }
 
         holder.deleteButton.setOnClickListener {
-            widgetEditorViewListener.onDelete(viewItem.widgetMetadata)
+            widgetEditorViewListener.onDelete(viewItem.widgetData)
         }
 
         holder.doneButton.setOnClickListener {
-            widgetEditorViewListener.onDone(viewItem.widgetMetadata)
+            widgetEditorViewListener.onDone(viewItem.widgetData)
         }
     }
 }
@@ -96,23 +96,23 @@ class WidgetEditorViewHolder(view: View) : ViewHolder(view) {
 }
 
 class WidgetEditorViewItem(
-    val widgetMetadata: WidgetMetadata, val widgetProviderInfo: AppWidgetProviderInfo
+    val widgetData: WidgetData, val widgetProviderInfo: AppWidgetProviderInfo
 ) : ViewItem {
 
     override val viewType: Int = R.id.widget_editor_view_type_id
 
     override fun areItemsTheSame(other: ViewItem): Boolean =
-        other is WidgetEditorViewItem && widgetMetadata.widgetId == other.widgetMetadata.widgetId
+        other is WidgetEditorViewItem && widgetData.widgetId == other.widgetData.widgetId
 
     override fun areContentsTheSame(other: ViewItem): Boolean =
-        other is WidgetEditorViewItem && widgetMetadata == other.widgetMetadata
+        other is WidgetEditorViewItem && widgetData == other.widgetData
 }
 
 interface WidgetEditorViewListener {
-    fun onConfigure(widgetMetadata: WidgetMetadata)
-    fun onDelete(widgetMetadata: WidgetMetadata)
-    fun onMoveUp(widgetMetadata: WidgetMetadata)
-    fun onResize(widgetMetadata: WidgetMetadata, height: Int)
-    fun onMoveDown(widgetMetadata: WidgetMetadata)
-    fun onDone(widgetMetadata: WidgetMetadata)
+    fun onConfigure(widgetData: WidgetData)
+    fun onDelete(widgetData: WidgetData)
+    fun onMoveUp(widgetData: WidgetData)
+    fun onResize(widgetData: WidgetData, height: Int)
+    fun onMoveDown(widgetData: WidgetData)
+    fun onDone(widgetData: WidgetData)
 }

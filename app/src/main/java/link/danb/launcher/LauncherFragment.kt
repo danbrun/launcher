@@ -32,11 +32,11 @@ import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.gestures.GestureContractModel
 import link.danb.launcher.icons.LauncherIconCache
-import link.danb.launcher.activities.ActivitiesViewModel.ActivityData
+import link.danb.launcher.activities.ActivityInfoWithData
 import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.TileData
-import link.danb.launcher.database.WidgetMetadata
+import link.danb.launcher.database.WidgetData
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TransparentTileViewBinder
 import link.danb.launcher.ui.GroupHeaderViewBinder
@@ -102,31 +102,31 @@ class LauncherFragment : Fragment() {
     }
 
     private val widgetEditorViewListener = object : WidgetEditorViewListener {
-        override fun onConfigure(widgetMetadata: WidgetMetadata) {
+        override fun onConfigure(widgetData: WidgetData) {
             appWidgetHost.startAppWidgetConfigureActivityForResult(
-                this@LauncherFragment.requireActivity(), widgetMetadata.widgetId,/* intentFlags = */
+                this@LauncherFragment.requireActivity(), widgetData.widgetId,/* intentFlags = */
                 0, R.id.app_widget_configure_request_id,/* options = */
                 null
             )
         }
 
-        override fun onDelete(widgetMetadata: WidgetMetadata) {
-            widgetsViewModel.delete(widgetMetadata.widgetId)
+        override fun onDelete(widgetData: WidgetData) {
+            widgetsViewModel.delete(widgetData.widgetId)
         }
 
-        override fun onMoveUp(widgetMetadata: WidgetMetadata) {
-            widgetsViewModel.moveUp(widgetMetadata.widgetId)
+        override fun onMoveUp(widgetData: WidgetData) {
+            widgetsViewModel.moveUp(widgetData.widgetId)
         }
 
-        override fun onResize(widgetMetadata: WidgetMetadata, height: Int) {
-            widgetsViewModel.setHeight(widgetMetadata.widgetId, height)
+        override fun onResize(widgetData: WidgetData, height: Int) {
+            widgetsViewModel.setHeight(widgetData.widgetId, height)
         }
 
-        override fun onMoveDown(widgetMetadata: WidgetMetadata) {
-            widgetsViewModel.moveDown(widgetMetadata.widgetId)
+        override fun onMoveDown(widgetData: WidgetData) {
+            widgetsViewModel.moveDown(widgetData.widgetId)
         }
 
-        override fun onDone(widgetMetadata: WidgetMetadata) {
+        override fun onDone(widgetData: WidgetData) {
             widgetsViewModel.finishEditing()
         }
     }
@@ -217,7 +217,7 @@ class LauncherFragment : Fragment() {
     }
 
     private fun getWidgetListViewItems(
-        widgets: List<WidgetMetadata>, widgetToEdit: Int?, activeProfile: UserHandle
+        widgets: List<WidgetData>, widgetToEdit: Int?, activeProfile: UserHandle
     ): List<ViewItem> = widgets.flatMap {
         val info = appWidgetManager.getAppWidgetInfo(it.widgetId)
         if (info.profile != activeProfile) return@flatMap listOf()
@@ -247,9 +247,9 @@ class LauncherFragment : Fragment() {
         }
 
     private suspend fun getAppListViewItems(
-        launcherActivities: List<ActivityData>, activeProfile: UserHandle
+        launcherActivities: List<ActivityInfoWithData>, activeProfile: UserHandle
     ): List<ViewItem> = launcherActivities.filter {
-        !it.metadata.isHidden && it.info.user == activeProfile
+        !it.data.isHidden && it.info.user == activeProfile
     }.groupBy {
         val initial = it.info.label.first().uppercaseChar()
         when {

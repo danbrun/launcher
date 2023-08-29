@@ -8,15 +8,15 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-@Database(entities = [ActivityMetadata::class, WidgetMetadata::class], version = 4)
+@Database(entities = [ActivityData::class, WidgetData::class], version = 5)
 @TypeConverters(
     ComponentNameConverter::class, UserHandleConverter::class, StringSetConverter::class
 )
 abstract class LauncherDatabase : RoomDatabase() {
 
-    abstract fun launcherActivityMetadata(): ActivityMetadata.DataAccessObject
+    abstract fun activityData(): ActivityData.DataAccessObject
 
-    abstract fun widgetMetadata(): WidgetMetadata.DataAccessObject
+    abstract fun widgetData(): WidgetData.DataAccessObject
 
     @Module
     @InstallIn(SingletonComponent::class)
@@ -26,11 +26,9 @@ abstract class LauncherDatabase : RoomDatabase() {
         @Singleton
         fun getDatabase(
             application: Application, userHandleConverter: UserHandleConverter
-        ): LauncherDatabase {
-            return Room.databaseBuilder(
-                application, LauncherDatabase::class.java, DATABASE_NAME
-            ).addTypeConverter(userHandleConverter).fallbackToDestructiveMigration().build()
-        }
+        ): LauncherDatabase =
+            Room.databaseBuilder(application, LauncherDatabase::class.java, DATABASE_NAME)
+                .addTypeConverter(userHandleConverter).fallbackToDestructiveMigration().build()
     }
 
     companion object {

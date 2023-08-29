@@ -26,6 +26,7 @@ import link.danb.launcher.R
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.activities.ActivityInfoWithData
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileData
@@ -119,7 +120,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private suspend fun getViewItems(
-        shortcutActivities: List<ActivitiesViewModel.ActivityData>, activeProfile: UserHandle
+        shortcutActivities: List<ActivityInfoWithData>, activeProfile: UserHandle
     ): List<ViewItem> = buildList {
         addAll(headerItems)
 
