@@ -15,7 +15,6 @@ import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.extensions.inflate
 import link.danb.launcher.extensions.applySize
-import link.danb.launcher.icons.LauncherIconCache.ApplicationInfoWithUser
 import javax.inject.Inject
 
 class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
@@ -81,7 +80,7 @@ class WidgetHeaderViewItem private constructor(
             WidgetHeaderViewItem(
                 info,
                 info.loadLabel(application.packageManager),
-                launcherIconCache.get(ApplicationInfoWithUser(info, user)),
+                launcherIconCache.get(info, user),
                 isExpanded
             )
     }

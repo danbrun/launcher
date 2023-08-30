@@ -31,7 +31,8 @@ class LauncherIconCache @Inject constructor(
         })
     }
 
-    suspend fun get(info: ApplicationInfoWithUser): Drawable = getIcon(info)
+    suspend fun get(info: ApplicationInfo, user: UserHandle): Drawable =
+        getIcon(ApplicationInfoWithUser(info, user))
 
     suspend fun get(info: LauncherActivityInfo): Drawable = getIcon(info)
 
@@ -49,7 +50,7 @@ class LauncherIconCache @Inject constructor(
     }
 
     private fun getIconHandle(info: Any): IconHandle = when (info) {
-        is ApplicationInfoWithUser -> IconHandle(info.packageName, info.user, null)
+        is ApplicationInfoWithUser -> IconHandle(info.info.packageName, info.user, null)
         is LauncherActivityInfo -> IconHandle(
             info.componentName.packageName, info.user, info.componentName.className
         )
@@ -59,15 +60,13 @@ class LauncherIconCache @Inject constructor(
     }
 
     private fun loadIcon(info: Any): Drawable = when (info) {
-        is ApplicationInfoWithUser -> application.packageManager.getApplicationIcon(info.packageName)
+        is ApplicationInfoWithUser -> application.packageManager.getApplicationIcon(info.info)
         is LauncherActivityInfo -> info.getIcon(density)
         is ShortcutInfo -> launcherApps.getShortcutIconDrawable(info, density)
         else -> throw IllegalArgumentException()
     }
 
-    data class ApplicationInfoWithUser(val packageName: String, val user: UserHandle) {
-        constructor(info: ApplicationInfo, user: UserHandle) : this(info.packageName, user)
-    }
+    data class ApplicationInfoWithUser(val info: ApplicationInfo, val user: UserHandle)
 
     private data class IconHandle(
         val packageName: String, val user: UserHandle, val additionalData: Any?
