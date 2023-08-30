@@ -19,7 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.widgets.WidgetHeaderViewItem.WidgetHeaderViewItemFactory
 import link.danb.launcher.icons.LauncherIconCache
@@ -74,11 +76,9 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
         widgetsViewModel.refresh()
     }
 
-    private val headerItems by lazy {
-        listOf(
-            DialogHeaderViewItem(
-                requireContext().getString(R.string.widgets), R.drawable.ic_baseline_widgets_24
-            )
+    private val header by lazy {
+        DialogHeaderViewItem(
+            requireContext().getString(R.string.widgets), R.drawable.ic_baseline_widgets_24
         )
     }
 
@@ -103,12 +103,12 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
             layoutManager = LinearLayoutManager(context)
         }
 
-        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem))
+        adapter.submitList(listOf(header, LoadingSpinnerViewItem))
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 widgetDialogViewModel.expandedPackageNames.collect {
-                    adapter.submitList(getViewItems(it))
+                    adapter.submitList(listOf(header) + getViewItems(it))
                 }
             }
         }
@@ -116,27 +116,24 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
         return recyclerView
     }
 
-    private suspend fun getViewItems(expandedPackages: Set<String>): List<ViewItem> = buildList {
-        addAll(headerItems)
-
-        val user = profilesModel.activeProfile.value
-        val widgetItems = appWidgetManager.getInstalledProvidersForProfile(user)
-            .groupBy { it.provider.packageName }
-            .mapKeys { launcherApps.getApplicationInfo(it.key, 0, user) }
-            .toSortedMap(compareBy<ApplicationInfo> {
-                it.loadLabel(packageManager).toString().lowercase()
-            }).flatMap { (appInfo, widgets) ->
-                mutableListOf<ViewItem>().apply {
-                    val isExpanded = expandedPackages.contains(appInfo.packageName)
-                    add(widgetHeaderViewItemFactory.create(appInfo, user, isExpanded))
-                    if (isExpanded) {
-                        addAll(widgets.map { WidgetPreviewViewItem(it, user) })
+    private suspend fun getViewItems(expandedPackages: Set<String>): List<ViewItem> =
+        withContext(Dispatchers.IO) {
+            val user = profilesModel.activeProfile.value
+            appWidgetManager.getInstalledProvidersForProfile(user)
+                .groupBy { it.provider.packageName }
+                .mapKeys { launcherApps.getApplicationInfo(it.key, 0, user) }
+                .toSortedMap(compareBy<ApplicationInfo> {
+                    it.loadLabel(packageManager).toString().lowercase()
+                }).flatMap { (appInfo, widgets) ->
+                    buildList {
+                        val isExpanded = expandedPackages.contains(appInfo.packageName)
+                        add(widgetHeaderViewItemFactory.create(appInfo, user, isExpanded))
+                        if (isExpanded) {
+                            addAll(widgets.map { WidgetPreviewViewItem(it, user) })
+                        }
                     }
                 }
-            }
-
-        addAll(widgetItems)
-    }
+        }
 
     private fun onWidgetPreviewClick(view: View, widgetPreviewViewItem: WidgetPreviewViewItem) {
         bindWidgetActivityLauncher.launch(

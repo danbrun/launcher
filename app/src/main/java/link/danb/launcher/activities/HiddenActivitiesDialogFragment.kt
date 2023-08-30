@@ -16,8 +16,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.ui.DialogHeaderViewBinder
@@ -94,7 +96,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
                     combine(
                         activitiesViewModel.launcherActivities, profilesModel.activeProfile
                     ) { activities, currentUser ->
-                        async(Dispatchers.IO) { getViewItems(activities, currentUser) }.await()
+                        listOf(header) + getViewItems(activities, currentUser)
                     }.collect(adapter::submitList)
                 }
             }
@@ -105,18 +107,14 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
     private suspend fun getViewItems(
         activities: List<ActivityInfoWithData>, activeProfile: UserHandle
-    ): List<ViewItem> = buildList {
-        add(header)
-
-        val activityItems =
-            activities.filter { it.data.isHidden && it.data.userHandle == activeProfile }
-                .sortedBy { it.info.label.toString().lowercase() }.map {
-                    TileViewItem.cardTileViewItem(
-                        ActivityTileData(it.info), it.info.label, launcherIconCache.get(it.info)
-                    )
-                }
-
-        addAll(activityItems)
+    ): List<ViewItem> = withContext(Dispatchers.IO) {
+        activities.filter { it.data.isHidden && it.data.userHandle == activeProfile }.map {
+            async {
+                TileViewItem.cardTileViewItem(
+                    ActivityTileData(it.info), it.info.label, launcherIconCache.get(it.info)
+                )
+            }
+        }.awaitAll().sortedBy { it.name.toString().lowercase() }
     }
 
     private fun onTileClick(view: View, tileData: TileData) {

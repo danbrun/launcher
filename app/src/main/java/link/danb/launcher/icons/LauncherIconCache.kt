@@ -5,11 +5,11 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.extensions.packageName
 import javax.inject.Inject
@@ -38,14 +38,18 @@ class LauncherIconCache @Inject constructor(
 
     suspend fun get(info: ShortcutInfo): Drawable = getIcon(info)
 
-    private suspend fun getIcon(info: Any) = coroutineScope {
+    private suspend fun getIcon(info: Any) = withContext(Dispatchers.IO) {
         val iconHandle = getIconHandle(info)
         icons.getOrPut(iconHandle) {
-            async(Dispatchers.IO) {
-                application.packageManager.getUserBadgedIcon(
-                    LauncherIconDrawable.create(loadIcon(info)), iconHandle.user
-                )
-            }.await()
+            application.packageManager.getUserBadgedIcon(
+                loadIcon(info).let {
+                    if (it is AdaptiveIconDrawable) {
+                        AdaptiveLauncherIconDrawable(it)
+                    } else {
+                        LegacyLauncherIconDrawable.create(it)
+                    }
+                }, iconHandle.user
+            )
         }
     }
 

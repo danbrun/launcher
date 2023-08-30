@@ -20,8 +20,12 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.icons.LauncherIconCache
@@ -66,11 +70,9 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         ActivityResultContracts.StartIntentSenderForResult(), ::onPinShortcutActivityResult
     )
 
-    private val headerItems by lazy {
-        listOf(
-            DialogHeaderViewItem(
-                requireContext().getString(R.string.shortcuts), R.drawable.baseline_push_pin_24
-            )
+    private val header by lazy {
+        DialogHeaderViewItem(
+            requireContext().getString(R.string.shortcuts), R.drawable.baseline_push_pin_24
         )
     }
 
@@ -104,7 +106,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
             layoutManager = gridLayoutManager
         }
 
-        adapter.submitList(headerItems + listOf(LoadingSpinnerViewItem))
+        adapter.submitList(listOf(header, LoadingSpinnerViewItem))
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -112,7 +114,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
                     activitiesViewModel.launcherActivities,
                     profilesModel.activeProfile,
                     ::getViewItems
-                ).collect { adapter.submitList(it) }
+                ).collect { adapter.submitList(listOf(header) + it) }
             }
         }
 
@@ -121,18 +123,18 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
     private suspend fun getViewItems(
         shortcutActivities: List<ActivityInfoWithData>, activeProfile: UserHandle
-    ): List<ViewItem> = buildList {
-        addAll(headerItems)
-
-        addAll(shortcutActivities.filter { it.info.user == activeProfile }.flatMap {
+    ): List<ViewItem> = withContext(Dispatchers.IO) {
+        shortcutActivities.filter { it.info.user == activeProfile }.flatMap {
             launcherApps.getShortcutConfigActivityList(
                 it.info.componentName.packageName, it.info.user
             )
-        }.sortedBy { it.label.toString().lowercase() }.map {
-            TileViewItem.cardTileViewItem(
-                ActivityTileData(it), it.label, launcherIconCache.get(it)
-            )
-        })
+        }.map {
+            async {
+                TileViewItem.cardTileViewItem(
+                    ActivityTileData(it), it.label, launcherIconCache.get(it)
+                )
+            }
+        }.awaitAll().sortedBy { it.name.toString().lowercase() }
     }
 
     private fun onTileClick(view: View, tileData: TileData) {

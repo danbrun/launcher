@@ -25,8 +25,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -196,7 +201,7 @@ class LauncherFragment : Fragment() {
 
                     combine(widgetsFlow, shortcutsFlow, appsFlow) { widgets, shortcuts, apps ->
                         widgets + shortcuts + apps
-                    }.collect { activityAdapter.submitList(it) }
+                    }.collectLatest { activityAdapter.submitList(it) }
                 }
 
                 launch {
@@ -234,36 +239,40 @@ class LauncherFragment : Fragment() {
 
     private suspend fun getShortcutListViewItems(
         shortcuts: List<ShortcutInfo>, activeProfile: UserHandle
-    ): List<ViewItem> = shortcuts.filter { it.userHandle == activeProfile }.groupBy { true }
-        .flatMap { (_, shortcuts) ->
-            buildList {
-                add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
-                addAll(shortcuts.map {
-                    TileViewItem.transparentTileViewItem(
-                        ShortcutTileData(it), it.shortLabel!!, launcherIconCache.get(it)
-                    )
-                }.sortedBy { it.name.toString().lowercase() })
+    ): List<ViewItem> = withContext(Dispatchers.IO) {
+        shortcuts.filter { it.userHandle == activeProfile }.map {
+            async {
+                TileViewItem.transparentTileViewItem(
+                    ShortcutTileData(it), it.shortLabel!!, launcherIconCache.get(it)
+                )
             }
-        }
+        }.awaitAll().sortedBy { it.name.toString().lowercase() }.takeIf { it.isNotEmpty() }
+            ?.let { listOf(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts))) + it }
+            ?: listOf()
+    }
 
     private suspend fun getAppListViewItems(
         launcherActivities: List<ActivityInfoWithData>, activeProfile: UserHandle
-    ): List<ViewItem> = launcherActivities.filter {
-        !it.data.isHidden && it.info.user == activeProfile
-    }.groupBy {
-        val initial = it.info.label.first().uppercaseChar()
-        when {
-            initial.isLetter() -> initial.toString()
-            else -> "..."
-        }
-    }.toSortedMap().flatMap { (groupName, launcherActivities) ->
-        buildList {
-            add(GroupHeaderViewItem(groupName))
-            addAll(launcherActivities.sortedBy { it.info.label.toString().lowercase() }.map {
+    ): List<ViewItem> = withContext(Dispatchers.IO) {
+        launcherActivities.filter {
+            !it.data.isHidden && it.info.user == activeProfile
+        }.map {
+            async {
                 TileViewItem.transparentTileViewItem(
                     ActivityTileData(it.info), it.info.label, launcherIconCache.get(it.info)
                 )
-            })
+            }
+        }.awaitAll().groupBy {
+            val initial = it.name.first().uppercaseChar()
+            when {
+                initial.isLetter() -> initial.toString()
+                else -> "..."
+            }
+        }.toSortedMap().flatMap { (groupName, activityItems) ->
+            buildList {
+                add(GroupHeaderViewItem(groupName))
+                addAll(activityItems.sortedBy { it.name.toString().lowercase() })
+            }
         }
     }
 
