@@ -13,30 +13,31 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ConfirmPinWidgetActivity : AppCompatActivity() {
 
-    @Inject
-    lateinit var launcherApps: LauncherApps
+  @Inject lateinit var launcherApps: LauncherApps
 
-    private val bindWidgetActivityLauncher = registerForActivityResult(
-        AppWidgetSetupActivityResultContract()
-    ) {
-        if (it.success) {
-            Toast.makeText(this, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, it.errorMessage, Toast.LENGTH_SHORT).show()
-        }
-        finish()
+  private val bindWidgetActivityLauncher =
+    registerForActivityResult(AppWidgetSetupActivityResultContract()) {
+      if (it.success) {
+        Toast.makeText(this, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
+      } else {
+        Toast.makeText(this, it.errorMessage, Toast.LENGTH_SHORT).show()
+      }
+      finish()
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-        val pinItemRequest = launcherApps.getPinItemRequest(intent)
+    val pinItemRequest = launcherApps.getPinItemRequest(intent)
 
-        if (!pinItemRequest.isValid || pinItemRequest.requestType != PinItemRequest.REQUEST_TYPE_APPWIDGET) return
+    if (
+      !pinItemRequest.isValid || pinItemRequest.requestType != PinItemRequest.REQUEST_TYPE_APPWIDGET
+    )
+      return
 
-        val info = pinItemRequest.getAppWidgetProviderInfo(this) ?: return
+    val info = pinItemRequest.getAppWidgetProviderInfo(this) ?: return
 
-        pinItemRequest.accept()
-        bindWidgetActivityLauncher.launch(AppWidgetSetupInput(info, info.profile))
-    }
+    pinItemRequest.accept()
+    bindWidgetActivityLauncher.launch(AppWidgetSetupInput(info, info.profile))
+  }
 }

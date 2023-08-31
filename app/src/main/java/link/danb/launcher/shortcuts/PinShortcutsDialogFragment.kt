@@ -27,11 +27,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
-import link.danb.launcher.tiles.ActivityTileData
-import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityInfoWithData
 import link.danb.launcher.extensions.setSpanSizeProvider
+import link.danb.launcher.icons.LauncherIconCache
+import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
@@ -42,127 +43,127 @@ import link.danb.launcher.ui.LoadingSpinnerViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.profiles.ProfilesModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
-    private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
-    private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
+  private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
+  private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
 
-    @Inject
-    lateinit var appWidgetHost: AppWidgetHost
+  @Inject lateinit var appWidgetHost: AppWidgetHost
+  @Inject lateinit var appWidgetManager: AppWidgetManager
+  @Inject lateinit var launcherIconCache: LauncherIconCache
+  @Inject lateinit var launcherApps: LauncherApps
+  @Inject lateinit var profilesModel: ProfilesModel
 
-    @Inject
-    lateinit var appWidgetManager: AppWidgetManager
-
-    @Inject
-    lateinit var launcherIconCache: LauncherIconCache
-
-    @Inject
-    lateinit var launcherApps: LauncherApps
-
-    @Inject
-    lateinit var profilesModel: ProfilesModel
-
-    private val shortcutActivityLauncher = registerForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult(), ::onPinShortcutActivityResult
+  private val shortcutActivityLauncher =
+    registerForActivityResult(
+      ActivityResultContracts.StartIntentSenderForResult(),
+      ::onPinShortcutActivityResult
     )
 
-    private val header by lazy {
-        DialogHeaderViewItem(
-            requireContext().getString(R.string.shortcuts), R.drawable.baseline_push_pin_24
-        )
-    }
+  private val header by lazy {
+    DialogHeaderViewItem(
+      requireContext().getString(R.string.shortcuts),
+      R.drawable.baseline_push_pin_24
+    )
+  }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        super.onCreateView(inflater, container, savedInstanceState)
+  override fun onCreateView(
+    inflater: LayoutInflater,
+    container: ViewGroup?,
+    savedInstanceState: Bundle?
+  ): View {
+    super.onCreateView(inflater, container, savedInstanceState)
 
-        val recyclerView = inflater.inflate(
-            R.layout.recycler_view_dialog_fragment, container, false
-        ) as RecyclerView
+    val recyclerView =
+      inflater.inflate(R.layout.recycler_view_dialog_fragment, container, false) as RecyclerView
 
-        val adapter = ViewBinderAdapter(
-            DialogHeaderViewBinder(),
-            GroupHeaderViewBinder(),
-            LoadingSpinnerViewBinder(),
-            CardTileViewBinder(::onTileClick),
-        )
+    val adapter =
+      ViewBinderAdapter(
+        DialogHeaderViewBinder(),
+        GroupHeaderViewBinder(),
+        LoadingSpinnerViewBinder(),
+        CardTileViewBinder { _, it -> onTileClick(it) },
+      )
 
-        val gridLayoutManager = GridLayoutManager(
-            context, requireContext().resources.getInteger(R.integer.launcher_columns)
-        ).setSpanSizeProvider { position, spanCount ->
-            when (adapter.currentList[position]) {
+    recyclerView.apply {
+      this.adapter = adapter
+      layoutManager =
+        GridLayoutManager(
+            context,
+            requireContext().resources.getInteger(R.integer.launcher_columns)
+          )
+          .apply {
+            setSpanSizeProvider { position, spanCount ->
+              when (adapter.currentList[position]) {
                 is TileViewItem -> 1
                 else -> spanCount
+              }
             }
+          }
+    }
+
+    adapter.submitList(listOf(header, LoadingSpinnerViewItem))
+
+    viewLifecycleOwner.lifecycleScope.launch {
+      viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+        combine(activitiesViewModel.activities, profilesModel.activeProfile, ::getViewItems)
+          .collect { adapter.submitList(listOf(header) + it) }
+      }
+    }
+
+    return recyclerView
+  }
+
+  private suspend fun getViewItems(
+    shortcutActivities: List<ActivityInfoWithData>,
+    activeProfile: UserHandle
+  ): List<ViewItem> =
+    withContext(Dispatchers.IO) {
+      shortcutActivities
+        .filter { it.info.user == activeProfile }
+        .flatMap {
+          launcherApps.getShortcutConfigActivityList(
+            it.info.componentName.packageName,
+            it.info.user
+          )
         }
-
-        recyclerView.apply {
-            this.adapter = adapter
-            layoutManager = gridLayoutManager
+        .map {
+          async {
+            TileViewItem.cardTileViewItem(ActivityTileData(it), it.label, launcherIconCache.get(it))
+          }
         }
-
-        adapter.submitList(listOf(header, LoadingSpinnerViewItem))
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                combine(
-                    activitiesViewModel.launcherActivities,
-                    profilesModel.activeProfile,
-                    ::getViewItems
-                ).collect { adapter.submitList(listOf(header) + it) }
-            }
-        }
-
-        return recyclerView
+        .awaitAll()
+        .sortedBy { it.name.toString().lowercase() }
     }
 
-    private suspend fun getViewItems(
-        shortcutActivities: List<ActivityInfoWithData>, activeProfile: UserHandle
-    ): List<ViewItem> = withContext(Dispatchers.IO) {
-        shortcutActivities.filter { it.info.user == activeProfile }.flatMap {
-            launcherApps.getShortcutConfigActivityList(
-                it.info.componentName.packageName, it.info.user
-            )
-        }.map {
-            async {
-                TileViewItem.cardTileViewItem(
-                    ActivityTileData(it), it.label, launcherIconCache.get(it)
-                )
-            }
-        }.awaitAll().sortedBy { it.name.toString().lowercase() }
-    }
+  private fun onTileClick(tileData: TileData) {
+    if (tileData !is ActivityTileData) return
 
-    private fun onTileClick(view: View, tileData: TileData) {
-        if (tileData !is ActivityTileData) return
+    shortcutActivityLauncher.launch(
+      IntentSenderRequest.Builder(launcherApps.getShortcutConfigActivityIntent(tileData.info)!!)
+        .build()
+    )
+  }
 
-        shortcutActivityLauncher.launch(
-            IntentSenderRequest.Builder(
-                launcherApps.getShortcutConfigActivityIntent(tileData.info)!!
-            ).build()
-        )
-    }
+  private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
+    if (activityResult.data == null) return
 
-    private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
-        if (activityResult.data == null) return
+    val pinItemRequest = launcherApps.getPinItemRequest(activityResult.data) ?: return
+    if (!pinItemRequest.isValid) return
+    if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
 
-        val pinItemRequest = launcherApps.getPinItemRequest(activityResult.data) ?: return
-        if (!pinItemRequest.isValid) return
-        if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
+    val info = pinItemRequest.shortcutInfo ?: return
 
-        val info = pinItemRequest.shortcutInfo ?: return
+    pinItemRequest.accept()
+    shortcutsViewModel.pinShortcut(info)
+    Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+    dismiss()
+  }
 
-        pinItemRequest.accept()
-        shortcutsViewModel.pinShortcut(info)
-        Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
-        dismiss()
-    }
-
-    companion object {
-        const val TAG = "widget_dialog_fragment"
-    }
+  companion object {
+    const val TAG = "widget_dialog_fragment"
+  }
 }

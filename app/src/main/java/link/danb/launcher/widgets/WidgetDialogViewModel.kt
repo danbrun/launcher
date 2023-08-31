@@ -9,14 +9,15 @@ import javax.inject.Inject
 @HiltViewModel
 class WidgetDialogViewModel @Inject constructor() : ViewModel() {
 
-    private val _expandedPackageNames: MutableStateFlow<Set<String>> = MutableStateFlow(setOf())
-    val expandedPackageNames: StateFlow<Set<String>> = _expandedPackageNames
+  private val _expandedPackageNames: MutableStateFlow<Set<String>> = MutableStateFlow(setOf())
 
-    fun toggleExpandedPackageName(packageName: String) {
-        if (_expandedPackageNames.value.contains(packageName)) {
-            _expandedPackageNames.value = _expandedPackageNames.value - packageName
-        } else {
-            _expandedPackageNames.value = _expandedPackageNames.value + packageName
-        }
+  val expandedPackageNames: StateFlow<Set<String>> = _expandedPackageNames
+
+  fun toggleExpandedPackageName(packageName: String) {
+    if (_expandedPackageNames.value.contains(packageName)) {
+      _expandedPackageNames.value = _expandedPackageNames.value - packageName
+    } else {
+      _expandedPackageNames.value = _expandedPackageNames.value + packageName
     }
+  }
 }

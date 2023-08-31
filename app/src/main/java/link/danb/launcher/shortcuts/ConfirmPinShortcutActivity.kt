@@ -12,23 +12,26 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ConfirmPinShortcutActivity : AppCompatActivity() {
 
-    private val shortcutsViewModel: ShortcutsViewModel by viewModels()
+  private val shortcutsViewModel: ShortcutsViewModel by viewModels()
 
-    @Inject
-    lateinit var launcherApps: LauncherApps
+  @Inject lateinit var launcherApps: LauncherApps
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-        val pinItemRequest = launcherApps.getPinItemRequest(intent)
+    val pinItemRequest = launcherApps.getPinItemRequest(intent)
 
-        if (!pinItemRequest.isValid || pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
+    if (
+      !pinItemRequest.isValid ||
+        pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT
+    )
+      return
 
-        val info = pinItemRequest.shortcutInfo ?: return
-        pinItemRequest.accept()
-        shortcutsViewModel.pinShortcut(info)
+    val info = pinItemRequest.shortcutInfo ?: return
+    pinItemRequest.accept()
+    shortcutsViewModel.pinShortcut(info)
 
-        Toast.makeText(this, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
-        finish()
-    }
+    Toast.makeText(this, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+    finish()
+  }
 }

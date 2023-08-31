@@ -26,155 +26,161 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AppWidgetSetupActivity : AppCompatActivity() {
 
-    @Inject
-    lateinit var appWidgetHost: AppWidgetHost
+  @Inject lateinit var appWidgetHost: AppWidgetHost
+  @Inject lateinit var appWidgetManager: AppWidgetManager
 
-    @Inject
-    lateinit var appWidgetManager: AppWidgetManager
+  private val widgetPermissionLauncher =
+    registerForActivityResult(WidgetPermissionResultContract(), this::onPermissionResult)
 
-    private val widgetPermissionLauncher =
-        registerForActivityResult(WidgetPermissionResultContract(), this::onPermissionResult)
+  private lateinit var widgetHandle: WidgetHandle
 
-    private lateinit var widgetHandle: WidgetHandle
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        if (savedInstanceState != null && savedInstanceState.containsKey(EXTRA_WIDGET_HANDLE)) {
-            widgetHandle = savedInstanceState.getParcelableCompat(EXTRA_WIDGET_HANDLE)!!
-        } else {
-            widgetHandle = WidgetHandle(
-                appWidgetHost.allocateAppWidgetId(),
-                intent.extras?.getParcelableCompat(EXTRA_WIDGET_PROVIDER)!!,
-                intent.extras?.getParcelableCompat(EXTRA_WIDGET_USER)!!
-            )
-            startPermissionsActivity()
-        }
-    }
-
-    @Deprecated(
-        "Deprecated in Java", ReplaceWith(
-            "super.onActivityResult(requestCode, resultCode, data)",
-            "androidx.appcompat.app.AppCompatActivity"
+    if (savedInstanceState != null && savedInstanceState.containsKey(EXTRA_WIDGET_HANDLE)) {
+      widgetHandle = savedInstanceState.getParcelableCompat(EXTRA_WIDGET_HANDLE)!!
+    } else {
+      widgetHandle =
+        WidgetHandle(
+          appWidgetHost.allocateAppWidgetId(),
+          intent.extras?.getParcelableCompat(EXTRA_WIDGET_PROVIDER)!!,
+          intent.extras?.getParcelableCompat(EXTRA_WIDGET_USER)!!
         )
+      startPermissionsActivity()
+    }
+  }
+
+  @Deprecated(
+    "Deprecated in Java",
+    ReplaceWith(
+      "super.onActivityResult(requestCode, resultCode, data)",
+      "androidx.appcompat.app.AppCompatActivity"
     )
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        @Suppress("DEPRECATION") super.onActivityResult(requestCode, resultCode, data)
+  )
+  override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    super.onActivityResult(requestCode, resultCode, data)
 
-        if (!isFinishing && requestCode == R.id.app_widget_configure_request_id) {
-            onConfigurationResult(resultCode)
-        }
+    if (!isFinishing && requestCode == R.id.app_widget_configure_request_id) {
+      onConfigurationResult(resultCode)
     }
+  }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
+  override fun onSaveInstanceState(outState: Bundle) {
+    super.onSaveInstanceState(outState)
 
-        outState.putParcelable(EXTRA_WIDGET_HANDLE, widgetHandle)
+    outState.putParcelable(EXTRA_WIDGET_HANDLE, widgetHandle)
+  }
+
+  private fun bindAppWidgetIfAllowed(): Boolean =
+    appWidgetManager.bindAppWidgetIdIfAllowed(
+      widgetHandle.id,
+      widgetHandle.user,
+      widgetHandle.info.provider,
+      null
+    )
+
+  private fun startPermissionsActivity() {
+    if (bindAppWidgetIfAllowed()) {
+      startConfigurationActivity()
+    } else {
+      widgetPermissionLauncher.launch(widgetHandle)
     }
+  }
 
-    private fun bindAppWidgetIfAllowed(): Boolean {
-        return appWidgetManager.bindAppWidgetIdIfAllowed(
-            widgetHandle.id, widgetHandle.user, widgetHandle.info.provider, null
-        )
+  private fun onPermissionResult(success: Boolean) {
+    if (success) {
+      startConfigurationActivity()
+    } else {
+      onBindFailed(R.string.widget_permission_denied)
     }
+  }
 
-    private fun startPermissionsActivity() {
-        if (bindAppWidgetIfAllowed()) {
-            startConfigurationActivity()
-        } else {
-            widgetPermissionLauncher.launch(widgetHandle)
-        }
+  private fun startConfigurationActivity() {
+    try {
+      appWidgetHost.startAppWidgetConfigureActivityForResult(
+        this,
+        widgetHandle.id,
+        /* intentFlags = */ 0,
+        R.id.app_widget_configure_request_id,
+        /* options = */ null
+      )
+    } catch (exception: ActivityNotFoundException) {
+      // If there is no configuration activity, return successfully.
+      onBindSuccess()
     }
+  }
 
-    private fun onPermissionResult(success: Boolean) {
-        if (success) {
-            startConfigurationActivity()
-        } else {
-            onBindFailed(R.string.widget_permission_denied)
-        }
+  private fun onConfigurationResult(resultCode: Int) {
+    if (resultCode == Activity.RESULT_OK) {
+      onBindSuccess()
+    } else {
+      onBindFailed(R.string.widget_configuration_failed)
     }
+  }
 
-    private fun startConfigurationActivity() {
-        try {
-            appWidgetHost.startAppWidgetConfigureActivityForResult(
-                this, widgetHandle.id,
-                /* intentFlags = */ 0, R.id.app_widget_configure_request_id,
-                /* options = */ null
-            )
-        } catch (exception: ActivityNotFoundException) {
-            // If there is no configuration activity, return successfully.
-            onBindSuccess()
-        }
-    }
+  private fun onBindSuccess() {
+    setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_WIDGET_HANDLE, widgetHandle))
+    finish()
+  }
 
-    private fun onConfigurationResult(resultCode: Int) {
-        if (resultCode == Activity.RESULT_OK) {
-            onBindSuccess()
-        } else {
-            onBindFailed(R.string.widget_configuration_failed)
-        }
-    }
+  private fun onBindFailed(@StringRes errorMessage: Int) {
+    appWidgetHost.deleteAppWidgetId(widgetHandle.id)
+    setResult(
+      Activity.RESULT_CANCELED,
+      Intent().apply {
+        putExtra(EXTRA_WIDGET_HANDLE, widgetHandle)
+        putExtra(EXTRA_ERROR_MESSAGE, errorMessage)
+      }
+    )
+    finish()
+  }
 
-    private fun onBindSuccess() {
-        setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_WIDGET_HANDLE, widgetHandle))
-        finish()
-    }
-
-    private fun onBindFailed(@StringRes errorMessage: Int) {
-        appWidgetHost.deleteAppWidgetId(widgetHandle.id)
-        setResult(Activity.RESULT_CANCELED, Intent().apply {
-            putExtra(EXTRA_WIDGET_HANDLE, widgetHandle)
-            putExtra(EXTRA_ERROR_MESSAGE, errorMessage)
-        })
-        finish()
-    }
-
-    companion object {
-        const val EXTRA_WIDGET_PROVIDER = "extra_widget_provider"
-        const val EXTRA_WIDGET_USER = "extra_widget_user"
-        const val EXTRA_WIDGET_HANDLE = "extra_widget_handle"
-        const val EXTRA_ERROR_MESSAGE = "extra_bind_widget_message"
-    }
+  companion object {
+    const val EXTRA_WIDGET_PROVIDER = "extra_widget_provider"
+    const val EXTRA_WIDGET_USER = "extra_widget_user"
+    const val EXTRA_WIDGET_HANDLE = "extra_widget_handle"
+    const val EXTRA_ERROR_MESSAGE = "extra_bind_widget_message"
+  }
 }
 
 /** Activity result contract for binding a new widget. */
 class AppWidgetSetupActivityResultContract :
-    ActivityResultContract<AppWidgetSetupInput, AppWidgetSetupResult>() {
-    override fun createIntent(context: Context, input: AppWidgetSetupInput): Intent {
-        return Intent(context, AppWidgetSetupActivity::class.java).apply {
-            putExtra(EXTRA_WIDGET_PROVIDER, input.providerInfo)
-            putExtra(EXTRA_WIDGET_USER, input.user)
-        }
+  ActivityResultContract<AppWidgetSetupInput, AppWidgetSetupResult>() {
+
+  override fun createIntent(context: Context, input: AppWidgetSetupInput): Intent =
+    Intent(context, AppWidgetSetupActivity::class.java).apply {
+      putExtra(EXTRA_WIDGET_PROVIDER, input.providerInfo)
+      putExtra(EXTRA_WIDGET_USER, input.user)
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?): AppWidgetSetupResult {
-        val extras = intent!!.extras!!
-        return AppWidgetSetupResult(
-            resultCode == Activity.RESULT_OK,
-            extras.getParcelableCompat(EXTRA_WIDGET_HANDLE)!!,
-            extras.getInt(AppWidgetSetupActivity.EXTRA_ERROR_MESSAGE)
-        )
+  override fun parseResult(resultCode: Int, intent: Intent?): AppWidgetSetupResult =
+    intent!!.extras!!.let {
+      AppWidgetSetupResult(
+        resultCode == Activity.RESULT_OK,
+        it.getParcelableCompat(EXTRA_WIDGET_HANDLE)!!,
+        it.getInt(AppWidgetSetupActivity.EXTRA_ERROR_MESSAGE)
+      )
     }
 
-    data class AppWidgetSetupInput(val providerInfo: AppWidgetProviderInfo, val user: UserHandle)
+  data class AppWidgetSetupInput(val providerInfo: AppWidgetProviderInfo, val user: UserHandle)
 
-    data class AppWidgetSetupResult(
-        val success: Boolean, val widgetHande: WidgetHandle, @StringRes val errorMessage: Int
-    )
+  data class AppWidgetSetupResult(
+    val success: Boolean,
+    val widgetHande: WidgetHandle,
+    @StringRes val errorMessage: Int
+  )
 }
 
 /** Activity result contract for launching a widget permission dialog. */
 private class WidgetPermissionResultContract : ActivityResultContract<WidgetHandle, Boolean>() {
 
-    override fun createIntent(context: Context, input: WidgetHandle): Intent {
-        return Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, input.id)
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, input.info.provider)
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER_PROFILE, input.info.profile)
-        }
+  override fun createIntent(context: Context, input: WidgetHandle): Intent =
+    Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
+      putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, input.id)
+      putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, input.info.provider)
+      putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER_PROFILE, input.info.profile)
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?): Boolean {
-        return resultCode == Activity.RESULT_OK
-    }
+  override fun parseResult(resultCode: Int, intent: Intent?): Boolean =
+    resultCode == Activity.RESULT_OK
 }

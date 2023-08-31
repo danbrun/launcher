@@ -17,42 +17,42 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GestureContractModel @Inject constructor(application: Application) :
-    AndroidViewModel(application) {
+  AndroidViewModel(application) {
 
-    private val _gestureContract: MutableStateFlow<GestureContract?> = MutableStateFlow(null)
+  private val _gestureContract: MutableStateFlow<GestureContract?> = MutableStateFlow(null)
 
-    val gestureContract: StateFlow<GestureContract?> = _gestureContract.asStateFlow()
+  val gestureContract: StateFlow<GestureContract?> = _gestureContract.asStateFlow()
 
-    fun onNewIntent(intent: Intent) {
-        val extras = intent.getBundleExtra(EXTRA_GESTURE_CONTRACT) ?: return
+  fun onNewIntent(intent: Intent) {
+    val extras = intent.getBundleExtra(EXTRA_GESTURE_CONTRACT) ?: return
 
-        val component: ComponentName? = extras.getParcelableCompat(Intent.EXTRA_COMPONENT_NAME)
-        val user: UserHandle? = extras.getParcelableCompat(Intent.EXTRA_USER)
-        val message: Message? = extras.getParcelableCompat(EXTRA_REMOTE_CALLBACK)
+    val component: ComponentName? = extras.getParcelableCompat(Intent.EXTRA_COMPONENT_NAME)
+    val user: UserHandle? = extras.getParcelableCompat(Intent.EXTRA_USER)
+    val message: Message? = extras.getParcelableCompat(EXTRA_REMOTE_CALLBACK)
 
-        if (component != null && user != null && message != null && message.replyTo != null) {
-            _gestureContract.value = GestureContract(component, user, message)
-        }
+    if (component != null && user != null && message != null && message.replyTo != null) {
+      _gestureContract.value = GestureContract(component, user, message)
     }
+  }
 
-    fun setBounds(bounds: RectF) {
-        val message = _gestureContract.value?.message ?: return
+  fun setBounds(bounds: RectF) {
+    val message = _gestureContract.value?.message ?: return
 
-        message.data = bundleOf(EXTRA_ICON_POSITION to bounds)
-        message.replyTo.send(message)
+    message.data = bundleOf(EXTRA_ICON_POSITION to bounds)
+    message.replyTo.send(message)
 
-        _gestureContract.value = null
-    }
+    _gestureContract.value = null
+  }
 
-    data class GestureContract(
-        val componentName: ComponentName,
-        val userHandle: UserHandle,
-        val message: Message
-    )
+  data class GestureContract(
+    val componentName: ComponentName,
+    val userHandle: UserHandle,
+    val message: Message,
+  )
 
-    companion object {
-        private const val EXTRA_GESTURE_CONTRACT = "gesture_nav_contract_v1"
-        private const val EXTRA_ICON_POSITION = "gesture_nav_contract_icon_position"
-        private const val EXTRA_REMOTE_CALLBACK = "android.intent.extra.REMOTE_CALLBACK"
-    }
+  companion object {
+    private const val EXTRA_GESTURE_CONTRACT = "gesture_nav_contract_v1"
+    private const val EXTRA_ICON_POSITION = "gesture_nav_contract_icon_position"
+    private const val EXTRA_REMOTE_CALLBACK = "android.intent.extra.REMOTE_CALLBACK"
+  }
 }

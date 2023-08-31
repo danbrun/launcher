@@ -10,18 +10,15 @@ import androidx.room.Upsert
 @Entity
 data class WidgetData(@PrimaryKey val widgetId: Int, val position: Int, val height: Int) {
 
-    @Dao
-    interface DataAccessObject {
-        @Query("SELECT * FROM WidgetData")
-        fun get(): List<WidgetData>
+  @Dao
+  interface DataAccessObject {
+    @Query("SELECT * FROM WidgetData") fun get(): List<WidgetData>
 
-        @Query("SELECT * FROM WidgetData WHERE widgetId = :widgetId")
-        fun get(widgetId: Int): WidgetData?
+    @Query("SELECT * FROM WidgetData WHERE widgetId = :widgetId")
+    fun get(widgetId: Int): WidgetData?
 
-        @Upsert
-        fun put(vararg widgetData: WidgetData)
+    @Upsert fun put(vararg widgetData: WidgetData)
 
-        @Delete
-        fun delete(vararg widgetData: WidgetData)
-    }
+    @Delete fun delete(vararg widgetData: WidgetData)
+  }
 }

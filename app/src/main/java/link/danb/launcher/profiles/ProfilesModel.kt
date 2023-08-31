@@ -16,65 +16,71 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ProfilesModel @Inject constructor(
-    application: Application, private val userManager: UserManager
-) {
-    private val _workProfileData: MutableStateFlow<WorkProfileData> = MutableStateFlow(
-        WorkProfileData(null, false)
-    )
-    private val _activeProfile: MutableStateFlow<UserHandle> = MutableStateFlow(personalProfile)
+class ProfilesModel
+@Inject
+constructor(application: Application, private val userManager: UserManager) {
 
-    private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            onProfileChange()
-        }
-    }
+  private val _workProfileData: MutableStateFlow<WorkProfileData> =
+    MutableStateFlow(WorkProfileData(null, false))
+  private val _activeProfile: MutableStateFlow<UserHandle> = MutableStateFlow(personalProfile)
 
-    private var switchToWorkProfileWhenAvailable: Boolean = false
-
-    init {
-        application.registerReceiver(broadcastReceiver, IntentFilter().apply {
-            addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
-            addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
-            addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
-            addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
-        })
-
+  private val broadcastReceiver =
+    object : BroadcastReceiver() {
+      override fun onReceive(context: Context, intent: Intent) {
         onProfileChange()
+      }
     }
 
-    val workProfileData: StateFlow<WorkProfileData> = _workProfileData.asStateFlow()
-    val activeProfile: StateFlow<UserHandle> = _activeProfile.asStateFlow()
+  private var switchToWorkProfileWhenAvailable: Boolean = false
 
-    fun setWorkProfileEnabled(isEnabled: Boolean) {
-        switchToWorkProfileWhenAvailable = isEnabled
-        _workProfileData.value.user?.let { userManager.requestQuietModeEnabled(!isEnabled, it) }
+  val workProfileData: StateFlow<WorkProfileData> = _workProfileData.asStateFlow()
+  val activeProfile: StateFlow<UserHandle> = _activeProfile.asStateFlow()
+
+  init {
+    application.registerReceiver(
+      broadcastReceiver,
+      IntentFilter().apply {
+        addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
+        addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+        addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+        addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
+      }
+    )
+
+    onProfileChange()
+  }
+
+  fun setWorkProfileEnabled(isEnabled: Boolean) {
+    switchToWorkProfileWhenAvailable = isEnabled
+    _workProfileData.value.user?.let { userManager.requestQuietModeEnabled(!isEnabled, it) }
+  }
+
+  fun toggleActiveProfile(showWorkProfile: Boolean? = null) {
+    _activeProfile.value =
+      _workProfileData.value.user?.takeIf {
+        showWorkProfile ?: _activeProfile.value.isPersonalProfile()
+      }
+        ?: personalProfile
+  }
+
+  @Synchronized
+  private fun onProfileChange() {
+    val workProfile = userManager.userProfiles.firstOrNull { !it.isPersonalProfile() }
+    val isWorkProfileEnabled =
+      !userManager.isQuietModeEnabled(workProfile) && userManager.isUserUnlocked(workProfile)
+    _workProfileData.value = WorkProfileData(workProfile, isWorkProfileEnabled)
+
+    if (_activeProfile.value == workProfile && !isWorkProfileEnabled) {
+      _activeProfile.value = personalProfile
+    } else if (isWorkProfileEnabled && workProfile != null && switchToWorkProfileWhenAvailable) {
+      switchToWorkProfileWhenAvailable = false
+      _activeProfile.value = workProfile
     }
+  }
 
-    fun toggleActiveProfile(showWorkProfile: Boolean? = null) {
-        _activeProfile.value = _workProfileData.value.user?.takeIf {
-            showWorkProfile ?: _activeProfile.value.isPersonalProfile()
-        } ?: personalProfile
-    }
+  data class WorkProfileData(val user: UserHandle?, val isEnabled: Boolean)
 
-    @Synchronized
-    private fun onProfileChange() {
-        val workProfile = userManager.userProfiles.firstOrNull { !it.isPersonalProfile() }
-        val isWorkProfileEnabled =
-            !userManager.isQuietModeEnabled(workProfile) && userManager.isUserUnlocked(workProfile)
-        _workProfileData.value = WorkProfileData(workProfile, isWorkProfileEnabled)
-
-        if (_activeProfile.value == workProfile && !isWorkProfileEnabled) {
-            _activeProfile.value = personalProfile
-        } else if (isWorkProfileEnabled && workProfile != null && switchToWorkProfileWhenAvailable) {
-            switchToWorkProfileWhenAvailable = false
-            _activeProfile.value = workProfile
-        }
-    }
-
-    data class WorkProfileData(val user: UserHandle?, val isEnabled: Boolean)
-
-    companion object {
-        val personalProfile: UserHandle = myUserHandle()
-    }
+  companion object {
+    val personalProfile: UserHandle = myUserHandle()
+  }
 }

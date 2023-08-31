@@ -9,27 +9,26 @@ import link.danb.launcher.extensions.inflate
 
 class GroupHeaderViewBinder : ViewBinder<GroupHeaderViewHolder, GroupHeaderViewItem> {
 
-    override val viewType: Int = R.id.group_header_view_type_id
+  override val viewType: Int = R.id.group_header_view_type_id
 
-    override fun createViewHolder(parent: ViewGroup): GroupHeaderViewHolder {
-        return GroupHeaderViewHolder(parent.inflate(R.layout.group_header_view))
-    }
+  override fun createViewHolder(parent: ViewGroup): GroupHeaderViewHolder =
+    GroupHeaderViewHolder(parent.inflate(R.layout.group_header_view))
 
-    override fun bindViewHolder(holder: GroupHeaderViewHolder, viewItem: GroupHeaderViewItem) {
-        holder.textView.text = viewItem.label
-    }
+  override fun bindViewHolder(holder: GroupHeaderViewHolder, viewItem: GroupHeaderViewItem) {
+    holder.textView.text = viewItem.label
+  }
 }
 
 class GroupHeaderViewHolder(view: View) : ViewHolder(view) {
-    val textView = itemView as TextView
+  val textView = itemView as TextView
 }
 
 class GroupHeaderViewItem(val label: String) : ViewItem {
 
-    override val viewType: Int = R.id.group_header_view_type_id
+  override val viewType: Int = R.id.group_header_view_type_id
 
-    override fun areItemsTheSame(other: ViewItem): Boolean =
-        other is GroupHeaderViewItem && label == other.label
+  override fun areItemsTheSame(other: ViewItem): Boolean =
+    other is GroupHeaderViewItem && label == other.label
 
-    override fun areContentsTheSame(other: ViewItem): Boolean = true
+  override fun areContentsTheSame(other: ViewItem): Boolean = true
 }

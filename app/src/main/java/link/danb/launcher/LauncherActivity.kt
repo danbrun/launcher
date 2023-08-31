@@ -11,28 +11,32 @@ import link.danb.launcher.gestures.GestureContractModel
 @AndroidEntryPoint
 class LauncherActivity : AppCompatActivity() {
 
-    private val gestureContractModel: GestureContractModel by viewModels()
+  private val gestureContractModel: GestureContractModel by viewModels()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.launcher_activity)
+    setContentView(R.layout.launcher_activity)
 
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.activity_frame, LauncherFragment()).commit()
+    if (savedInstanceState == null) {
+      supportFragmentManager
+        .beginTransaction()
+        .replace(R.id.activity_frame, LauncherFragment())
+        .commit()
+    }
+
+    onBackPressedDispatcher.addCallback(
+      object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+          // Do not close app.
         }
+      }
+    )
+  }
 
-        onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // Do not close app.
-            }
-        })
-    }
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-
-        gestureContractModel.onNewIntent(intent)
-    }
+    gestureContractModel.onNewIntent(intent)
+  }
 }

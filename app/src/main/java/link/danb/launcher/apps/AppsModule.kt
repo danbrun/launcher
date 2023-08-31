@@ -12,6 +12,6 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 class AppsModule {
 
-    @Provides
-    fun getLauncherApps(application: Application): LauncherApps = application.getSystemService()!!
+  @Provides
+  fun getLauncherApps(application: Application): LauncherApps = application.getSystemService()!!
 }

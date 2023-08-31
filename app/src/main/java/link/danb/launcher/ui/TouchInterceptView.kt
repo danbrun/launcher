@@ -6,16 +6,15 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.FrameLayout
 
-class TouchInterceptView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null
-) : FrameLayout(context, attrs) {
+class TouchInterceptView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
+  FrameLayout(context, attrs) {
 
-    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        return true
-    }
+  override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
+    return true
+  }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        return false
-    }
+  @SuppressLint("ClickableViewAccessibility")
+  override fun onTouchEvent(event: MotionEvent?): Boolean {
+    return false
+  }
 }

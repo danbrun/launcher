@@ -7,5 +7,5 @@ import androidx.annotation.LayoutRes
 
 /** Convenience method to inflate a layout from a parent [ViewGroup]. */
 fun ViewGroup.inflate(@LayoutRes resource: Int, attachToRoot: Boolean = false): View {
-    return LayoutInflater.from(context).inflate(resource, this, attachToRoot)
+  return LayoutInflater.from(context).inflate(resource, this, attachToRoot)
 }
