@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.os.Bundle
@@ -24,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -61,7 +63,6 @@ import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetViewItem
 import link.danb.launcher.widgets.WidgetsViewModel
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
@@ -195,6 +196,7 @@ class LauncherFragment : Fragment() {
             combine(
               activitiesViewModel.activities,
               profilesModel.activeProfile,
+              activitiesViewModel.sortByCategory,
               ::getAppListViewItems
             )
 
@@ -262,31 +264,39 @@ class LauncherFragment : Fragment() {
   private suspend fun getAppListViewItems(
     launcherActivities: List<ActivityInfoWithData>,
     activeProfile: UserHandle,
+    sortByCategory: Boolean,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       launcherActivities
         .filter { !it.data.isHidden && it.info.user == activeProfile }
         .map {
           async {
-            TileViewItem.transparentTileViewItem(
-              ActivityTileData(it.info),
-              it.info.label,
-              launcherIconCache.get(it.info)
+            Pair(
+              it,
+              TileViewItem.transparentTileViewItem(
+                ActivityTileData(it.info),
+                it.info.label,
+                launcherIconCache.get(it.info)
+              )
             )
           }
         }
         .awaitAll()
         .groupBy {
-          val initial = it.name.first().uppercaseChar()
-          when {
-            initial.isLetter() -> initial.toString()
-            else -> "..."
+          if (sortByCategory) {
+            getStringForCategory(it.first.info.applicationInfo.category)
+          } else {
+            val initial = it.second.name.first().uppercaseChar()
+            when {
+              initial.isLetter() -> initial.toString()
+              else -> requireContext().getString(R.string.ellipses)
+            }
           }
         }
         .toSortedMap()
         .flatMap { (groupName, activityItems) ->
           listOf(GroupHeaderViewItem(groupName)) +
-            activityItems.sortedBy { it.name.toString().lowercase() }
+            activityItems.map { it.second }.sortedBy { it.name.toString().lowercase() }
         }
     }
 
@@ -330,6 +340,23 @@ class LauncherFragment : Fragment() {
 
     return firstMatchIndex
   }
+
+  private fun getStringForCategory(category: Int): String =
+    requireContext()
+      .getString(
+        when (category) {
+          ApplicationInfo.CATEGORY_ACCESSIBILITY -> R.string.accessibility
+          ApplicationInfo.CATEGORY_AUDIO -> R.string.audio
+          ApplicationInfo.CATEGORY_GAME -> R.string.games
+          ApplicationInfo.CATEGORY_IMAGE -> R.string.images
+          ApplicationInfo.CATEGORY_MAPS -> R.string.maps
+          ApplicationInfo.CATEGORY_NEWS -> R.string.news
+          ApplicationInfo.CATEGORY_PRODUCTIVITY -> R.string.productivity
+          ApplicationInfo.CATEGORY_SOCIAL -> R.string.social
+          ApplicationInfo.CATEGORY_VIDEO -> R.string.video
+          else -> R.string.other
+        }
+      )
 
   private fun onTileClick(view: View, tileViewData: TileData) {
     when (tileViewData) {

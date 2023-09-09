@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -24,7 +25,6 @@ import link.danb.launcher.profiles.EnableWorkProfileDialogBuilder
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
-import javax.inject.Inject
 
 class LauncherMenuProvider
 @Inject
@@ -38,9 +38,7 @@ constructor(
 
   private lateinit var profileToggle: MenuItem
   private lateinit var visibilityToggle: MenuItem
-  private lateinit var pinShortcutButton: MenuItem
-  private lateinit var pinWidgetButton: MenuItem
-  private lateinit var settingsShortcut: MenuItem
+  private lateinit var categorySortToggle: MenuItem
 
   init {
     fragment.lifecycle.addObserver(this)
@@ -93,6 +91,18 @@ constructor(
               profileToggle.setIcon(data.icon)
             }
         }
+
+        launch {
+          activitiesViewModel.sortByCategory.collect { sortByCategory ->
+            categorySortToggle.setIcon(
+              if (sortByCategory) R.drawable.baseline_sort_by_alpha_24
+              else R.drawable.baseline_category_24
+            )
+            categorySortToggle.setTitle(
+              if (sortByCategory) R.string.sort_alphabetically else R.string.sort_by_category
+            )
+          }
+        }
       }
     }
   }
@@ -102,9 +112,7 @@ constructor(
 
     profileToggle = menu.findItem(R.id.profile_toggle)
     visibilityToggle = menu.findItem(R.id.visibility_toggle)
-    pinShortcutButton = menu.findItem(R.id.pin_shortcut_button)
-    pinWidgetButton = menu.findItem(R.id.pin_widget_button)
-    settingsShortcut = menu.findItem(R.id.settings_shortcut)
+    categorySortToggle = menu.findItem(R.id.category_sort_toggle)
   }
 
   override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
@@ -125,6 +133,10 @@ constructor(
       R.id.visibility_toggle -> {
         HiddenActivitiesDialogFragment()
           .show(fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG)
+        true
+      }
+      R.id.category_sort_toggle -> {
+        activitiesViewModel.toggleSortByCategory()
         true
       }
       R.id.pin_shortcut_button -> {

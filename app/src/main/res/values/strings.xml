@@ -6,6 +6,7 @@
     <string name="shortcuts">Shortcuts</string>
     <string name="widgets">Widgets</string>
     <string name="hidden_apps">Hidden apps</string>
+    <string name="ellipses">&#8230;</string>
 
     <!-- Filters -->
     <string name="all">All</string>
@@ -39,4 +40,18 @@
     <string name="hide_hidden">Stop showing hidden apps</string>
     <string name="turn_on">Turn on</string>
     <string name="turn_on_work_profile">Turn on work profile?</string>
+    <string name="sort_alphabetically">Sort alphabetically</string>
+    <string name="sort_by_category">Sort by category</string>
+
+    <!-- Categories -->
+    <string name="accessibility">Accessibility</string>
+    <string name="audio">Audio</string>
+    <string name="games">Games</string>
+    <string name="images">Images</string>
+    <string name="maps">Maps</string>
+    <string name="news">News</string>
+    <string name="productivity">Productivity</string>
+    <string name="social">Social</string>
+    <string name="video">Video</string>
+    <string name="other">Other</string>
 </resources>

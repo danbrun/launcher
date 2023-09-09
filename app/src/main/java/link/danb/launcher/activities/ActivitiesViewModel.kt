@@ -7,13 +7,13 @@ import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
-import javax.inject.Inject
 
 /** View model for launch icons. */
 @HiltViewModel
@@ -29,8 +29,10 @@ constructor(
   private val launcherAppsCallback = LauncherAppsCallback(this::update)
 
   private val _activities = MutableStateFlow<List<ActivityInfoWithData>>(listOf())
+  private val _sortByCategory = MutableStateFlow<Boolean>(false)
 
   val activities: StateFlow<List<ActivityInfoWithData>> = _activities.asStateFlow()
+  val sortByCategory: StateFlow<Boolean> = _sortByCategory.asStateFlow()
 
   init {
     viewModelScope.launch(Dispatchers.IO) {
@@ -48,6 +50,10 @@ constructor(
     super.onCleared()
 
     launcherApps.unregisterCallback(launcherAppsCallback)
+  }
+
+  fun toggleSortByCategory() {
+    _sortByCategory.value = !_sortByCategory.value
   }
 
   /** Sets the list of tags to associate with the given [ActivityInfoWithData] */

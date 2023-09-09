@@ -12,7 +12,11 @@
         android:id="@+id/visibility_toggle"
         android:icon="@drawable/ic_baseline_visibility_24"
         android:title="@string/show_hidden"
+        app:showAsAction="always" />
 
+    <item
+        android:id="@+id/category_sort_toggle"
+        android:title="@null"
         app:showAsAction="always" />
 
     <item
