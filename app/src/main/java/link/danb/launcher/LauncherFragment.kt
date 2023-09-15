@@ -93,6 +93,8 @@ class LauncherFragment : Fragment() {
     )
   }
 
+  private val ellipses: CharSequence by lazy { requireContext().getString(R.string.ellipses) }
+
   private val widgetEditorViewListener =
     object : WidgetEditorViewListener {
       override fun onConfigure(widgetData: WidgetData, view: View) {
@@ -290,13 +292,19 @@ class LauncherFragment : Fragment() {
             val initial = it.second.name.first().uppercaseChar()
             when {
               initial.isLetter() -> initial.toString()
-              else -> requireContext().getString(R.string.ellipses)
+              else -> ellipses
             }
           }
         }
-        .toSortedMap()
+        .toSortedMap { first, second ->
+          if (first == ellipses) {
+            -1
+          } else {
+            first.toString().compareTo(second.toString())
+          }
+        }
         .flatMap { (groupName, activityItems) ->
-          listOf(GroupHeaderViewItem(groupName)) +
+          listOf(GroupHeaderViewItem(groupName.toString())) +
             activityItems.map { it.second }.sortedBy { it.name.toString().lowercase() }
         }
     }
