@@ -8,12 +8,12 @@ import android.content.pm.ShortcutInfo
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.extensions.packageName
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class LauncherIconCache
@@ -71,6 +71,7 @@ constructor(private val application: Application, private val launcherApps: Laun
       is ApplicationInfoWithUser -> application.packageManager.getApplicationIcon(info.info)
       is LauncherActivityInfo -> info.getIcon(density)
       is ShortcutInfo -> launcherApps.getShortcutIconDrawable(info, density)
+          ?: application.packageManager.getApplicationIcon(info.packageName)
       else -> throw IllegalArgumentException()
     }
 
