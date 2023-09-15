@@ -85,7 +85,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         DialogHeaderViewBinder(),
         GroupHeaderViewBinder(),
         LoadingSpinnerViewBinder(),
-        CardTileViewBinder { _, it -> onTileClick(it) },
+        CardTileViewBinder({ _, it -> onTileClick(it) }),
       )
 
     recyclerView.apply {
