@@ -135,7 +135,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
           tileData.info.componentName,
           tileData.info.user,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation()
+          view.makeClipRevealAnimation().toBundle()
         )
         dismiss()
       }

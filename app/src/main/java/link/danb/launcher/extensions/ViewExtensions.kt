@@ -4,7 +4,6 @@ import android.app.ActivityOptions
 import android.content.Intent
 import android.graphics.Point
 import android.graphics.Rect
-import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -26,8 +25,8 @@ fun View.isTouchWithinBounds(motionEvent: MotionEvent): Boolean =
   getBoundsOnScreen().contains(motionEvent.rawX.toInt(), motionEvent.rawY.toInt())
 
 /** Creates clip reveal animation [Intent] options for the [View]. */
-fun View.makeClipRevealAnimation(): Bundle =
-  ActivityOptions.makeClipRevealAnimation(this, 0, 0, width, height).toBundle()
+fun View.makeClipRevealAnimation(): ActivityOptions =
+  ActivityOptions.makeClipRevealAnimation(this, 0, 0, width, height)
 
 /** Updates the [LayoutParams] of the view to force specific dimensions. */
 fun View.setLayoutSize(width: Int? = null, height: Int? = null) {

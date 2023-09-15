@@ -76,7 +76,7 @@ class WidgetEditorViewBinder(
         } else {
           View.GONE
         }
-      setOnClickListener { widgetEditorViewListener.onConfigure(viewItem.widgetData) }
+      setOnClickListener { widgetEditorViewListener.onConfigure(viewItem.widgetData, this) }
     }
 
     holder.deleteButton.setOnClickListener {
@@ -111,7 +111,7 @@ class WidgetEditorViewItem(
 }
 
 interface WidgetEditorViewListener {
-  fun onConfigure(widgetData: WidgetData)
+  fun onConfigure(widgetData: WidgetData, view: View)
   fun onDelete(widgetData: WidgetData)
   fun onMoveUp(widgetData: WidgetData)
   fun onResize(widgetData: WidgetData, height: Int)

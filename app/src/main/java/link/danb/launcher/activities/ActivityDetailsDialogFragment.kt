@@ -173,7 +173,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       viewItem.data.info.componentName,
       viewItem.data.info.user,
       view.getBoundsOnScreen(),
-      view.makeClipRevealAnimation()
+      view.makeClipRevealAnimation().toBundle()
     )
     dismiss()
   }
@@ -190,7 +190,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         launcherApps.startShortcut(
           tileData.info,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation()
+          view.makeClipRevealAnimation().toBundle()
         )
         dismiss()
       }

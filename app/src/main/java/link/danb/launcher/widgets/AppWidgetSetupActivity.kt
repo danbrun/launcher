@@ -1,6 +1,7 @@
 package link.danb.launcher.widgets
 
 import android.app.Activity
+import android.app.ActivityOptions
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
@@ -14,6 +15,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.R
+import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.widgets.AppWidgetSetupActivity.Companion.EXTRA_WIDGET_HANDLE
 import link.danb.launcher.widgets.AppWidgetSetupActivity.Companion.EXTRA_WIDGET_PROVIDER
@@ -102,7 +104,7 @@ class AppWidgetSetupActivity : AppCompatActivity() {
         widgetHandle.id,
         /* intentFlags = */ 0,
         R.id.app_widget_configure_request_id,
-        /* options = */ null
+        ActivityOptions.makeBasic().allowPendingIntentBackgroundActivityStart().toBundle()
       )
     } catch (exception: ActivityNotFoundException) {
       // If there is no configuration activity, return successfully.

@@ -37,6 +37,7 @@ import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityInfoWithData
 import link.danb.launcher.database.WidgetData
+import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.getBoundsOnScreen
 import link.danb.launcher.extensions.makeClipRevealAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
@@ -94,13 +95,13 @@ class LauncherFragment : Fragment() {
 
   private val widgetEditorViewListener =
     object : WidgetEditorViewListener {
-      override fun onConfigure(widgetData: WidgetData) {
+      override fun onConfigure(widgetData: WidgetData, view: View) {
         appWidgetHost.startAppWidgetConfigureActivityForResult(
           this@LauncherFragment.requireActivity(),
           widgetData.widgetId,
           /* intentFlags = */ 0,
           R.id.app_widget_configure_request_id,
-          /* options = */ null
+          view.makeClipRevealAnimation().allowPendingIntentBackgroundActivityStart().toBundle()
         )
       }
 
@@ -170,7 +171,7 @@ class LauncherFragment : Fragment() {
           // This extra is for Firefox to open a new tab.
           putExtra("open_to_search", "static_shortcut_new_tab")
         },
-        button.makeClipRevealAnimation()
+        button.makeClipRevealAnimation().toBundle()
       )
     }
 
@@ -365,14 +366,14 @@ class LauncherFragment : Fragment() {
           tileViewData.info.componentName,
           tileViewData.info.user,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation()
+          view.makeClipRevealAnimation().toBundle()
         )
       }
       is ShortcutTileData -> {
         launcherApps.startShortcut(
           tileViewData.info,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation()
+          view.makeClipRevealAnimation().toBundle()
         )
       }
     }
