@@ -65,14 +65,14 @@ constructor(application: Application, private val userManager: UserManager) {
 
   @Synchronized
   private fun onProfileChange() {
-    val workProfile = userManager.userProfiles.firstOrNull { !it.isPersonalProfile() }
+    val workProfile = userManager.userProfiles.firstOrNull { !it.isPersonalProfile() } ?: return
     val isWorkProfileEnabled =
       !userManager.isQuietModeEnabled(workProfile) && userManager.isUserUnlocked(workProfile)
     _workProfileData.value = WorkProfileData(workProfile, isWorkProfileEnabled)
 
     if (_activeProfile.value == workProfile && !isWorkProfileEnabled) {
       _activeProfile.value = personalProfile
-    } else if (isWorkProfileEnabled && workProfile != null && switchToWorkProfileWhenAvailable) {
+    } else if (isWorkProfileEnabled && switchToWorkProfileWhenAvailable) {
       switchToWorkProfileWhenAvailable = false
       _activeProfile.value = workProfile
     }
