@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.extensions.getBoundsOnScreen
-import link.danb.launcher.extensions.makeClipRevealAnimation
+import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
@@ -135,7 +135,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
           tileData.info.componentName,
           tileData.info.user,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
       }

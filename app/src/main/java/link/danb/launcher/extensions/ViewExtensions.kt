@@ -25,8 +25,8 @@ fun View.isTouchWithinBounds(motionEvent: MotionEvent): Boolean =
   getBoundsOnScreen().contains(motionEvent.rawX.toInt(), motionEvent.rawY.toInt())
 
 /** Creates clip reveal animation [Intent] options for the [View]. */
-fun View.makeClipRevealAnimation(): ActivityOptions =
-  ActivityOptions.makeClipRevealAnimation(this, 0, 0, width, height)
+fun View.makeScaleUpAnimation(): ActivityOptions =
+  ActivityOptions.makeScaleUpAnimation(this, 0, 0, width, height)
 
 /** Updates the [LayoutParams] of the view to force specific dimensions. */
 fun View.setLayoutSize(width: Int? = null, height: Int? = null) {

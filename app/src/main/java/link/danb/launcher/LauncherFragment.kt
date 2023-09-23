@@ -39,7 +39,7 @@ import link.danb.launcher.activities.ActivityInfoWithData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.getBoundsOnScreen
-import link.danb.launcher.extensions.makeClipRevealAnimation
+import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContractModel
 import link.danb.launcher.icons.LauncherIconCache
@@ -103,7 +103,7 @@ class LauncherFragment : Fragment() {
           widgetData.widgetId,
           /* intentFlags = */ 0,
           R.id.app_widget_configure_request_id,
-          view.makeClipRevealAnimation().allowPendingIntentBackgroundActivityStart().toBundle()
+          view.makeScaleUpAnimation().allowPendingIntentBackgroundActivityStart().toBundle()
         )
       }
 
@@ -173,7 +173,7 @@ class LauncherFragment : Fragment() {
           // This extra is for Firefox to open a new tab.
           putExtra("open_to_search", "static_shortcut_new_tab")
         },
-        button.makeClipRevealAnimation().toBundle()
+        button.makeScaleUpAnimation().toBundle()
       )
     }
 
@@ -374,14 +374,14 @@ class LauncherFragment : Fragment() {
           tileViewData.info.componentName,
           tileViewData.info.user,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle()
         )
       }
       is ShortcutTileData -> {
         launcherApps.startShortcut(
           tileViewData.info,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle()
         )
       }
     }

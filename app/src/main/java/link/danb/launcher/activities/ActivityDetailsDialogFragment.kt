@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.extensions.getBoundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
-import link.danb.launcher.extensions.makeClipRevealAnimation
+import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
@@ -173,7 +173,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       viewItem.data.info.componentName,
       viewItem.data.info.user,
       view.getBoundsOnScreen(),
-      view.makeClipRevealAnimation().toBundle()
+      view.makeScaleUpAnimation().toBundle()
     )
     dismiss()
   }
@@ -190,7 +190,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         launcherApps.startShortcut(
           tileData.info,
           view.getBoundsOnScreen(),
-          view.makeClipRevealAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
       }
