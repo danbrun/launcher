@@ -18,7 +18,12 @@ import link.danb.launcher.ui.ViewItem
 class WidgetEditorViewBinder(
   private val appWidgetViewProvider: AppWidgetViewProvider,
   private val widgetSizeUtil: WidgetSizeUtil,
-  private val widgetEditorViewListener: WidgetEditorViewListener,
+  private val onConfigure: (widgetData: WidgetData, view: View) -> Unit,
+  private val onDelete: (widgetData: WidgetData) -> Unit,
+  private val onMoveUp: (widgetData: WidgetData) -> Unit,
+  private val onResize: (widgetData: WidgetData, height: Int) -> Unit,
+  private val onMoveDown: (widgetData: WidgetData) -> Unit,
+  private val onDone: (widgetData: WidgetData) -> Unit,
 ) : ViewBinder<WidgetEditorViewHolder, WidgetEditorViewItem> {
 
   override val viewType: Int = R.id.widget_editor_view_type_id
@@ -28,13 +33,9 @@ class WidgetEditorViewBinder(
 
   @SuppressLint("ClickableViewAccessibility", "Recycle")
   override fun bindViewHolder(holder: WidgetEditorViewHolder, viewItem: WidgetEditorViewItem) {
-    holder.moveUpButton.setOnClickListener {
-      widgetEditorViewListener.onMoveUp(viewItem.widgetData)
-    }
+    holder.moveUpButton.setOnClickListener { onMoveUp(viewItem.widgetData) }
 
-    holder.moveDownButton.setOnClickListener {
-      widgetEditorViewListener.onMoveDown(viewItem.widgetData)
-    }
+    holder.moveDownButton.setOnClickListener { onMoveDown(viewItem.widgetData) }
 
     var downEvent: MotionEvent? = null
     holder.resizeButton.setOnTouchListener { view, motionEvent ->
@@ -57,7 +58,7 @@ class WidgetEditorViewBinder(
         }
         MotionEvent.ACTION_UP -> {
           view.parent.requestDisallowInterceptTouchEvent(false)
-          widgetEditorViewListener.onResize(
+          onResize(
             viewItem.widgetData,
             viewItem.widgetData.height + motionEvent.rawY.toInt() - downEvent!!.rawY.toInt()
           )
@@ -76,14 +77,12 @@ class WidgetEditorViewBinder(
         } else {
           View.GONE
         }
-      setOnClickListener { widgetEditorViewListener.onConfigure(viewItem.widgetData, this) }
+      setOnClickListener { onConfigure(viewItem.widgetData, this) }
     }
 
-    holder.deleteButton.setOnClickListener {
-      widgetEditorViewListener.onDelete(viewItem.widgetData)
-    }
+    holder.deleteButton.setOnClickListener { onDelete(viewItem.widgetData) }
 
-    holder.doneButton.setOnClickListener { widgetEditorViewListener.onDone(viewItem.widgetData) }
+    holder.doneButton.setOnClickListener { onDone(viewItem.widgetData) }
   }
 }
 
@@ -108,13 +107,4 @@ class WidgetEditorViewItem(
 
   override fun areContentsTheSame(other: ViewItem): Boolean =
     other is WidgetEditorViewItem && widgetData == other.widgetData
-}
-
-interface WidgetEditorViewListener {
-  fun onConfigure(widgetData: WidgetData, view: View)
-  fun onDelete(widgetData: WidgetData)
-  fun onMoveUp(widgetData: WidgetData)
-  fun onResize(widgetData: WidgetData, height: Int)
-  fun onMoveDown(widgetData: WidgetData)
-  fun onDone(widgetData: WidgetData)
 }

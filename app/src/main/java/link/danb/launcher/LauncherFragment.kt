@@ -59,7 +59,6 @@ import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetEditorViewItem
-import link.danb.launcher.widgets.WidgetEditorViewListener
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetViewItem
@@ -89,44 +88,30 @@ class LauncherFragment : Fragment() {
       GroupHeaderViewBinder(),
       TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
       WidgetViewBinder(appWidgetViewProvider) { widgetsViewModel.startEditing(it.widgetId) },
-      WidgetEditorViewBinder(appWidgetViewProvider, widgetSizeUtil, widgetEditorViewListener),
+      WidgetEditorViewBinder(
+        appWidgetViewProvider,
+        widgetSizeUtil,
+        { widgetData: WidgetData, view: View ->
+          appWidgetHost.startAppWidgetConfigureActivityForResult(
+            this@LauncherFragment.requireActivity(),
+            widgetData.widgetId,
+            /* intentFlags = */ 0,
+            R.id.app_widget_configure_request_id,
+            view.makeScaleUpAnimation().allowPendingIntentBackgroundActivityStart().toBundle()
+          )
+        },
+        { widgetsViewModel.delete(it.widgetId) },
+        { widgetsViewModel.moveUp(it.widgetId) },
+        { widgetData: WidgetData, height: Int ->
+          widgetsViewModel.setHeight(widgetData.widgetId, height)
+        },
+        { widgetsViewModel.moveDown(it.widgetId) },
+        { widgetsViewModel.finishEditing() }
+      ),
     )
   }
 
   private val ellipses: CharSequence by lazy { requireContext().getString(R.string.ellipses) }
-
-  private val widgetEditorViewListener =
-    object : WidgetEditorViewListener {
-      override fun onConfigure(widgetData: WidgetData, view: View) {
-        appWidgetHost.startAppWidgetConfigureActivityForResult(
-          this@LauncherFragment.requireActivity(),
-          widgetData.widgetId,
-          /* intentFlags = */ 0,
-          R.id.app_widget_configure_request_id,
-          view.makeScaleUpAnimation().allowPendingIntentBackgroundActivityStart().toBundle()
-        )
-      }
-
-      override fun onDelete(widgetData: WidgetData) {
-        widgetsViewModel.delete(widgetData.widgetId)
-      }
-
-      override fun onMoveUp(widgetData: WidgetData) {
-        widgetsViewModel.moveUp(widgetData.widgetId)
-      }
-
-      override fun onResize(widgetData: WidgetData, height: Int) {
-        widgetsViewModel.setHeight(widgetData.widgetId, height)
-      }
-
-      override fun onMoveDown(widgetData: WidgetData) {
-        widgetsViewModel.moveDown(widgetData.widgetId)
-      }
-
-      override fun onDone(widgetData: WidgetData) {
-        widgetsViewModel.finishEditing()
-      }
-    }
 
   override fun onCreateView(
     inflater: LayoutInflater,
