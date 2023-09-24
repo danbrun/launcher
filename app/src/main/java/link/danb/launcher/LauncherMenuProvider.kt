@@ -52,7 +52,7 @@ constructor(
               activities,
               activeProfile ->
               Pair(
-                activities.any { !it.info.user.isPersonalProfile() },
+                activities.any { !it.info.user.isPersonalProfile },
                 activities.any { it.data.isHidden && it.info.user == activeProfile }
               )
             }
@@ -69,7 +69,7 @@ constructor(
             ) { workProfileData, activeProfile ->
               WorkProfileToggleData(
                 workProfileData.user != null,
-                if (activeProfile.isPersonalProfile()) {
+                if (activeProfile.isPersonalProfile) {
                   if (workProfileData.isEnabled) {
                     R.drawable.ic_baseline_work_24
                   } else {
@@ -78,7 +78,7 @@ constructor(
                 } else {
                   R.drawable.baseline_person_24
                 },
-                if (activeProfile.isPersonalProfile()) {
+                if (activeProfile.isPersonalProfile) {
                   R.string.show_work
                 } else {
                   R.string.show_personal
@@ -119,7 +119,7 @@ constructor(
     when (menuItem.itemId) {
       R.id.profile_toggle -> {
         if (
-          !profilesModel.activeProfile.value.isPersonalProfile() ||
+          !profilesModel.activeProfile.value.isPersonalProfile ||
             profilesModel.workProfileData.value.isEnabled
         ) {
           profilesModel.toggleActiveProfile()

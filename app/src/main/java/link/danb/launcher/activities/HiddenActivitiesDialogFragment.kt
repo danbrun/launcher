@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
-import link.danb.launcher.extensions.getBoundsOnScreen
+import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.icons.LauncherIconCache
@@ -134,7 +134,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         launcherApps.startMainActivity(
           tileData.info.componentName,
           tileData.info.user,
-          view.getBoundsOnScreen(),
+          view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
         dismiss()

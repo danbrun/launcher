@@ -10,19 +10,20 @@ import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 
 /** Gets the location of the [View] on screen as a [Point]. */
-fun View.getLocationOnScreen(): Point =
-  IntArray(2).let {
-    getLocationOnScreen(it)
-    Point(it[0], it[1])
-  }
+val View.locationOnScreen: Point
+  get() =
+    IntArray(2).let {
+      getLocationOnScreen(it)
+      Point(it[0], it[1])
+    }
 
 /** Gets the bounds of the [View] on screen as a [Rect]. */
-fun View.getBoundsOnScreen(): Rect =
-  getLocationOnScreen().let { Rect(it.x, it.y, it.x + width, it.y + height) }
+val View.boundsOnScreen: Rect
+  get() = locationOnScreen.let { Rect(it.x, it.y, it.x + width, it.y + height) }
 
 /** Checks if the coordinates of the given [MotionEvent] are within the bounds of the [View]. */
 fun View.isTouchWithinBounds(motionEvent: MotionEvent): Boolean =
-  getBoundsOnScreen().contains(motionEvent.rawX.toInt(), motionEvent.rawY.toInt())
+  boundsOnScreen.contains(motionEvent.rawX.toInt(), motionEvent.rawY.toInt())
 
 /** Creates clip reveal animation [Intent] options for the [View]. */
 fun View.makeScaleUpAnimation(): ActivityOptions =

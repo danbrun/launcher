@@ -38,7 +38,7 @@ import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityInfoWithData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
-import link.danb.launcher.extensions.getBoundsOnScreen
+import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContractModel
@@ -305,7 +305,7 @@ class LauncherFragment : Fragment() {
     val view = recyclerView.findViewHolderForAdapterPosition(firstMatchingIndex)?.itemView
 
     if (view != null) {
-      gestureContractModel.setBounds(view.getBoundsOnScreen().toRectF())
+      gestureContractModel.setBounds(view.boundsOnScreen.toRectF())
     } else {
       recyclerView.scrollToPosition(firstMatchingIndex)
     }
@@ -358,14 +358,14 @@ class LauncherFragment : Fragment() {
         launcherApps.startMainActivity(
           tileViewData.info.componentName,
           tileViewData.info.user,
-          view.getBoundsOnScreen(),
+          view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
       }
       is ShortcutTileData -> {
         launcherApps.startShortcut(
           tileViewData.info,
-          view.getBoundsOnScreen(),
+          view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
       }

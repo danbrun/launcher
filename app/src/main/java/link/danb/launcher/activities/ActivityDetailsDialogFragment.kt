@@ -24,7 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
-import link.danb.launcher.extensions.getBoundsOnScreen
+import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
@@ -172,7 +172,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     launcherApps.startAppDetailsActivity(
       viewItem.data.info.componentName,
       viewItem.data.info.user,
-      view.getBoundsOnScreen(),
+      view.boundsOnScreen,
       view.makeScaleUpAnimation().toBundle()
     )
     dismiss()
@@ -189,7 +189,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       is ShortcutTileData -> {
         launcherApps.startShortcut(
           tileData.info,
-          view.getBoundsOnScreen(),
+          view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
