@@ -201,12 +201,6 @@ class LauncherFragment : Fragment() {
     return view
   }
 
-  override fun onStart() {
-    super.onStart()
-
-    widgetsViewModel.refresh()
-  }
-
   private fun getWidgetListViewItems(
     widgets: List<WidgetData>,
     widgetToEdit: Int?,

@@ -76,7 +76,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       } else {
         Toast.makeText(context, it.errorMessage, Toast.LENGTH_SHORT).show()
       }
-      widgetsViewModel.refresh()
+      widgetsViewModel.checkForNewWidgets()
     }
 
   override fun onCreateView(
