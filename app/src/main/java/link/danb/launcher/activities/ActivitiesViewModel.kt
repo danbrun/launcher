@@ -74,7 +74,7 @@ constructor(
     }
   }
 
-  private fun getMetadata(info: LauncherActivityInfo): ActivityData =
+  private suspend fun getMetadata(info: LauncherActivityInfo): ActivityData =
     activityData.get(info.componentName, info.user)
       ?: ActivityData(info.componentName, info.user, isHidden = false, tags = setOf())
 

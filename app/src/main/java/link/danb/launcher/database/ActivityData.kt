@@ -19,10 +19,10 @@ data class ActivityData(
     @Query(
       "SELECT * FROM ActivityData WHERE componentName = :componentName AND userHandle = :userHandle"
     )
-    fun get(componentName: ComponentName, userHandle: UserHandle): ActivityData?
+    suspend fun get(componentName: ComponentName, userHandle: UserHandle): ActivityData?
 
-    @Upsert fun put(vararg activityMetadata: ActivityData)
+    @Upsert suspend fun put(vararg activityMetadata: ActivityData)
 
-    @Delete fun delete(vararg activityData: ActivityData)
+    @Delete suspend fun delete(vararg activityData: ActivityData)
   }
 }

@@ -15,10 +15,10 @@ data class WidgetData(@PrimaryKey val widgetId: Int, val position: Int, val heig
     @Query("SELECT * FROM WidgetData") fun get(): List<WidgetData>
 
     @Query("SELECT * FROM WidgetData WHERE widgetId = :widgetId")
-    fun get(widgetId: Int): WidgetData?
+    suspend fun get(widgetId: Int): WidgetData?
 
-    @Upsert fun put(vararg widgetData: WidgetData)
+    @Upsert suspend fun put(vararg widgetData: WidgetData)
 
-    @Delete fun delete(vararg widgetData: WidgetData)
+    @Delete suspend fun delete(vararg widgetData: WidgetData)
   }
 }

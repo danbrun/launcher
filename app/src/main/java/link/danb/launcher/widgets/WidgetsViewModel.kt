@@ -85,7 +85,7 @@ constructor(
     }
   }
 
-  private fun adjustPosition(widgetId: Int, positionChange: Int) {
+  private suspend fun adjustPosition(widgetId: Int, positionChange: Int) {
     val widgets = widgetData.get().sortedBy { it.position }.toMutableList()
     val widget = widgets.first { it.widgetId == widgetId }
     val originalPosition = widgets.indexOf(widget)
@@ -97,7 +97,7 @@ constructor(
     reloadFromDatabase()
   }
 
-  private fun insertNewWidgets() {
+  private suspend fun insertNewWidgets() {
     val widgetIdsToAdd =
       appWidgetHost.appWidgetIds.toSet() - widgetData.get().map { it.widgetId }.toSet()
 
@@ -114,7 +114,7 @@ constructor(
     )
   }
 
-  private fun updatePositions(
+  private suspend fun updatePositions(
     widgets: List<WidgetData> = widgetData.get().sortedBy { it.position }
   ) {
     widgetData.put(
@@ -122,7 +122,7 @@ constructor(
     )
   }
 
-  private fun cleanupUnboundWidgets() {
+  private suspend fun cleanupUnboundWidgets() {
     widgetData.get().forEach {
       if (!appWidgetHost.appWidgetIds.contains(it.widgetId)) {
         widgetData.delete(it)
