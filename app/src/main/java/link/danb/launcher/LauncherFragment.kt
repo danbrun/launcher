@@ -41,6 +41,7 @@ import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
+import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureContractModel
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
@@ -146,8 +147,6 @@ class LauncherFragment : Fragment() {
 
     view.findViewById<View>(R.id.app_list_background).background = InvertedCornerDrawable(radius)
 
-    recyclerAdapter.onBindViewHolderListener = { maybeAnimateNewIntent() }
-
     view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
 
     view.findViewById<FloatingActionButton>(R.id.floating_action).setOnClickListener { button ->
@@ -194,7 +193,7 @@ class LauncherFragment : Fragment() {
             .collectLatest { recyclerAdapter.submitList(it) }
         }
 
-        launch { gestureContractModel.gestureContract.collect { maybeAnimateNewIntent() } }
+        launch { gestureContractModel.gestureContract.collect { maybeAnimateGestureContract(it) } }
       }
     }
 
@@ -288,19 +287,22 @@ class LauncherFragment : Fragment() {
         }
     }
 
-  private fun maybeAnimateNewIntent() {
-    val gestureContract = gestureContractModel.gestureContract.value ?: return
-
+  private fun maybeAnimateGestureContract(gestureContract: GestureContract) {
     val firstMatchingIndex =
       getFirstMatchingIndex(gestureContract.componentName, gestureContract.userHandle)
 
-    if (firstMatchingIndex < 0) return
+    if (firstMatchingIndex < 0) {
+      recyclerAdapter.onBindViewHolderListener = null
+      return
+    }
 
     val view = recyclerView.findViewHolderForAdapterPosition(firstMatchingIndex)?.itemView
 
     if (view != null) {
-      gestureContractModel.setBounds(view.boundsOnScreen.toRectF())
+      recyclerAdapter.onBindViewHolderListener = null
+      gestureContract.sendBounds(view.boundsOnScreen.toRectF())
     } else {
+      recyclerAdapter.onBindViewHolderListener = { maybeAnimateGestureContract(gestureContract) }
       recyclerView.scrollToPosition(firstMatchingIndex)
     }
   }
