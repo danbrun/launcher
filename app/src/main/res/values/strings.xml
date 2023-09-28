@@ -26,8 +26,8 @@
 
     <!-- Actions -->
     <string name="search">Search</string>
-    <string name="pin_shortcut">Pin shortcut</string>
-    <string name="pin_widget">Pin widget</string>
+    <string name="pin_shortcut">Shortcut</string>
+    <string name="pin_widget">Widget</string>
     <string name="pin_items">Pin items</string>
     <string name="remove_widget">Remove widget</string>
     <string name="configure_widget">Configure widget</string>
@@ -42,6 +42,7 @@
     <string name="turn_on_work_profile">Turn on work profile?</string>
     <string name="sort_alphabetically">Sort alphabetically</string>
     <string name="sort_by_category">Sort by category</string>
+    <string name="add_item">Add item</string>
 
     <!-- Categories -->
     <string name="accessibility">Accessibility</string>

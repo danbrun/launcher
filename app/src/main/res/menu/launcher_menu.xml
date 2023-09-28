@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="AlwaysShowAction">
+
     <item
         android:id="@+id/profile_toggle"
         android:title="@null"
@@ -20,20 +21,26 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/pin_shortcut_button"
         android:icon="@drawable/baseline_push_pin_24"
-        android:title="@string/pin_shortcut"
-        app:showAsAction="always" />
+        android:title="@string/add_item"
+        app:showAsAction="always">
 
-    <item
-        android:id="@+id/pin_widget_button"
-        android:icon="@drawable/ic_baseline_widgets_24"
-        android:title="@string/pin_widget"
-        app:showAsAction="always" />
+        <menu>
 
-    <item
-        android:id="@+id/settings_shortcut"
-        android:icon="@drawable/ic_baseline_settings_24"
-        android:title="@string/settings"
-        app:showAsAction="always" />
+            <item
+                android:id="@+id/pin_shortcut_button"
+                android:icon="@drawable/baseline_shortcut_24"
+                android:title="@string/pin_shortcut"
+                app:showAsAction="always" />
+
+            <item
+                android:id="@+id/pin_widget_button"
+                android:icon="@drawable/ic_baseline_widgets_24"
+                android:title="@string/pin_widget"
+                app:showAsAction="always" />
+
+        </menu>
+
+    </item>
+
 </menu>

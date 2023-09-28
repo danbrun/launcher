@@ -1,7 +1,5 @@
 package link.danb.launcher
 
-import android.content.Intent
-import android.provider.Settings
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -147,10 +145,6 @@ constructor(
       R.id.pin_widget_button -> {
         PinWidgetsDialogFragment()
           .showNow(fragment.childFragmentManager, PinWidgetsDialogFragment.TAG)
-        true
-      }
-      R.id.settings_shortcut -> {
-        fragment.startActivity(Intent(Settings.ACTION_SETTINGS))
         true
       }
       else -> false
