@@ -179,7 +179,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private fun onVisibilityButtonClick(viewItem: ActivityHeaderViewItem) {
-    activitiesViewModel.setIsHidden(viewItem.data.info, !viewItem.data.data.isHidden)
+    activitiesViewModel.putMetadataInBackground(
+      viewItem.data.data.copy(isHidden = !viewItem.data.data.isHidden)
+    )
     dismiss()
   }
 

@@ -3,46 +3,43 @@ package link.danb.launcher.apps
 import android.content.pm.LauncherApps
 import android.os.UserHandle
 
-class LauncherAppsCallback(private val onChange: (packageName: String, user: UserHandle) -> Unit) :
-  LauncherApps.Callback() {
+class LauncherAppsCallback(
+  private val onPackagesChanged: (packageName: List<String>, user: UserHandle) -> Unit,
+) : LauncherApps.Callback() {
 
-  override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
-    updateSinglePackage(packageName, user)
+  override fun onPackageRemoved(packageName: String, user: UserHandle) {
+    onPackagesChanged(listOf(packageName), user)
   }
 
-  override fun onPackageAdded(packageName: String?, user: UserHandle?) {
-    updateSinglePackage(packageName, user)
+  override fun onPackageAdded(packageName: String, user: UserHandle) {
+    onPackagesChanged(listOf(packageName), user)
   }
 
-  override fun onPackageChanged(packageName: String?, user: UserHandle?) {
-    updateSinglePackage(packageName, user)
+  override fun onPackageChanged(packageName: String, user: UserHandle) {
+    onPackagesChanged(listOf(packageName), user)
   }
 
   override fun onPackagesAvailable(
-    packageName: Array<out String>?,
-    user: UserHandle?,
+    packageNames: Array<out String>,
+    user: UserHandle,
     replacing: Boolean,
   ) {
-    updateMultiplePackages(packageName, user)
+    onPackagesChanged(packageNames.toList(), user)
   }
 
   override fun onPackagesUnavailable(
-    packageName: Array<out String>?,
-    user: UserHandle?,
+    packageNames: Array<out String>,
+    user: UserHandle,
     replacing: Boolean,
   ) {
-    updateMultiplePackages(packageName, user)
+    onPackagesChanged(packageNames.toList(), user)
   }
 
-  private fun updateSinglePackage(packageName: String?, user: UserHandle?) {
-    if (packageName != null && user != null) {
-      onChange(packageName, user)
-    }
+  override fun onPackagesSuspended(packageNames: Array<out String>, user: UserHandle) {
+    onPackagesChanged(packageNames.toList(), user)
   }
 
-  private fun updateMultiplePackages(packageName: Array<out String>?, user: UserHandle?) {
-    if (user != null) {
-      packageName?.forEach { onChange(it, user) }
-    }
+  override fun onPackagesUnsuspended(packageNames: Array<out String>, user: UserHandle) {
+    onPackagesChanged(packageNames.toList(), user)
   }
 }

@@ -11,6 +11,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
@@ -26,7 +27,9 @@ constructor(
 ) : AndroidViewModel(application) {
 
   private val activityData = launcherDatabase.activityData()
-  private val launcherAppsCallback = LauncherAppsCallback(this::update)
+  private val launcherAppsCallback = LauncherAppsCallback { packageName, user ->
+    viewModelScope.launch { update(packageName, user) }
+  }
 
   private val _activities = MutableStateFlow<List<ActivityInfoWithData>>(listOf())
   private val _sortByCategory = MutableStateFlow<Boolean>(false)
@@ -35,13 +38,7 @@ constructor(
   val sortByCategory: StateFlow<Boolean> = _sortByCategory.asStateFlow()
 
   init {
-    viewModelScope.launch(Dispatchers.IO) {
-      _activities.emit(
-        launcherApps.profiles
-          .flatMap { launcherApps.getActivityList(null, it) }
-          .map { ActivityInfoWithData(it, getMetadata(it)) }
-      )
-    }
+    viewModelScope.launch { replace() }
 
     launcherApps.registerCallback(launcherAppsCallback)
   }
@@ -56,43 +53,38 @@ constructor(
     _sortByCategory.value = !_sortByCategory.value
   }
 
-  /** Sets the list of tags to associate with the given [ActivityInfoWithData] */
-  // May use this again soon so leaving it for now.
-  @Suppress("unused")
-  fun updateTags(info: LauncherActivityInfo, tags: Set<String>) {
-    viewModelScope.launch(Dispatchers.IO) {
-      activityData.put(getMetadata(info).copy(tags = tags))
-      update(info)
-    }
-  }
+  fun putMetadataInBackground(activityMetadata: ActivityData) =
+    viewModelScope.launch { putMetadata(activityMetadata) }
 
-  /** Sets the visibility of the given app. */
-  fun setIsHidden(info: LauncherActivityInfo, isHidden: Boolean) {
-    viewModelScope.launch(Dispatchers.IO) {
-      activityData.put(getMetadata(info).copy(isHidden = isHidden))
-      update(info)
+  private suspend fun putMetadata(activityMetadata: ActivityData) =
+    withContext(Dispatchers.IO) {
+      activityData.put(activityMetadata)
+      update(listOf(activityMetadata.componentName.packageName), activityMetadata.userHandle)
     }
-  }
 
   private suspend fun getMetadata(info: LauncherActivityInfo): ActivityData =
     activityData.get(info.componentName, info.user)
       ?: ActivityData(info.componentName, info.user, isHidden = false, tags = setOf())
 
-  private fun update(info: LauncherActivityInfo) {
-    update(info.componentName.packageName, info.user)
-  }
-
-  private fun update(packageName: String, user: UserHandle) {
-    viewModelScope.launch(Dispatchers.IO) {
+  private suspend fun update(packageNames: List<String>, user: UserHandle) =
+    withContext(Dispatchers.IO) {
       _activities.value.toMutableList().apply {
-        removeIf { it.info.componentName.packageName == packageName && it.info.user == user }
+        removeIf { it.info.componentName.packageName in packageNames && it.info.user == user }
         addAll(
-          launcherApps.getActivityList(packageName, user).map {
-            ActivityInfoWithData(it, getMetadata(it))
-          }
+          packageNames
+            .flatMap { launcherApps.getActivityList(it, user) }
+            .map { ActivityInfoWithData(it, getMetadata(it)) }
         )
         _activities.emit(toList())
       }
     }
-  }
+
+  private suspend fun replace() =
+    withContext(Dispatchers.IO) {
+      _activities.emit(
+        launcherApps.profiles
+          .flatMap { launcherApps.getActivityList(null, it) }
+          .map { ActivityInfoWithData(it, getMetadata(it)) }
+      )
+    }
 }

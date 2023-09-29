@@ -27,8 +27,8 @@ constructor(private val application: Application, private val launcherApps: Laun
 
   init {
     launcherApps.registerCallback(
-      LauncherAppsCallback { packageName: String, user: UserHandle ->
-        icons.keys.removeIf { it.packageName == packageName && it.user == user }
+      LauncherAppsCallback { packageNames: List<String>, user: UserHandle ->
+        icons.keys.removeIf { it.packageName in packageNames && it.user == user }
       }
     )
   }
@@ -70,7 +70,8 @@ constructor(private val application: Application, private val launcherApps: Laun
     when (info) {
       is ApplicationInfoWithUser -> application.packageManager.getApplicationIcon(info.info)
       is LauncherActivityInfo -> info.getIcon(density)
-      is ShortcutInfo -> launcherApps.getShortcutIconDrawable(info, density)
+      is ShortcutInfo ->
+        launcherApps.getShortcutIconDrawable(info, density)
           ?: application.packageManager.getApplicationIcon(info.packageName)
       else -> throw IllegalArgumentException()
     }
