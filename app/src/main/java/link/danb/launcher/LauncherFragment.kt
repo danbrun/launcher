@@ -26,10 +26,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -161,7 +163,7 @@ class LauncherFragment : Fragment() {
     }
 
     viewLifecycleOwner.lifecycleScope.launch {
-      viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+      viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
         launch {
           val widgetsFlow =
             combine(
@@ -185,9 +187,11 @@ class LauncherFragment : Fragment() {
               ::getAppListViewItems
             )
 
+          @OptIn(FlowPreview::class)
           combine(widgetsFlow, shortcutsFlow, appsFlow) { widgets, shortcuts, apps ->
               widgets + shortcuts + apps
             }
+            .debounce(250)
             .collectLatest { recyclerAdapter.submitList(it) }
         }
 
