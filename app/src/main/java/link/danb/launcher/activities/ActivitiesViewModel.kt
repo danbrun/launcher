@@ -50,11 +50,6 @@ constructor(
   fun putMetadataInBackground(activityMetadata: ActivityData) =
     viewModelScope.launch { putMetadata(activityMetadata) }
 
-  fun getInfo(activityData: ActivityData): LauncherActivityInfo =
-    launcherApps
-      .getActivityList(activityData.componentName.packageName, activityData.userHandle)
-      .first { it.componentName == activityData.componentName }
-
   private suspend fun putMetadata(activityMetadata: ActivityData) =
     withContext(Dispatchers.IO) {
       activityData.put(activityMetadata)

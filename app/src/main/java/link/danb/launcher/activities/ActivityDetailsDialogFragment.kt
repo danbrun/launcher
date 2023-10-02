@@ -27,6 +27,7 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
+import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
@@ -132,7 +133,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       ActivityHeaderViewItem(
         activityData,
         launcherIconCache.get(activityData),
-        activitiesViewModel.getInfo(activityData).label
+        launcherApps.resolveActivity(activityData).label
       )
     )
 

@@ -41,6 +41,7 @@ import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
+import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureContractModel
@@ -253,20 +254,17 @@ class LauncherFragment : Fragment() {
         .filter { !it.isHidden && it.userHandle == activeProfile }
         .map {
           async {
-            val info = activitiesViewModel.getInfo(it)
-            Pair(
-              it,
-              TileViewItem.transparentTileViewItem(
-                ActivityTileData(info),
-                info.label,
-                launcherIconCache.get(it)
-              )
+            val info = launcherApps.resolveActivity(it)
+            TileViewItem.transparentTileViewItem(
+              ActivityTileData(info),
+              info.label,
+              launcherIconCache.get(it)
             )
           }
         }
         .awaitAll()
         .groupBy {
-          val initial = it.second.name.first().uppercaseChar()
+          val initial = it.name.first().uppercaseChar()
           when {
             initial.isLetter() -> initial.toString()
             else -> ellipses
@@ -281,7 +279,7 @@ class LauncherFragment : Fragment() {
         }
         .flatMap { (groupName, activityItems) ->
           listOf(GroupHeaderViewItem(groupName.toString())) +
-            activityItems.map { it.second }.sortedBy { it.name.toString().lowercase() }
+            activityItems.sortedBy { it.name.toString().lowercase() }
         }
     }
 

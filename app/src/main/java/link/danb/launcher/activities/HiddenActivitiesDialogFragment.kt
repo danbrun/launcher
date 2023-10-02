@@ -25,6 +25,7 @@ import link.danb.launcher.R
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
+import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
@@ -118,7 +119,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         .filter { it.isHidden && it.userHandle == activeProfile }
         .map {
           async {
-            val info = activitiesViewModel.getInfo(it)
+            val info = launcherApps.resolveActivity(it)
             TileViewItem.cardTileViewItem(
               ActivityTileData(info),
               info.label,

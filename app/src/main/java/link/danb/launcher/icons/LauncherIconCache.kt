@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.packageName
+import link.danb.launcher.extensions.resolveActivity
 
 @Singleton
 class LauncherIconCache
@@ -69,7 +70,8 @@ constructor(private val application: Application, private val launcherApps: Laun
   private fun loadIcon(info: Any): Drawable =
     when (info) {
       is ApplicationInfoWithUser -> application.packageManager.getApplicationIcon(info.info)
-      is ActivityData -> application.packageManager.getActivityIcon(info.componentName)
+      is ActivityData ->
+        launcherApps.resolveActivity(info.componentName, info.userHandle).getIcon(density)
       is ShortcutInfo ->
         launcherApps.getShortcutIconDrawable(info, density)
           ?: application.packageManager.getApplicationIcon(info.packageName)
