@@ -27,15 +27,13 @@ constructor(
 ) : AndroidViewModel(application) {
 
   private val activityData = launcherDatabase.activityData()
-  private val launcherAppsCallback = LauncherAppsCallback { packageName, user ->
-    viewModelScope.launch { update(packageName, user) }
+  private val launcherAppsCallback = LauncherAppsCallback { packageNames, user ->
+    viewModelScope.launch { update(packageNames, user) }
   }
 
-  private val _activities = MutableStateFlow<List<ActivityInfoWithData>>(listOf())
-  private val _sortByCategory = MutableStateFlow<Boolean>(false)
+  private val _activities = MutableStateFlow<List<ActivityData>>(listOf())
 
-  val activities: StateFlow<List<ActivityInfoWithData>> = _activities.asStateFlow()
-  val sortByCategory: StateFlow<Boolean> = _sortByCategory.asStateFlow()
+  val activities: StateFlow<List<ActivityData>> = _activities.asStateFlow()
 
   init {
     viewModelScope.launch { replace() }
@@ -49,12 +47,13 @@ constructor(
     launcherApps.unregisterCallback(launcherAppsCallback)
   }
 
-  fun toggleSortByCategory() {
-    _sortByCategory.value = !_sortByCategory.value
-  }
-
   fun putMetadataInBackground(activityMetadata: ActivityData) =
     viewModelScope.launch { putMetadata(activityMetadata) }
+
+  fun getInfo(activityData: ActivityData): LauncherActivityInfo =
+    launcherApps
+      .getActivityList(activityData.componentName.packageName, activityData.userHandle)
+      .first { it.componentName == activityData.componentName }
 
   private suspend fun putMetadata(activityMetadata: ActivityData) =
     withContext(Dispatchers.IO) {
@@ -68,15 +67,18 @@ constructor(
 
   private suspend fun update(packageNames: List<String>, user: UserHandle) =
     withContext(Dispatchers.IO) {
-      _activities.value.toMutableList().apply {
-        removeIf { it.info.componentName.packageName in packageNames && it.info.user == user }
-        addAll(
-          packageNames
-            .flatMap { launcherApps.getActivityList(it, user) }
-            .map { ActivityInfoWithData(it, getMetadata(it)) }
-        )
-        _activities.emit(toList())
-      }
+      _activities.emit(
+        buildList {
+          addAll(
+            _activities.value.filter {
+              it.componentName.packageName !in packageNames || it.userHandle != user
+            }
+          )
+          addAll(
+            packageNames.flatMap { launcherApps.getActivityList(it, user) }.map { getMetadata(it) }
+          )
+        }
+      )
     }
 
   private suspend fun replace() =
@@ -84,7 +86,7 @@ constructor(
       _activities.emit(
         launcherApps.profiles
           .flatMap { launcherApps.getActivityList(null, it) }
-          .map { ActivityInfoWithData(it, getMetadata(it)) }
+          .map { getMetadata(it) }
       )
     }
 }

@@ -16,11 +16,6 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/category_sort_toggle"
-        android:title="@null"
-        app:showAsAction="always" />
-
-    <item
         android:icon="@drawable/baseline_push_pin_24"
         android:title="@string/add_item"
         app:showAsAction="always">

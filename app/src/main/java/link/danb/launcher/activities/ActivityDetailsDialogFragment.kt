@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.net.Uri
 import android.os.Bundle
@@ -24,6 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
+import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
@@ -59,12 +59,12 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   @Inject lateinit var launcherIconCache: LauncherIconCache
   @Inject lateinit var profilesModel: ProfilesModel
 
-  private val launcherActivity by lazy {
+  private val activityData: ActivityData by lazy {
     val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
     val user: UserHandle = arguments?.getParcelableCompat(USER_ARGUMENT)!!
 
     activitiesViewModel.activities.value.first {
-      it.info.componentName == component && it.info.user == user
+      it.componentName == component && it.userHandle == user
     }
   }
 
@@ -128,50 +128,54 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private suspend fun getViewItems(activeProfile: UserHandle): List<ViewItem> = buildList {
-    add(ActivityHeaderViewItem(launcherActivity, launcherIconCache.get(launcherActivity.info)))
+    add(
+      ActivityHeaderViewItem(
+        activityData,
+        launcherIconCache.get(activityData),
+        activitiesViewModel.getInfo(activityData).label
+      )
+    )
 
     shortcutsViewModel.pinnedShortcuts.value.filter {
       it.userHandle == profilesModel.activeProfile.value
     }
 
     val shortcuts =
-      shortcutsViewModel
-        .getShortcuts(launcherActivity.info.componentName.packageName, activeProfile)
-        .map {
-          TileViewItem.cardTileViewItem(
-            ShortcutTileData(it),
-            it.shortLabel!!,
-            launcherIconCache.get(it)
-          )
-        }
+      shortcutsViewModel.getShortcuts(activityData.componentName.packageName, activeProfile).map {
+        TileViewItem.cardTileViewItem(
+          ShortcutTileData(it),
+          it.shortLabel!!,
+          launcherIconCache.get(it)
+        )
+      }
 
     addAll(shortcuts)
 
     val widgets =
       appWidgetManager
         .getInstalledProvidersForPackage(
-          launcherActivity.info.componentName.packageName,
-          launcherActivity.info.user
+          activityData.componentName.packageName,
+          activityData.userHandle
         )
-        .map { WidgetPreviewViewItem(it, launcherActivity.info.user) }
+        .map { WidgetPreviewViewItem(it, activityData.userHandle) }
 
     addAll(widgets)
   }
 
   private fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-    val packageName = viewItem.data.info.componentName.packageName
+    val packageName = viewItem.data.componentName.packageName
     view.context.startActivity(
       Intent(Intent.ACTION_DELETE)
         .setData(Uri.parse("package:$packageName"))
-        .putExtra(Intent.EXTRA_USER, viewItem.data.info.user)
+        .putExtra(Intent.EXTRA_USER, viewItem.data.userHandle)
     )
     dismiss()
   }
 
   private fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
     launcherApps.startAppDetailsActivity(
-      viewItem.data.info.componentName,
-      viewItem.data.info.user,
+      viewItem.data.componentName,
+      viewItem.data.userHandle,
       view.boundsOnScreen,
       view.makeScaleUpAnimation().toBundle()
     )
@@ -180,7 +184,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onVisibilityButtonClick(viewItem: ActivityHeaderViewItem) {
     activitiesViewModel.putMetadataInBackground(
-      viewItem.data.data.copy(isHidden = !viewItem.data.data.isHidden)
+      viewItem.data.copy(isHidden = !viewItem.data.isHidden)
     )
     dismiss()
   }
@@ -209,7 +213,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onWidgetPreviewClick(widgetPreviewViewItem: WidgetPreviewViewItem) {
     bindWidgetActivityLauncher.launch(
-      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, launcherActivity.info.user)
+      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, activityData.userHandle)
     )
   }
 
@@ -219,12 +223,15 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     private const val COMPONENT_ARGUMENT: String = "name"
     private const val USER_ARGUMENT: String = "user"
 
-    fun newInstance(info: LauncherActivityInfo): ActivityDetailsDialogFragment =
+    fun newInstance(
+      componentName: ComponentName,
+      userHandle: UserHandle
+    ): ActivityDetailsDialogFragment =
       ActivityDetailsDialogFragment().apply {
         arguments =
           Bundle().apply {
-            putParcelable(COMPONENT_ARGUMENT, info.componentName)
-            putParcelable(USER_ARGUMENT, info.user)
+            putParcelable(COMPONENT_ARGUMENT, componentName)
+            putParcelable(USER_ARGUMENT, userHandle)
           }
       }
   }

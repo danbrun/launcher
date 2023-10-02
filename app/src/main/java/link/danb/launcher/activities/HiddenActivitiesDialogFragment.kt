@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
+import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
@@ -37,7 +39,6 @@ import link.danb.launcher.ui.LoadingSpinnerViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
@@ -109,18 +110,19 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   }
 
   private suspend fun getViewItems(
-    activities: List<ActivityInfoWithData>,
+    activities: List<ActivityData>,
     activeProfile: UserHandle,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       activities
-        .filter { it.data.isHidden && it.data.userHandle == activeProfile }
+        .filter { it.isHidden && it.userHandle == activeProfile }
         .map {
           async {
+            val info = activitiesViewModel.getInfo(it)
             TileViewItem.cardTileViewItem(
-              ActivityTileData(it.info),
-              it.info.label,
-              launcherIconCache.get(it.info)
+              ActivityTileData(info),
+              info.label,
+              launcherIconCache.get(it)
             )
           }
         }
@@ -146,7 +148,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   private fun onTileLongClick(tileData: TileData) {
     when (tileData) {
       is ActivityTileData -> {
-        ActivityDetailsDialogFragment.newInstance(tileData.info)
+        ActivityDetailsDialogFragment.newInstance(tileData.info.componentName, tileData.info.user)
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
       is ShortcutTileData -> throw NotImplementedError()

@@ -36,7 +36,6 @@ constructor(
 
   private lateinit var profileToggle: MenuItem
   private lateinit var visibilityToggle: MenuItem
-  private lateinit var categorySortToggle: MenuItem
 
   init {
     fragment.lifecycle.addObserver(this)
@@ -50,8 +49,8 @@ constructor(
               activities,
               activeProfile ->
               Pair(
-                activities.any { !it.info.user.isPersonalProfile },
-                activities.any { it.data.isHidden && it.info.user == activeProfile }
+                activities.any { !it.userHandle.isPersonalProfile },
+                activities.any { it.isHidden && it.userHandle == activeProfile }
               )
             }
             .collect { (hasWorkProfileApps, hasHiddenApps) ->
@@ -89,18 +88,6 @@ constructor(
               profileToggle.setIcon(data.icon)
             }
         }
-
-        launch {
-          activitiesViewModel.sortByCategory.collect { sortByCategory ->
-            categorySortToggle.setIcon(
-              if (sortByCategory) R.drawable.baseline_sort_by_alpha_24
-              else R.drawable.baseline_category_24
-            )
-            categorySortToggle.setTitle(
-              if (sortByCategory) R.string.sort_alphabetically else R.string.sort_by_category
-            )
-          }
-        }
       }
     }
   }
@@ -110,7 +97,6 @@ constructor(
 
     profileToggle = menu.findItem(R.id.profile_toggle)
     visibilityToggle = menu.findItem(R.id.visibility_toggle)
-    categorySortToggle = menu.findItem(R.id.category_sort_toggle)
   }
 
   override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
@@ -131,10 +117,6 @@ constructor(
       R.id.visibility_toggle -> {
         HiddenActivitiesDialogFragment()
           .show(fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG)
-        true
-      }
-      R.id.category_sort_toggle -> {
-        activitiesViewModel.toggleSortByCategory()
         true
       }
       R.id.pin_shortcut_button -> {

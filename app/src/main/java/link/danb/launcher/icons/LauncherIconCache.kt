@@ -2,7 +2,6 @@ package link.danb.launcher.icons
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
-import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -13,6 +12,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherAppsCallback
+import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.packageName
 
 @Singleton
@@ -36,11 +36,11 @@ constructor(private val application: Application, private val launcherApps: Laun
   suspend fun get(info: ApplicationInfo, user: UserHandle): Drawable =
     getIcon(ApplicationInfoWithUser(info, user))
 
-  suspend fun get(info: LauncherActivityInfo): Drawable = getIcon(info)
+  suspend fun get(info: ActivityData): Drawable = getIcon(info)
 
   suspend fun get(info: ShortcutInfo): Drawable = getIcon(info)
 
-  private suspend fun getIcon(info: Any) =
+  private suspend fun getIcon(info: Any): Drawable =
     withContext(Dispatchers.IO) {
       val iconHandle = getIconHandle(info)
       icons.getOrPut(iconHandle) {
@@ -60,8 +60,8 @@ constructor(private val application: Application, private val launcherApps: Laun
   private fun getIconHandle(info: Any): IconHandle =
     when (info) {
       is ApplicationInfoWithUser -> IconHandle(info.info.packageName, info.user, null)
-      is LauncherActivityInfo ->
-        IconHandle(info.componentName.packageName, info.user, info.componentName.className)
+      is ActivityData ->
+        IconHandle(info.componentName.packageName, info.userHandle, info.componentName.className)
       is ShortcutInfo -> IconHandle(info.packageName, info.userHandle, info.shortLabel)
       else -> throw IllegalArgumentException()
     }
@@ -69,7 +69,7 @@ constructor(private val application: Application, private val launcherApps: Laun
   private fun loadIcon(info: Any): Drawable =
     when (info) {
       is ApplicationInfoWithUser -> application.packageManager.getApplicationIcon(info.info)
-      is LauncherActivityInfo -> info.getIcon(density)
+      is ActivityData -> application.packageManager.getActivityIcon(info.componentName)
       is ShortcutInfo ->
         launcherApps.getShortcutIconDrawable(info, density)
           ?: application.packageManager.getApplicationIcon(info.packageName)

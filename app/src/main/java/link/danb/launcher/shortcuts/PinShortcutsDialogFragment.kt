@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -28,7 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
-import link.danb.launcher.activities.ActivityInfoWithData
+import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
@@ -43,7 +44,6 @@ import link.danb.launcher.ui.LoadingSpinnerViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
@@ -118,22 +118,24 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private suspend fun getViewItems(
-    shortcutActivities: List<ActivityInfoWithData>,
+    activityData: List<ActivityData>,
     activeProfile: UserHandle
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
-      shortcutActivities
-        .filter { it.info.user == activeProfile }
-        .flatMap {
-          launcherApps.getShortcutConfigActivityList(
-            it.info.componentName.packageName,
-            it.info.user
-          )
-        }
-        .map {
-          async {
-            TileViewItem.cardTileViewItem(ActivityTileData(it), it.label, launcherIconCache.get(it))
-          }
+      activityData
+        .filter { it.userHandle == activeProfile }
+        .flatMap { data ->
+          launcherApps
+            .getShortcutConfigActivityList(data.componentName.packageName, data.userHandle)
+            .map {
+              async {
+                TileViewItem.cardTileViewItem(
+                  ActivityTileData(it),
+                  it.label,
+                  launcherIconCache.get(data)
+                )
+              }
+            }
         }
         .awaitAll()
         .sortedBy { it.name.toString().lowercase() }

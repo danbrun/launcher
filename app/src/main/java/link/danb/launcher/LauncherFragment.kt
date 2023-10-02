@@ -5,7 +5,6 @@ import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.os.Bundle
@@ -35,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
-import link.danb.launcher.activities.ActivityInfoWithData
+import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.boundsOnScreen
@@ -183,7 +182,6 @@ class LauncherFragment : Fragment() {
             combine(
               activitiesViewModel.activities,
               profilesModel.activeProfile,
-              activitiesViewModel.sortByCategory,
               ::getAppListViewItems
             )
 
@@ -243,35 +241,31 @@ class LauncherFragment : Fragment() {
     }
 
   private suspend fun getAppListViewItems(
-    launcherActivities: List<ActivityInfoWithData>,
+    launcherActivities: List<ActivityData>,
     activeProfile: UserHandle,
-    sortByCategory: Boolean,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       launcherActivities
-        .filter { !it.data.isHidden && it.info.user == activeProfile }
+        .filter { !it.isHidden && it.userHandle == activeProfile }
         .map {
           async {
+            val info = activitiesViewModel.getInfo(it)
             Pair(
               it,
               TileViewItem.transparentTileViewItem(
-                ActivityTileData(it.info),
-                it.info.label,
-                launcherIconCache.get(it.info)
+                ActivityTileData(info),
+                info.label,
+                launcherIconCache.get(it)
               )
             )
           }
         }
         .awaitAll()
         .groupBy {
-          if (sortByCategory) {
-            getStringForCategory(it.first.info.applicationInfo.category)
-          } else {
-            val initial = it.second.name.first().uppercaseChar()
-            when {
-              initial.isLetter() -> initial.toString()
-              else -> ellipses
-            }
+          val initial = it.second.name.first().uppercaseChar()
+          when {
+            initial.isLetter() -> initial.toString()
+            else -> ellipses
           }
         }
         .toSortedMap { first, second ->
@@ -331,23 +325,6 @@ class LauncherFragment : Fragment() {
     return firstMatchIndex
   }
 
-  private fun getStringForCategory(category: Int): String =
-    requireContext()
-      .getString(
-        when (category) {
-          ApplicationInfo.CATEGORY_ACCESSIBILITY -> R.string.accessibility
-          ApplicationInfo.CATEGORY_AUDIO -> R.string.audio
-          ApplicationInfo.CATEGORY_GAME -> R.string.games
-          ApplicationInfo.CATEGORY_IMAGE -> R.string.images
-          ApplicationInfo.CATEGORY_MAPS -> R.string.maps
-          ApplicationInfo.CATEGORY_NEWS -> R.string.news
-          ApplicationInfo.CATEGORY_PRODUCTIVITY -> R.string.productivity
-          ApplicationInfo.CATEGORY_SOCIAL -> R.string.social
-          ApplicationInfo.CATEGORY_VIDEO -> R.string.video
-          else -> R.string.other
-        }
-      )
-
   private fun onTileClick(view: View, tileViewData: TileData) {
     when (tileViewData) {
       is ActivityTileData -> {
@@ -371,7 +348,10 @@ class LauncherFragment : Fragment() {
   private fun onTileLongClick(tileViewData: TileData) {
     when (tileViewData) {
       is ActivityTileData -> {
-        ActivityDetailsDialogFragment.newInstance(tileViewData.info)
+        ActivityDetailsDialogFragment.newInstance(
+            tileViewData.info.componentName,
+            tileViewData.info.user
+          )
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
       is ShortcutTileData -> {
