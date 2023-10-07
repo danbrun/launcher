@@ -1,8 +1,11 @@
 package link.danb.launcher
 
+import android.content.Intent
+import android.provider.Settings
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.core.view.MenuProvider
@@ -19,6 +22,7 @@ import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.extensions.isPersonalProfile
+import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.profiles.EnableWorkProfileDialogBuilder
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
@@ -127,6 +131,16 @@ constructor(
       R.id.pin_widget_button -> {
         PinWidgetsDialogFragment()
           .showNow(fragment.childFragmentManager, PinWidgetsDialogFragment.TAG)
+        true
+      }
+      R.id.settings_button -> {
+        fragment.startActivity(
+          Intent(Settings.ACTION_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+          fragment.view
+            ?.findViewById<View>(R.id.settings_button)
+            ?.makeScaleUpAnimation()
+            ?.toBundle()
+        )
         true
       }
       else -> false

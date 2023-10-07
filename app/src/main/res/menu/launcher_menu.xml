@@ -38,4 +38,10 @@
 
     </item>
 
+    <item
+        android:id="@+id/settings_button"
+        android:icon="@drawable/ic_baseline_settings_24"
+        android:title="@string/settings"
+        app:showAsAction="always" />
+
 </menu>
