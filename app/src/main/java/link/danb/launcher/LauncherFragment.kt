@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -86,11 +87,13 @@ class LauncherFragment : Fragment() {
 
   private lateinit var recyclerView: RecyclerView
 
+  private val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
   private val recyclerAdapter: ViewBinderAdapter by lazy {
     ViewBinderAdapter(
       GroupHeaderViewBinder(),
       TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-      WidgetViewBinder(appWidgetViewProvider) { widgetsViewModel.startEditing(it.widgetId) },
+      WidgetViewBinder(appWidgetViewProvider) { isInEditMode.value = true },
       WidgetEditorViewBinder(
         appWidgetViewProvider,
         widgetSizeUtil,
@@ -109,7 +112,7 @@ class LauncherFragment : Fragment() {
           widgetsViewModel.setHeight(widgetData.widgetId, height)
         },
         { widgetsViewModel.moveDown(it.widgetId) },
-        { widgetsViewModel.finishEditing() }
+        { isInEditMode.value = false }
       ),
     )
   }
@@ -169,8 +172,8 @@ class LauncherFragment : Fragment() {
           val widgetsFlow =
             combine(
               widgetsViewModel.widgets,
-              widgetsViewModel.widgetToEdit,
               profilesModel.activeProfile,
+              isInEditMode,
               ::getWidgetListViewItems
             )
 
@@ -205,14 +208,14 @@ class LauncherFragment : Fragment() {
 
   private fun getWidgetListViewItems(
     widgets: List<WidgetData>,
-    widgetToEdit: Int?,
     activeProfile: UserHandle,
+    isInEditMode: Boolean,
   ): List<ViewItem> =
     widgets.flatMap {
       val info = appWidgetManager.getAppWidgetInfo(it.widgetId)
       if (info.profile != activeProfile) return@flatMap listOf()
 
-      if (it.widgetId == widgetToEdit) {
+      if (isInEditMode) {
         listOf(
           WidgetViewItem(it),
           WidgetEditorViewItem(it, appWidgetManager.getAppWidgetInfo(it.widgetId))

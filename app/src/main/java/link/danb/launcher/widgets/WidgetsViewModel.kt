@@ -27,10 +27,8 @@ constructor(
   private val widgetData by lazy { launcherDatabase.widgetData() }
 
   private val _widgets: MutableStateFlow<List<WidgetData>> = MutableStateFlow(listOf())
-  private val _widgetToEdit: MutableStateFlow<Int?> = MutableStateFlow(null)
 
   val widgets: StateFlow<List<WidgetData>> = _widgets
-  val widgetToEdit: StateFlow<Int?> = _widgetToEdit
 
   init {
     viewModelScope.launch(Dispatchers.IO) {
@@ -38,14 +36,6 @@ constructor(
       checkForNewWidgets()
       reloadFromDatabase()
     }
-  }
-
-  fun startEditing(widgetId: Int) {
-    _widgetToEdit.value = widgetId
-  }
-
-  fun finishEditing() {
-    _widgetToEdit.value = null
   }
 
   fun checkForNewWidgets() {
