@@ -12,6 +12,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -37,6 +40,8 @@ import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
+import link.danb.launcher.ui.GroupHeaderViewBinder
+import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
@@ -69,6 +74,12 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     }
   }
 
+  private val shortcutActivityLauncher =
+    registerForActivityResult(
+      ActivityResultContracts.StartIntentSenderForResult(),
+      ::onPinShortcutActivityResult
+    )
+
   private val bindWidgetActivityLauncher =
     registerForActivityResult(AppWidgetSetupActivityResultContract()) {
       if (it.success) {
@@ -97,6 +108,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
           ::onUninstallButtonClick,
           ::onSettingsButtonClick
         ),
+        GroupHeaderViewBinder(),
         CardTileViewBinder(::onTileClick) { _, it -> onTileLongClick(it) },
         WidgetPreviewViewBinder(appWidgetViewProvider) { _, it -> onWidgetPreviewClick(it) },
       )
@@ -112,6 +124,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
             setSpanSizeProvider { position, spanCount ->
               when (adapter.currentList[position]) {
                 is ActivityHeaderViewItem,
+                is GroupHeaderViewItem,
                 is WidgetPreviewViewItem -> spanCount
                 else -> 1
               }
@@ -137,20 +150,39 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       )
     )
 
-    shortcutsViewModel.pinnedShortcuts.value.filter {
-      it.userHandle == profilesModel.activeProfile.value
+    val shortcuts =
+      shortcutsViewModel
+        .getShortcuts(activityData.componentName.packageName, activeProfile)
+        .map {
+          TileViewItem.cardTileViewItem(
+            ShortcutTileData(it),
+            it.shortLabel!!,
+            launcherIconCache.get(it)
+          )
+        }
+        .sortedBy { it.name.toString() }
+
+    if (shortcuts.isNotEmpty()) {
+      add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
+      addAll(shortcuts)
     }
 
-    val shortcuts =
-      shortcutsViewModel.getShortcuts(activityData.componentName.packageName, activeProfile).map {
-        TileViewItem.cardTileViewItem(
-          ShortcutTileData(it),
-          it.shortLabel!!,
-          launcherIconCache.get(it)
-        )
-      }
+    val configurableShortcuts =
+      launcherApps
+        .getShortcutConfigActivityList(activityData.componentName.packageName, activeProfile)
+        .map {
+          TileViewItem.cardTileViewItem(
+            ActivityTileData(it),
+            it.label,
+            launcherIconCache.get(activityData)
+          )
+        }
+        .sortedBy { it.name.toString() }
 
-    addAll(shortcuts)
+    if (configurableShortcuts.isNotEmpty()) {
+      add(GroupHeaderViewItem(requireContext().getString(R.string.configurable_shortcuts)))
+      addAll(configurableShortcuts)
+    }
 
     val widgets =
       appWidgetManager
@@ -160,7 +192,10 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         )
         .map { WidgetPreviewViewItem(it, activityData.userHandle) }
 
-    addAll(widgets)
+    if (widgets.isNotEmpty()) {
+      add(GroupHeaderViewItem(requireContext().getString(R.string.widgets)))
+      addAll(widgets)
+    }
   }
 
   private fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
@@ -192,7 +227,12 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onTileClick(view: View, tileData: TileData) =
     when (tileData) {
-      is ActivityTileData -> throw NotImplementedError()
+      is ActivityTileData -> {
+        shortcutActivityLauncher.launch(
+          IntentSenderRequest.Builder(launcherApps.getShortcutConfigActivityIntent(tileData.info)!!)
+            .build()
+        )
+      }
       is ShortcutTileData -> {
         launcherApps.startShortcut(
           tileData.info,
@@ -205,7 +245,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onTileLongClick(tileData: TileData) =
     when (tileData) {
-      is ActivityTileData -> throw NotImplementedError()
+      is ActivityTileData -> Unit
       is ShortcutTileData -> {
         shortcutsViewModel.pinShortcut(tileData.info)
         Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
@@ -216,6 +256,21 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     bindWidgetActivityLauncher.launch(
       AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, activityData.userHandle)
     )
+  }
+
+  private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
+    if (activityResult.data == null) return
+
+    val pinItemRequest = launcherApps.getPinItemRequest(activityResult.data) ?: return
+    if (!pinItemRequest.isValid) return
+    if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
+
+    val info = pinItemRequest.shortcutInfo ?: return
+
+    pinItemRequest.accept()
+    shortcutsViewModel.pinShortcut(info)
+    Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+    dismiss()
   }
 
   companion object {
