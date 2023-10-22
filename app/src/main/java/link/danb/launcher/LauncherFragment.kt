@@ -22,6 +22,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomappbar.BottomAppBar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -360,8 +361,14 @@ class LauncherFragment : Fragment() {
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
       is ShortcutTileData -> {
-        Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-        shortcutsViewModel.unpinShortcut(tileViewData.info)
+        MaterialAlertDialogBuilder(requireContext())
+          .setTitle(R.string.unpin_shortcut)
+          .setPositiveButton(R.string.unpin) { _, _ ->
+            Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
+            shortcutsViewModel.unpinShortcut(tileViewData.info)
+          }
+          .setNegativeButton(android.R.string.cancel, null)
+          .show()
       }
     }
   }

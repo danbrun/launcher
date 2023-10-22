@@ -44,6 +44,8 @@
     <string name="sort_alphabetically">Sort alphabetically</string>
     <string name="sort_by_category">Sort by category</string>
     <string name="add_item">Add item</string>
+    <string name="unpin_shortcut">Unpin shortcut?</string>
+    <string name="unpin">Unpin</string>
 
     <!-- Categories -->
     <string name="accessibility">Accessibility</string>
