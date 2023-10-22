@@ -16,14 +16,13 @@
         <ImageView
             android:id="@+id/widget_preview"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_height="200dp"
             android:contentDescription="@null" />
 
         <link.danb.launcher.ui.TouchInterceptView
             android:id="@+id/widget_preview_frame"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="200dp" />
 
         <TextView
             android:id="@+id/widget_label"

@@ -1,6 +1,5 @@
 package link.danb.launcher.widgets
 
-import android.annotation.SuppressLint
 import android.appwidget.AppWidgetProviderInfo
 import android.content.res.Resources
 import android.os.Build
@@ -26,7 +25,6 @@ class WidgetPreviewViewBinder(
   override fun createViewHolder(parent: ViewGroup): WidgetPreviewViewHolder =
     WidgetPreviewViewHolder(parent.inflate(R.layout.widget_preview_view))
 
-  @SuppressLint("ResourceType")
   override fun bindViewHolder(holder: WidgetPreviewViewHolder, viewItem: WidgetPreviewViewItem) {
     holder.itemView.apply {
       isClickable = onClick != null
@@ -40,8 +38,12 @@ class WidgetPreviewViewBinder(
       Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
         viewItem.providerInfo.previewLayout != Resources.ID_NULL
     ) {
+      holder.frame.visibility = View.VISIBLE
+      holder.image.visibility = View.GONE
       holder.frame.addView(appWidgetViewProvider.createPreview(viewItem.providerInfo))
     } else {
+      holder.frame.visibility = View.GONE
+      holder.image.visibility = View.VISIBLE
       holder.image.setImageDrawable(
         viewItem.providerInfo.loadPreviewImage(holder.image.context, 0)
           ?: viewItem.providerInfo.loadIcon(holder.image.context, 0)
