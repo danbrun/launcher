@@ -234,7 +234,7 @@ class LauncherFragment : Fragment() {
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       (launcherActivities
-          .filter { it.isPinned }
+          .filter { it.isPinned && it.userHandle == activeProfile }
           .map {
             async {
               val info = launcherApps.resolveActivity(it)
