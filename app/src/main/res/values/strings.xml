@@ -41,7 +41,11 @@
     <string name="show_hidden">Show hidden apps</string>
     <string name="hide_hidden">Stop showing hidden apps</string>
     <string name="turn_on">Turn on</string>
-    <string name="turn_on_work_profile">Turn on work profile?</string>
+    <string name="turn_off">Turn off</string>
+    <string name="turn_on_work_profile_title">Turn on work profile?</string>
+    <string name="turn_off_work_profile_title">Turn off work profile?</string>
+    <string name="turn_on_work_profile">Turn on work profile</string>
+    <string name="turn_off_work_profile">Turn off work profile</string>
     <string name="sort_alphabetically">Sort alphabetically</string>
     <string name="sort_by_category">Sort by category</string>
     <string name="add_item">Add item</string>

@@ -6,8 +6,6 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -23,8 +21,8 @@ import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
-import link.danb.launcher.profiles.EnableWorkProfileDialogBuilder
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.profiles.ToggleWorkProfileDialogBuilder
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
 
@@ -33,12 +31,13 @@ class LauncherMenuProvider
 constructor(
   private val fragment: Fragment,
   private val profilesModel: ProfilesModel,
-  private val enableWorkProfileDialogBuilder: EnableWorkProfileDialogBuilder,
+  private val toggleWorkProfileDialogBuilder: ToggleWorkProfileDialogBuilder,
 ) : DefaultLifecycleObserver, MenuProvider {
 
   private val activitiesViewModel: ActivitiesViewModel by fragment.activityViewModels()
 
   private lateinit var profileToggle: MenuItem
+  private lateinit var workToggle: MenuItem
   private lateinit var visibilityToggle: MenuItem
 
   init {
@@ -59,38 +58,46 @@ constructor(
             }
             .collect { (hasWorkProfileApps, hasHiddenApps) ->
               profileToggle.isVisible = hasWorkProfileApps
+              workToggle.isVisible = hasWorkProfileApps
               visibilityToggle.isVisible = hasHiddenApps
             }
         }
 
         launch {
-          combine(
-              profilesModel.workProfileData,
-              profilesModel.activeProfile,
-            ) { workProfileData, activeProfile ->
-              WorkProfileToggleData(
-                workProfileData.user != null,
-                if (activeProfile.isPersonalProfile) {
-                  if (workProfileData.isEnabled) {
-                    R.drawable.ic_baseline_work_24
-                  } else {
-                    R.drawable.ic_baseline_work_off_24
-                  }
-                } else {
-                  R.drawable.baseline_person_24
-                },
-                if (activeProfile.isPersonalProfile) {
-                  R.string.show_work
-                } else {
-                  R.string.show_personal
-                },
-              )
-            }
-            .collect { data ->
-              profileToggle.isVisible = data.show
-              profileToggle.setTitle(data.title)
-              profileToggle.setIcon(data.icon)
-            }
+          combine(profilesModel.workProfileData, profilesModel.activeProfile, ::Pair).collect {
+            (workProfileData, activeProfile) ->
+            profileToggle.isVisible = workProfileData.user != null
+            profileToggle.setTitle(
+              if (activeProfile.isPersonalProfile) {
+                R.string.show_work
+              } else {
+                R.string.show_personal
+              }
+            )
+            profileToggle.setIcon(
+              if (activeProfile.isPersonalProfile) {
+                R.drawable.baseline_person_24
+              } else {
+                R.drawable.ic_baseline_work_account_24
+              }
+            )
+
+            workToggle.isVisible = workProfileData.user != null
+            workToggle.setTitle(
+              if (workProfileData.isEnabled) {
+                R.string.turn_off_work_profile
+              } else {
+                R.string.turn_on_work_profile
+              }
+            )
+            workToggle.setIcon(
+              if (workProfileData.isEnabled) {
+                R.drawable.ic_baseline_work_24
+              } else {
+                R.drawable.ic_baseline_work_off_24
+              }
+            )
+          }
         }
       }
     }
@@ -100,22 +107,20 @@ constructor(
     menuInflater.inflate(R.menu.launcher_menu, menu)
 
     profileToggle = menu.findItem(R.id.profile_toggle)
+    workToggle = menu.findItem(R.id.work_toggle)
     visibilityToggle = menu.findItem(R.id.visibility_toggle)
   }
 
   override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
     when (menuItem.itemId) {
       R.id.profile_toggle -> {
-        if (
-          !profilesModel.activeProfile.value.isPersonalProfile ||
-            profilesModel.workProfileData.value.isEnabled
-        ) {
-          profilesModel.toggleActiveProfile()
-        } else {
-          enableWorkProfileDialogBuilder
-            .getEnableWorkProfileDialogBuilder(fragment.requireContext())
-            .show()
-        }
+        profilesModel.toggleActiveProfile()
+        true
+      }
+      R.id.work_toggle -> {
+        toggleWorkProfileDialogBuilder
+          .getToggleWorkProfileDialogBuilder(fragment.requireContext())
+          .show()
         true
       }
       R.id.visibility_toggle -> {
@@ -145,10 +150,4 @@ constructor(
       }
       else -> false
     }
-
-  data class WorkProfileToggleData(
-    val show: Boolean,
-    @DrawableRes val icon: Int,
-    @StringRes val title: Int,
-  )
 }

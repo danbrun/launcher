@@ -8,13 +8,15 @@ import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.packageName
 import link.danb.launcher.profiles.ProfilesModel
-import javax.inject.Inject
 
 @HiltViewModel
 class ShortcutsViewModel
@@ -30,7 +32,12 @@ constructor(
   val pinnedShortcuts: StateFlow<List<ShortcutInfo>> = _pinnedShortcuts.asStateFlow()
 
   init {
-    viewModelScope.launch { profilesModel.activeProfile.collect(::update) }
+    viewModelScope.launch {
+      combine(profilesModel.activeProfile, profilesModel.workProfileData, ::Pair).collect {
+        (activeProfile, workProfileData) ->
+        update(activeProfile, workProfileData)
+      }
+    }
   }
 
   fun getShortcuts(packageName: String, user: UserHandle): List<ShortcutInfo> {
@@ -42,8 +49,7 @@ constructor(
         .setPackage(packageName)
         .setQueryFlags(ShortcutQuery.FLAG_MATCH_DYNAMIC or ShortcutQuery.FLAG_MATCH_MANIFEST),
       user
-    )
-      ?: listOf()
+    ) ?: listOf()
   }
 
   fun pinShortcut(shortcutInfo: ShortcutInfo) {
@@ -69,19 +75,22 @@ constructor(
         ShortcutQuery().setPackage(packageName).setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
         profilesModel.activeProfile.value
       )
-      ?.toSet()
-      ?: setOf()
+      ?.toSet() ?: setOf()
 
   private fun setPinnedShortcuts(shortcutInfo: ShortcutInfo, shortcutIds: Set<String>) {
     launcherApps.pinShortcuts(shortcutInfo.`package`, shortcutIds.toList(), shortcutInfo.userHandle)
-    update(profilesModel.activeProfile.value)
+    update(profilesModel.activeProfile.value, profilesModel.workProfileData.value)
   }
 
-  private fun update(user: UserHandle) {
+  private fun update(activeProfile: UserHandle, workProfileData: ProfilesModel.WorkProfileData) {
     _pinnedShortcuts.value =
-      launcherApps.getShortcuts(
-        ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
-        user
-      )!!
+      if (activeProfile.isPersonalProfile || workProfileData.isEnabled) {
+        launcherApps.getShortcuts(
+          ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
+          activeProfile
+        )!!
+      } else {
+        listOf()
+      }
   }
 }
