@@ -4,6 +4,7 @@
     <string name="settings">Settings</string>
     <string name="uninstall">Uninstall</string>
     <string name="shortcuts">Shortcuts</string>
+    <string name="pinned_items">Pinned items</string>
     <string name="configurable_shortcuts">Configurable Shortcuts</string>
     <string name="widgets">Widgets</string>
     <string name="hidden_apps">Hidden apps</string>

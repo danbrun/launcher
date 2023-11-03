@@ -104,6 +104,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     val adapter =
       ViewBinderAdapter(
         ActivityHeaderViewBinder(
+          { _, it -> onPinButtonClick(it) },
           { _, it -> onVisibilityButtonClick(it) },
           ::onUninstallButtonClick,
           ::onSettingsButtonClick
@@ -214,6 +215,13 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       viewItem.data.userHandle,
       view.boundsOnScreen,
       view.makeScaleUpAnimation().toBundle()
+    )
+    dismiss()
+  }
+
+  private fun onPinButtonClick(viewItem: ActivityHeaderViewItem) {
+    activitiesViewModel.putMetadataInBackground(
+      viewItem.data.copy(isPinned = !viewItem.data.isPinned)
     )
     dismiss()
   }

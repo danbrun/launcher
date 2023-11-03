@@ -178,11 +178,12 @@ class LauncherFragment : Fragment() {
               ::getWidgetListViewItems
             )
 
-          val shortcutsFlow =
+          val pinnedFlow =
             combine(
+              activitiesViewModel.activities,
               shortcutsViewModel.pinnedShortcuts,
               profilesModel.activeProfile,
-              ::getShortcutListViewItems
+              ::getPinnedListViewItems
             )
 
           val appsFlow =
@@ -193,8 +194,8 @@ class LauncherFragment : Fragment() {
             )
 
           @OptIn(FlowPreview::class)
-          combine(widgetsFlow, shortcutsFlow, appsFlow) { widgets, shortcuts, apps ->
-              widgets + shortcuts + apps
+          combine(widgetsFlow, pinnedFlow, appsFlow) { widgets, pins, apps ->
+              widgets + pins + apps
             }
             .debounce(250)
             .collectLatest { recyclerAdapter.submitList(it) }
@@ -226,27 +227,41 @@ class LauncherFragment : Fragment() {
       }
     }
 
-  private suspend fun getShortcutListViewItems(
+  private suspend fun getPinnedListViewItems(
+    launcherActivities: List<ActivityData>,
     shortcuts: List<ShortcutInfo>,
     activeProfile: UserHandle,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
-      shortcuts
-        .filter { it.userHandle == activeProfile }
-        .map {
-          async {
-            TileViewItem.transparentTileViewItem(
-              ShortcutTileData(it),
-              it.shortLabel!!,
-              launcherIconCache.get(it)
-            )
-          }
-        }
+      (launcherActivities
+          .filter { it.isPinned }
+          .map {
+            async {
+              val info = launcherApps.resolveActivity(it)
+              TileViewItem.transparentTileViewItem(
+                ActivityTileData(info),
+                info.label,
+                launcherIconCache.get(it)
+              )
+            }
+          } +
+          shortcuts
+            .filter { it.userHandle == activeProfile }
+            .map {
+              async {
+                TileViewItem.transparentTileViewItem(
+                  ShortcutTileData(it),
+                  it.shortLabel!!,
+                  launcherIconCache.get(it)
+                )
+              }
+            })
         .awaitAll()
         .sortedBy { it.name.toString().lowercase() }
         .takeIf { it.isNotEmpty() }
-        ?.let { listOf(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts))) + it }
-        ?: listOf()
+        ?.let {
+          listOf(GroupHeaderViewItem(requireContext().getString(R.string.pinned_items))) + it
+        } ?: listOf()
     }
 
   private suspend fun getAppListViewItems(

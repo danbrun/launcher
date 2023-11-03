@@ -58,7 +58,13 @@ constructor(
 
   private suspend fun getMetadata(info: LauncherActivityInfo): ActivityData =
     activityData.get(info.componentName, info.user)
-      ?: ActivityData(info.componentName, info.user, isHidden = false, tags = setOf())
+      ?: ActivityData(
+        info.componentName,
+        info.user,
+        isPinned = false,
+        isHidden = false,
+        tags = setOf()
+      )
 
   private suspend fun update(packageNames: List<String>, user: UserHandle) =
     withContext(Dispatchers.IO) {

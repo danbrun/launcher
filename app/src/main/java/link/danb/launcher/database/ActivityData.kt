@@ -8,6 +8,8 @@ import androidx.room.*
 data class ActivityData(
   val componentName: ComponentName,
   val userHandle: UserHandle,
+  @ColumnInfo(defaultValue = "0")
+  val isPinned: Boolean,
   val isHidden: Boolean,
   val tags: Set<String>,
 ) {

@@ -14,6 +14,7 @@ import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 
 class ActivityHeaderViewBinder(
+  private val onPinButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
   private val onVisibilityButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
   private val onUninstallButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
   private val onSettingsButtonClick: ((view: View, viewItem: ActivityHeaderViewItem) -> Unit)?,
@@ -29,6 +30,17 @@ class ActivityHeaderViewBinder(
       text = viewItem.name
       viewItem.icon.setSize(context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size))
       setCompoundDrawables(viewItem.icon, null, null, null)
+    }
+
+    holder.pinButton.apply {
+      setIconResource(
+        if (!viewItem.data.isPinned) {
+          R.drawable.baseline_push_pin_24
+        } else {
+          R.drawable.baseline_push_pin_off_24
+        }
+      )
+      setOnClickListener { onPinButtonClick?.invoke(it, viewItem) }
     }
 
     holder.visibilityButton.apply {
@@ -50,6 +62,7 @@ class ActivityHeaderViewBinder(
 
 class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
   val activityItem: TextView = view.findViewById(R.id.activity_item)
+  val pinButton: MaterialButton = view.findViewById(R.id.pin_button)
   val visibilityButton: MaterialButton = view.findViewById(R.id.visibility_button)
   val uninstallButton: MaterialButton = view.findViewById(R.id.uninstall_button)
   val settingsButton: MaterialButton = view.findViewById(R.id.settings_button)
