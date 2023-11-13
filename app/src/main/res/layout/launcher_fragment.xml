@@ -29,7 +29,8 @@
             android:id="@+id/bottom_app_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/black" />
+            android:backgroundTint="@color/black"
+            android:theme="@style/Theme.Material3.Dark" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/floating_action"
