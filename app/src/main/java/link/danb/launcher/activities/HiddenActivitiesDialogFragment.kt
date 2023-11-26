@@ -25,15 +25,14 @@ import link.danb.launcher.R
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
-import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.tiles.CardTileViewBinder
+import link.danb.launcher.tiles.ConfigurableShortcutTileData
 import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.tiles.TileData
-import link.danb.launcher.tiles.TileViewItem
+import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.LoadingSpinnerViewBinder
@@ -47,8 +46,8 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
 
   @Inject lateinit var launcherApps: LauncherApps
-  @Inject lateinit var launcherIconCache: LauncherIconCache
   @Inject lateinit var profilesModel: ProfilesModel
+  @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
   private val header by lazy {
     DialogHeaderViewItem(
@@ -117,16 +116,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
     withContext(Dispatchers.IO) {
       activities
         .filter { it.isHidden && it.userHandle == activeProfile }
-        .map {
-          async {
-            val info = launcherApps.resolveActivity(it)
-            TileViewItem.cardTileViewItem(
-              ActivityTileData(info),
-              info.label,
-              launcherIconCache.get(it)
-            )
-          }
-        }
+        .map { async { tileViewItemFactory.getCardTileViewItem(it) } }
         .awaitAll()
         .sortedBy { it.name.toString().lowercase() }
     }
@@ -134,25 +124,26 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   private fun onTileClick(view: View, tileData: TileData) {
     when (tileData) {
       is ActivityTileData -> {
-        launcherApps.startMainActivity(
-          tileData.info.componentName,
-          tileData.info.user,
+        activitiesViewModel.launchActivity(
+          tileData.activityData,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
       }
       is ShortcutTileData -> throw NotImplementedError()
+      is ConfigurableShortcutTileData -> throw NotImplementedError()
     }
   }
 
   private fun onTileLongClick(tileData: TileData) {
     when (tileData) {
       is ActivityTileData -> {
-        ActivityDetailsDialogFragment.newInstance(tileData.info.componentName, tileData.info.user)
+        ActivityDetailsDialogFragment.newInstance(tileData.activityData)
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
       is ShortcutTileData -> throw NotImplementedError()
+      is ConfigurableShortcutTileData -> throw NotImplementedError()
     }
   }
 

@@ -1,20 +1,28 @@
 package link.danb.launcher.tiles
 
-import android.content.pm.LauncherActivityInfo
-import android.content.pm.ShortcutInfo
+import link.danb.launcher.database.ActivityData
+import link.danb.launcher.shortcuts.ConfigurableShortcutData
+import link.danb.launcher.shortcuts.ShortcutData
 
 sealed interface TileData {
   fun areItemsTheSame(other: TileData): Boolean
 }
 
-class ActivityTileData(val info: LauncherActivityInfo) : TileData {
+@JvmInline
+value class ActivityTileData(val activityData: ActivityData) : TileData {
   override fun areItemsTheSame(other: TileData): Boolean =
     other is ActivityTileData &&
-      info.componentName == other.info.componentName &&
-      info.user == other.info.user
+      activityData.componentName == other.activityData.componentName &&
+      activityData.userHandle == other.activityData.userHandle
 }
 
-class ShortcutTileData(val info: ShortcutInfo) : TileData {
-  override fun areItemsTheSame(other: TileData): Boolean =
-    other is ShortcutTileData && info.`package` == other.info.`package` && info.id == other.info.id
+@JvmInline
+value class ShortcutTileData(val shortcutData: ShortcutData) : TileData {
+  override fun areItemsTheSame(other: TileData): Boolean = this == other
+}
+
+@JvmInline
+value class ConfigurableShortcutTileData(val configurableShortcutData: ConfigurableShortcutData) :
+  TileData {
+  override fun areItemsTheSame(other: TileData): Boolean = this == other
 }

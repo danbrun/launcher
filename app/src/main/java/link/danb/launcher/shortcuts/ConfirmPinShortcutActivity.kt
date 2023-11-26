@@ -7,6 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.R
+import link.danb.launcher.extensions.toShortcutData
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -29,7 +30,7 @@ class ConfirmPinShortcutActivity : AppCompatActivity() {
 
     val info = pinItemRequest.shortcutInfo ?: return
     pinItemRequest.accept()
-    shortcutsViewModel.pinShortcut(info)
+    shortcutsViewModel.pinShortcut(info.toShortcutData())
 
     Toast.makeText(this, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
     finish()

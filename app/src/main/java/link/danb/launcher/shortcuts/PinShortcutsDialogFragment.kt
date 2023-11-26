@@ -31,12 +31,14 @@ import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.icons.LauncherIconCache
+import link.danb.launcher.extensions.toConfigurableShortcutData
+import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.tiles.CardTileViewBinder
+import link.danb.launcher.tiles.ConfigurableShortcutTileData
 import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
+import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.GroupHeaderViewBinder
@@ -53,9 +55,9 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
   @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetManager: AppWidgetManager
-  @Inject lateinit var launcherIconCache: LauncherIconCache
   @Inject lateinit var launcherApps: LauncherApps
   @Inject lateinit var profilesModel: ProfilesModel
+  @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
   private val shortcutActivityLauncher =
     registerForActivityResult(
@@ -128,13 +130,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
           launcherApps
             .getShortcutConfigActivityList(data.componentName.packageName, data.userHandle)
             .map {
-              async {
-                TileViewItem.cardTileViewItem(
-                  ActivityTileData(it),
-                  it.label,
-                  launcherIconCache.get(data)
-                )
-              }
+              async { tileViewItemFactory.getCardTileViewItem(it.toConfigurableShortcutData()) }
             }
         }
         .awaitAll()
@@ -142,10 +138,12 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     }
 
   private fun onTileClick(tileData: TileData) {
-    if (tileData !is ActivityTileData) return
+    if (tileData !is ConfigurableShortcutTileData) return
 
     shortcutActivityLauncher.launch(
-      IntentSenderRequest.Builder(launcherApps.getShortcutConfigActivityIntent(tileData.info)!!)
+      IntentSenderRequest.Builder(
+          shortcutsViewModel.getConfigurableShortcutIntent(tileData.configurableShortcutData)
+        )
         .build()
     )
   }
@@ -160,7 +158,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     val info = pinItemRequest.shortcutInfo ?: return
 
     pinItemRequest.accept()
-    shortcutsViewModel.pinShortcut(info)
+    shortcutsViewModel.pinShortcut(info.toShortcutData())
     Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
     dismiss()
   }

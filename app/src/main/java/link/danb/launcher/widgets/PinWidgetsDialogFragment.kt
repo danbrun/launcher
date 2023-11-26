@@ -23,7 +23,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
-import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
@@ -45,7 +44,6 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var widgetHeaderViewItemFactory: WidgetHeaderViewItemFactory
-  @Inject lateinit var launcherIconCache: LauncherIconCache
   @Inject lateinit var launcherApps: LauncherApps
   @Inject lateinit var profilesModel: ProfilesModel
 

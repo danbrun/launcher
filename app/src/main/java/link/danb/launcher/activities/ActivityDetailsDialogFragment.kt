@@ -24,6 +24,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.database.ActivityData
@@ -32,14 +35,17 @@ import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
+import link.danb.launcher.extensions.toConfigurableShortcutData
+import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.tiles.CardTileViewBinder
+import link.danb.launcher.tiles.ConfigurableShortcutTileData
 import link.danb.launcher.tiles.ShortcutTileData
 import link.danb.launcher.tiles.TileData
-import link.danb.launcher.tiles.TileViewItem
+import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -64,13 +70,16 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   @Inject lateinit var launcherApps: LauncherApps
   @Inject lateinit var launcherIconCache: LauncherIconCache
   @Inject lateinit var profilesModel: ProfilesModel
+  @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
-  private val activityData: ActivityData by lazy {
-    val component: ComponentName = arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
-    val user: UserHandle = arguments?.getParcelableCompat(USER_ARGUMENT)!!
+  private val componentName: ComponentName by lazy {
+    arguments?.getParcelableCompat(COMPONENT_ARGUMENT)!!
+  }
+  private val userHandle: UserHandle by lazy { arguments?.getParcelableCompat(USER_ARGUMENT)!! }
 
-    activitiesViewModel.activities.value.first {
-      it.componentName == component && it.userHandle == user
+  private val activityData: Flow<ActivityData> by lazy {
+    activitiesViewModel.activities.map { activities ->
+      activities.first { it.componentName == componentName && it.userHandle == userHandle }
     }
   }
 
@@ -134,15 +143,22 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     }
 
     viewLifecycleOwner.lifecycleScope.launch {
-      repeatOnLifecycle(Lifecycle.State.STARTED) {
-        profilesModel.activeProfile.collect { adapter.submitList(getViewItems(it)) }
+      viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+        launch {
+          combine(activityData, profilesModel.activeProfile, ::getViewItems).collect {
+            adapter.submitList(it)
+          }
+        }
       }
     }
 
     return recyclerView
   }
 
-  private suspend fun getViewItems(activeProfile: UserHandle): List<ViewItem> = buildList {
+  private suspend fun getViewItems(
+    activityData: ActivityData,
+    activeProfile: UserHandle
+  ): List<ViewItem> = buildList {
     add(
       ActivityHeaderViewItem(
         activityData,
@@ -154,13 +170,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     val shortcuts =
       shortcutsViewModel
         .getShortcuts(activityData.componentName.packageName, activeProfile)
-        .map {
-          TileViewItem.cardTileViewItem(
-            ShortcutTileData(it),
-            it.shortLabel!!,
-            launcherIconCache.get(it)
-          )
-        }
+        .map { tileViewItemFactory.getCardTileViewItem(it.toShortcutData()) }
         .sortedBy { it.name.toString() }
 
     if (shortcuts.isNotEmpty()) {
@@ -171,13 +181,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     val configurableShortcuts =
       launcherApps
         .getShortcutConfigActivityList(activityData.componentName.packageName, activeProfile)
-        .map {
-          TileViewItem.cardTileViewItem(
-            ActivityTileData(it),
-            it.label,
-            launcherIconCache.get(activityData)
-          )
-        }
+        .map { tileViewItemFactory.getCardTileViewItem(it.toConfigurableShortcutData()) }
         .sortedBy { it.name.toString() }
 
     if (configurableShortcuts.isNotEmpty()) {
@@ -210,9 +214,8 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-    launcherApps.startAppDetailsActivity(
-      viewItem.data.componentName,
-      viewItem.data.userHandle,
+    activitiesViewModel.launchAppDetails(
+      viewItem.data,
       view.boundsOnScreen,
       view.makeScaleUpAnimation().toBundle()
     )
@@ -235,34 +238,38 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onTileClick(view: View, tileData: TileData) =
     when (tileData) {
-      is ActivityTileData -> {
-        shortcutActivityLauncher.launch(
-          IntentSenderRequest.Builder(launcherApps.getShortcutConfigActivityIntent(tileData.info)!!)
-            .build()
-        )
-      }
+      is ActivityTileData -> throw NotImplementedError()
       is ShortcutTileData -> {
-        launcherApps.startShortcut(
-          tileData.info,
+        shortcutsViewModel.launchShortcut(
+          tileData.shortcutData,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
       }
+      is ConfigurableShortcutTileData -> {
+        shortcutActivityLauncher.launch(
+          IntentSenderRequest.Builder(
+              shortcutsViewModel.getConfigurableShortcutIntent(tileData.configurableShortcutData)
+            )
+            .build()
+        )
+      }
     }
 
   private fun onTileLongClick(tileData: TileData) =
     when (tileData) {
-      is ActivityTileData -> Unit
+      is ActivityTileData -> throw NotImplementedError()
       is ShortcutTileData -> {
-        shortcutsViewModel.pinShortcut(tileData.info)
+        shortcutsViewModel.pinShortcut(tileData.shortcutData)
         Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
       }
+      is ConfigurableShortcutTileData -> Unit
     }
 
   private fun onWidgetPreviewClick(widgetPreviewViewItem: WidgetPreviewViewItem) {
     bindWidgetActivityLauncher.launch(
-      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, activityData.userHandle)
+      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, userHandle)
     )
   }
 
@@ -273,7 +280,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     if (!pinItemRequest.isValid) return
     if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
 
-    val info = pinItemRequest.shortcutInfo ?: return
+    val info = pinItemRequest.shortcutInfo?.toShortcutData() ?: return
 
     pinItemRequest.accept()
     shortcutsViewModel.pinShortcut(info)
@@ -287,15 +294,12 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     private const val COMPONENT_ARGUMENT: String = "name"
     private const val USER_ARGUMENT: String = "user"
 
-    fun newInstance(
-      componentName: ComponentName,
-      userHandle: UserHandle
-    ): ActivityDetailsDialogFragment =
+    fun newInstance(activityData: ActivityData): ActivityDetailsDialogFragment =
       ActivityDetailsDialogFragment().apply {
         arguments =
           Bundle().apply {
-            putParcelable(COMPONENT_ARGUMENT, componentName)
-            putParcelable(USER_ARGUMENT, userHandle)
+            putParcelable(COMPONENT_ARGUMENT, activityData.componentName)
+            putParcelable(USER_ARGUMENT, activityData.userHandle)
           }
       }
   }

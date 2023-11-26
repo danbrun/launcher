@@ -1,11 +1,9 @@
 package link.danb.launcher.tiles
 
 import android.graphics.drawable.Drawable
-import link.danb.launcher.R
 import link.danb.launcher.ui.ViewItem
 
-class TileViewItem
-private constructor(
+class TileViewItem(
   override val viewType: Int,
   val data: TileData,
   val name: CharSequence,
@@ -17,12 +15,4 @@ private constructor(
 
   override fun areContentsTheSame(other: ViewItem): Boolean =
     other is TileViewItem && name == other.name && icon == other.icon
-
-  companion object {
-    fun cardTileViewItem(data: TileData, name: CharSequence, icon: Drawable) =
-      TileViewItem(R.id.card_tile_view_type_id, data, name, icon)
-
-    fun transparentTileViewItem(data: TileData, name: CharSequence, icon: Drawable) =
-      TileViewItem(R.id.transparent_tile_view_type_id, data, name, icon)
-  }
 }
