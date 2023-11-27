@@ -27,11 +27,8 @@ import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.tiles.CardTileViewBinder
-import link.danb.launcher.tiles.ConfigurableShortcutTileData
-import link.danb.launcher.tiles.ShortcutTileData
-import link.danb.launcher.tiles.TileData
+import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
@@ -116,34 +113,32 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
     withContext(Dispatchers.IO) {
       activities
         .filter { it.isHidden && it.userHandle == activeProfile }
-        .map { async { tileViewItemFactory.getCardTileViewItem(it) } }
+        .map { async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) } }
         .awaitAll()
         .sortedBy { it.name.toString().lowercase() }
     }
 
-  private fun onTileClick(view: View, tileData: TileData) {
-    when (tileData) {
-      is ActivityTileData -> {
+  private fun onTileClick(view: View, data: Any) {
+    when (data) {
+      is ActivityData -> {
         activitiesViewModel.launchActivity(
-          tileData.activityData,
+          data,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
       }
-      is ShortcutTileData -> throw NotImplementedError()
-      is ConfigurableShortcutTileData -> throw NotImplementedError()
+      else -> throw NotImplementedError()
     }
   }
 
-  private fun onTileLongClick(tileData: TileData) {
-    when (tileData) {
-      is ActivityTileData -> {
-        ActivityDetailsDialogFragment.newInstance(tileData.activityData)
+  private fun onTileLongClick(data: Any) {
+    when (data) {
+      is ActivityData -> {
+        ActivityDetailsDialogFragment.newInstance(data)
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
-      is ShortcutTileData -> throw NotImplementedError()
-      is ConfigurableShortcutTileData -> throw NotImplementedError()
+      else -> throw NotImplementedError()
     }
   }
 

@@ -35,8 +35,6 @@ import link.danb.launcher.extensions.toConfigurableShortcutData
 import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.tiles.CardTileViewBinder
-import link.danb.launcher.tiles.ConfigurableShortcutTileData
-import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
@@ -130,22 +128,27 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
           launcherApps
             .getShortcutConfigActivityList(data.componentName.packageName, data.userHandle)
             .map {
-              async { tileViewItemFactory.getCardTileViewItem(it.toConfigurableShortcutData()) }
+              async {
+                tileViewItemFactory.getTileViewItem(
+                  it.toConfigurableShortcutData(),
+                  TileViewItem.Style.CARD
+                )
+              }
             }
         }
         .awaitAll()
         .sortedBy { it.name.toString().lowercase() }
     }
 
-  private fun onTileClick(tileData: TileData) {
-    if (tileData !is ConfigurableShortcutTileData) return
-
-    shortcutActivityLauncher.launch(
-      IntentSenderRequest.Builder(
-          shortcutsViewModel.getConfigurableShortcutIntent(tileData.configurableShortcutData)
+  private fun onTileClick(data: Any) {
+    when (data) {
+      is ConfigurableShortcutData ->
+        shortcutActivityLauncher.launch(
+          IntentSenderRequest.Builder(shortcutsViewModel.getConfigurableShortcutIntent(data))
+            .build()
         )
-        .build()
-    )
+      else -> throw NotImplementedError()
+    }
   }
 
   private fun onPinShortcutActivityResult(activityResult: ActivityResult) {

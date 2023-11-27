@@ -39,12 +39,11 @@ import link.danb.launcher.extensions.toConfigurableShortcutData
 import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.shortcuts.ConfigurableShortcutData
+import link.danb.launcher.shortcuts.ShortcutData
 import link.danb.launcher.shortcuts.ShortcutsViewModel
-import link.danb.launcher.tiles.ActivityTileData
 import link.danb.launcher.tiles.CardTileViewBinder
-import link.danb.launcher.tiles.ConfigurableShortcutTileData
-import link.danb.launcher.tiles.ShortcutTileData
-import link.danb.launcher.tiles.TileData
+import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
@@ -170,7 +169,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     val shortcuts =
       shortcutsViewModel
         .getShortcuts(activityData.componentName.packageName, activeProfile)
-        .map { tileViewItemFactory.getCardTileViewItem(it.toShortcutData()) }
+        .map { tileViewItemFactory.getTileViewItem(it.toShortcutData(), TileViewItem.Style.CARD) }
         .sortedBy { it.name.toString() }
 
     if (shortcuts.isNotEmpty()) {
@@ -181,7 +180,12 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     val configurableShortcuts =
       launcherApps
         .getShortcutConfigActivityList(activityData.componentName.packageName, activeProfile)
-        .map { tileViewItemFactory.getCardTileViewItem(it.toConfigurableShortcutData()) }
+        .map {
+          tileViewItemFactory.getTileViewItem(
+            it.toConfigurableShortcutData(),
+            TileViewItem.Style.CARD
+          )
+        }
         .sortedBy { it.name.toString() }
 
     if (configurableShortcuts.isNotEmpty()) {
@@ -236,35 +240,33 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     dismiss()
   }
 
-  private fun onTileClick(view: View, tileData: TileData) =
-    when (tileData) {
-      is ActivityTileData -> throw NotImplementedError()
-      is ShortcutTileData -> {
+  private fun onTileClick(view: View, data: Any) =
+    when (data) {
+      is ShortcutData -> {
         shortcutsViewModel.launchShortcut(
-          tileData.shortcutData,
+          data,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
         dismiss()
       }
-      is ConfigurableShortcutTileData -> {
+      is ConfigurableShortcutData -> {
         shortcutActivityLauncher.launch(
-          IntentSenderRequest.Builder(
-              shortcutsViewModel.getConfigurableShortcutIntent(tileData.configurableShortcutData)
-            )
+          IntentSenderRequest.Builder(shortcutsViewModel.getConfigurableShortcutIntent(data))
             .build()
         )
       }
+      else -> throw NotImplementedError()
     }
 
-  private fun onTileLongClick(tileData: TileData) =
-    when (tileData) {
-      is ActivityTileData -> throw NotImplementedError()
-      is ShortcutTileData -> {
-        shortcutsViewModel.pinShortcut(tileData.shortcutData)
+  private fun onTileLongClick(data: Any) =
+    when (data) {
+      is ShortcutData -> {
+        shortcutsViewModel.pinShortcut(data)
         Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
       }
-      is ConfigurableShortcutTileData -> Unit
+      is ConfigurableShortcutData -> Unit
+      else -> throw NotImplementedError()
     }
 
   private fun onWidgetPreviewClick(widgetPreviewViewItem: WidgetPreviewViewItem) {

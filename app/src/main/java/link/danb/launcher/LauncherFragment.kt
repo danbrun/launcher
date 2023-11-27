@@ -48,10 +48,6 @@ import link.danb.launcher.gestures.GestureContractModel
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutData
 import link.danb.launcher.shortcuts.ShortcutsViewModel
-import link.danb.launcher.tiles.ActivityTileData
-import link.danb.launcher.tiles.ConfigurableShortcutTileData
-import link.danb.launcher.tiles.ShortcutTileData
-import link.danb.launcher.tiles.TileData
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.tiles.TransparentTileViewBinder
@@ -235,10 +231,14 @@ class LauncherFragment : Fragment() {
     withContext(Dispatchers.IO) {
       (launcherActivities
           .filter { it.isPinned && it.userHandle == activeProfile }
-          .map { async { tileViewItemFactory.getTransparentTileViewItem(it) } } +
+          .map {
+            async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+          } +
           shortcuts
             .filter { it.userHandle == activeProfile }
-            .map { async { tileViewItemFactory.getTransparentTileViewItem(it) } })
+            .map {
+              async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+            })
         .awaitAll()
         .sortedBy { it.name.toString().lowercase() }
         .takeIf { it.isNotEmpty() }
@@ -254,7 +254,7 @@ class LauncherFragment : Fragment() {
     withContext(Dispatchers.IO) {
       launcherActivities
         .filter { !it.isHidden && it.userHandle == activeProfile }
-        .map { async { tileViewItemFactory.getTransparentTileViewItem(it) } }
+        .map { async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) } }
         .awaitAll()
         .groupBy {
           val initial = it.name.first().uppercaseChar()
@@ -305,18 +305,14 @@ class LauncherFragment : Fragment() {
     for (index in recyclerAdapter.currentList.indices) {
       val item = recyclerAdapter.currentList[index]
 
-      if (
-        item !is TileViewItem ||
-          item.data !is ActivityTileData ||
-          item.data.activityData.userHandle != user
-      )
+      if (item !is TileViewItem || item.data !is ActivityData || item.data.userHandle != user)
         continue
 
-      if (item.data.activityData.componentName == component) {
+      if (item.data.componentName == component) {
         return index
       }
 
-      if (item.data.activityData.componentName.packageName == component.packageName) {
+      if (item.data.componentName.packageName == component.packageName) {
         firstMatchIndex = index
       }
     }
@@ -324,43 +320,43 @@ class LauncherFragment : Fragment() {
     return firstMatchIndex
   }
 
-  private fun onTileClick(view: View, tileViewData: TileData) {
-    when (tileViewData) {
-      is ActivityTileData -> {
+  private fun onTileClick(view: View, data: Any) {
+    when (data) {
+      is ActivityData -> {
         activitiesViewModel.launchActivity(
-          tileViewData.activityData,
+          data,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
       }
-      is ShortcutTileData -> {
+      is ShortcutData -> {
         shortcutsViewModel.launchShortcut(
-          tileViewData.shortcutData,
+          data,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle()
         )
       }
-      is ConfigurableShortcutTileData -> throw NotImplementedError()
+      else -> throw NotImplementedError()
     }
   }
 
-  private fun onTileLongClick(tileViewData: TileData) {
+  private fun onTileLongClick(tileViewData: Any) {
     when (tileViewData) {
-      is ActivityTileData -> {
-        ActivityDetailsDialogFragment.newInstance(tileViewData.activityData)
+      is ActivityData -> {
+        ActivityDetailsDialogFragment.newInstance(tileViewData)
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
-      is ShortcutTileData -> {
+      is ShortcutData -> {
         MaterialAlertDialogBuilder(requireContext())
           .setTitle(R.string.unpin_shortcut)
           .setPositiveButton(R.string.unpin) { _, _ ->
             Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-            shortcutsViewModel.unpinShortcut(tileViewData.shortcutData)
+            shortcutsViewModel.unpinShortcut(tileViewData)
           }
           .setNegativeButton(android.R.string.cancel, null)
           .show()
       }
-      is ConfigurableShortcutTileData -> throw NotImplementedError()
+      else -> throw NotImplementedError()
     }
   }
 }

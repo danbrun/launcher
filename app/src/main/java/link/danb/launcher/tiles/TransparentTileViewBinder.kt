@@ -11,8 +11,8 @@ import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.ui.ViewBinder
 
 class TransparentTileViewBinder(
-  private val onClick: ((View, TileData) -> Unit)? = null,
-  private val onLongClick: ((View, TileData) -> Unit)? = null,
+  private val onClick: ((View, Any) -> Unit)? = null,
+  private val onLongClick: ((View, Any) -> Unit)? = null,
 ) : ViewBinder<TransparentTileViewHolder, TileViewItem> {
 
   override val viewType: Int = R.id.transparent_tile_view_type_id

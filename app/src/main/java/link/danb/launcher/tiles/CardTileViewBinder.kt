@@ -11,8 +11,8 @@ import link.danb.launcher.extensions.setSize
 import link.danb.launcher.ui.ViewBinder
 
 class CardTileViewBinder(
-  private val onClick: ((View, TileData) -> Unit)? = null,
-  private val onLongClick: ((View, TileData) -> Unit)? = null,
+  private val onClick: ((View, Any) -> Unit)? = null,
+  private val onLongClick: ((View, Any) -> Unit)? = null,
 ) : ViewBinder<CardTileViewHolder, TileViewItem> {
 
   override val viewType: Int = R.id.card_tile_view_type_id
