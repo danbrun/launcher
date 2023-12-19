@@ -3,7 +3,6 @@ package link.danb.launcher
 import android.app.SearchManager
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
@@ -13,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.graphics.toRectF
+import androidx.core.util.Consumer
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -41,10 +41,10 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.gestureContract
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
-import link.danb.launcher.gestures.GestureContractModel
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutData
 import link.danb.launcher.shortcuts.ShortcutsViewModel
@@ -69,7 +69,6 @@ import link.danb.launcher.widgets.WidgetsViewModel
 class LauncherFragment : Fragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
-  private val gestureContractModel: GestureContractModel by activityViewModels()
   private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
@@ -114,7 +113,16 @@ class LauncherFragment : Fragment() {
     )
   }
 
+  private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
+    intent.gestureContract?.let { maybeAnimateGestureContract(it) }
+  }
+
   private val ellipses: CharSequence by lazy { requireContext().getString(R.string.ellipses) }
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    requireActivity().addOnNewIntentListener(onNewIntentListener)
+  }
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -196,12 +204,15 @@ class LauncherFragment : Fragment() {
             .debounce(250)
             .collectLatest { recyclerAdapter.submitList(it) }
         }
-
-        launch { gestureContractModel.gestureContract.collect { maybeAnimateGestureContract(it) } }
       }
     }
 
     return view
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    requireActivity().removeOnNewIntentListener(onNewIntentListener)
   }
 
   private fun getWidgetListViewItems(
@@ -277,47 +288,20 @@ class LauncherFragment : Fragment() {
     }
 
   private fun maybeAnimateGestureContract(gestureContract: GestureContract) {
-    val firstMatchingIndex =
-      getFirstMatchingIndex(gestureContract.componentName, gestureContract.userHandle)
-
-    if (firstMatchingIndex < 0) {
-      recyclerAdapter.onBindViewHolderListener = null
-      return
-    }
-
-    val view = recyclerView.findViewHolderForAdapterPosition(firstMatchingIndex)?.itemView
-
-    if (view != null) {
-      recyclerAdapter.onBindViewHolderListener = null
-      gestureContract.sendBounds(view.boundsOnScreen.toRectF())
-    } else {
-      recyclerAdapter.onBindViewHolderListener = { maybeAnimateGestureContract(gestureContract) }
-      recyclerView.scrollToPosition(firstMatchingIndex)
-    }
-  }
-
-  private fun getFirstMatchingIndex(component: ComponentName, user: UserHandle): Int {
-    // If there is an exact component match, returns that icon view. Otherwise returns the icon
-    // view of the first package match.
-
-    var firstMatchIndex = -1
-
-    for (index in recyclerAdapter.currentList.indices) {
-      val item = recyclerAdapter.currentList[index]
-
-      if (item !is TileViewItem || item.data !is ActivityData || item.data.userHandle != user)
-        continue
-
-      if (item.data.componentName == component) {
-        return index
-      }
-
-      if (item.data.componentName.packageName == component.packageName) {
-        firstMatchIndex = index
+    for ((index, item) in recyclerAdapter.currentList.withIndex()) {
+      if (
+        item is TileViewItem &&
+          item.data is ActivityData &&
+          item.data.componentName == gestureContract.componentName &&
+          item.data.userHandle == gestureContract.userHandle
+      ) {
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
+        if (viewHolder != null) {
+          gestureContract.sendBounds(viewHolder.itemView.boundsOnScreen.toRectF())
+          break
+        }
       }
     }
-
-    return firstMatchIndex
   }
 
   private fun onTileClick(view: View, data: Any) {

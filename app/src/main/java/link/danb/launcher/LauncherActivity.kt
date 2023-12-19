@@ -1,17 +1,12 @@
 package link.danb.launcher
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
-import link.danb.launcher.gestures.GestureContractModel
 
 @AndroidEntryPoint
 class LauncherActivity : AppCompatActivity() {
-
-  private val gestureContractModel: GestureContractModel by viewModels()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -32,11 +27,5 @@ class LauncherActivity : AppCompatActivity() {
         }
       }
     )
-  }
-
-  override fun onNewIntent(intent: Intent) {
-    super.onNewIntent(intent)
-
-    gestureContractModel.onNewIntent(intent)
   }
 }

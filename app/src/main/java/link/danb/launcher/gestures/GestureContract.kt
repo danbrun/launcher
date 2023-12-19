@@ -27,6 +27,7 @@ data class GestureContract(
 
     fun fromIntent(intent: Intent): GestureContract? {
       val extras = intent.getBundleExtra(EXTRA_GESTURE_CONTRACT) ?: return null
+      intent.removeExtra(EXTRA_GESTURE_CONTRACT)
 
       val component: ComponentName? = extras.getParcelableCompat(Intent.EXTRA_COMPONENT_NAME)
       val user: UserHandle? = extras.getParcelableCompat(Intent.EXTRA_USER)
