@@ -26,13 +26,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -173,37 +174,15 @@ class LauncherFragment : Fragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        launch {
-          val widgetsFlow =
-            combine(
-              widgetsViewModel.widgets,
-              profilesModel.activeProfile,
-              isInEditMode,
-              ::getWidgetListViewItems
-            )
-
-          val pinnedFlow =
-            combine(
-              activitiesViewModel.activities,
-              shortcutsViewModel.pinnedShortcuts,
-              profilesModel.activeProfile,
-              ::getPinnedListViewItems
-            )
-
-          val appsFlow =
-            combine(
-              activitiesViewModel.activities,
-              profilesModel.activeProfile,
-              ::getAppListViewItems
-            )
-
-          @OptIn(FlowPreview::class)
-          combine(widgetsFlow, pinnedFlow, appsFlow) { widgets, pins, apps ->
-              widgets + pins + apps
-            }
-            .debounce(250)
-            .collectLatest { recyclerAdapter.submitList(it) }
-        }
+        combine(
+            profilesModel.activeProfile,
+            isInEditMode,
+            widgetsViewModel.widgets,
+            activitiesViewModel.activities,
+            shortcutsViewModel.pinnedShortcuts,
+            ::getViewItems
+          )
+          .collectLatest { recyclerAdapter.submitList(it) }
       }
     }
 
@@ -214,6 +193,17 @@ class LauncherFragment : Fragment() {
     super.onDestroy()
     requireActivity().removeOnNewIntentListener(onNewIntentListener)
   }
+
+  private suspend fun getViewItems(
+    activeProfile: UserHandle,
+    isInEditMode: Boolean,
+    widgets: List<WidgetData>,
+    launcherActivities: List<ActivityData>,
+    shortcuts: List<ShortcutData>,
+  ): List<ViewItem> =
+    getWidgetListViewItems(widgets, activeProfile, isInEditMode) +
+      getPinnedListViewItems(launcherActivities, shortcuts, activeProfile) +
+      getAppListViewItems(launcherActivities, activeProfile)
 
   private fun getWidgetListViewItems(
     widgets: List<WidgetData>,
@@ -240,17 +230,17 @@ class LauncherFragment : Fragment() {
     activeProfile: UserHandle,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
-      (launcherActivities
-          .filter { it.isPinned && it.userHandle == activeProfile }
-          .map {
-            async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
-          } +
+      merge(
+          launcherActivities
+            .asFlow()
+            .filter { it.isPinned && it.userHandle == activeProfile }
+            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
           shortcuts
+            .asFlow()
             .filter { it.userHandle == activeProfile }
-            .map {
-              async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
-            })
-        .awaitAll()
+            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+        )
+        .toList()
         .sortedBy { it.name.toString().lowercase() }
         .takeIf { it.isNotEmpty() }
         ?.let {
@@ -264,9 +254,10 @@ class LauncherFragment : Fragment() {
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       launcherActivities
+        .asFlow()
         .filter { !it.isHidden && it.userHandle == activeProfile }
-        .map { async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) } }
-        .awaitAll()
+        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+        .toList()
         .groupBy {
           val initial = it.name.first().uppercaseChar()
           when {

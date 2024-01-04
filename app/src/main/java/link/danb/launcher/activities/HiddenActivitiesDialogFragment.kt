@@ -16,9 +16,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
@@ -112,9 +114,10 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       activities
+        .asFlow()
         .filter { it.isHidden && it.userHandle == activeProfile }
-        .map { async { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) } }
-        .awaitAll()
+        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+        .toList()
         .sortedBy { it.name.toString().lowercase() }
     }
 

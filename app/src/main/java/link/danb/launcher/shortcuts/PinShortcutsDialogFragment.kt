@@ -22,9 +22,13 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
@@ -123,20 +127,22 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
       activityData
+        .asFlow()
         .filter { it.userHandle == activeProfile }
-        .flatMap { data ->
-          launcherApps
-            .getShortcutConfigActivityList(data.componentName.packageName, data.userHandle)
-            .map {
-              async {
-                tileViewItemFactory.getTileViewItem(
-                  it.toConfigurableShortcutData(),
-                  TileViewItem.Style.CARD
-                )
-              }
-            }
+        .transform {
+          emitAll(
+            launcherApps
+              .getShortcutConfigActivityList(it.componentName.packageName, it.userHandle)
+              .asFlow()
+          )
         }
-        .awaitAll()
+        .map {
+          tileViewItemFactory.getTileViewItem(
+            it.toConfigurableShortcutData(),
+            TileViewItem.Style.CARD
+          )
+        }
+        .toList()
         .sortedBy { it.name.toString().lowercase() }
     }
 
