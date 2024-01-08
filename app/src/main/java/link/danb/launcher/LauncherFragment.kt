@@ -118,8 +118,6 @@ class LauncherFragment : Fragment() {
     intent.gestureContract?.let { maybeAnimateGestureContract(it) }
   }
 
-  private val ellipses: CharSequence by lazy { requireContext().getString(R.string.ellipses) }
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     requireActivity().addOnNewIntentListener(onNewIntentListener)
@@ -209,20 +207,16 @@ class LauncherFragment : Fragment() {
     widgets: List<WidgetData>,
     activeProfile: UserHandle,
     isInEditMode: Boolean,
-  ): List<ViewItem> =
-    widgets.flatMap {
-      val info = appWidgetManager.getAppWidgetInfo(it.widgetId)
-      if (info.profile != activeProfile) return@flatMap listOf()
-
-      if (isInEditMode) {
-        listOf(
-          WidgetViewItem(it),
-          WidgetEditorViewItem(it, appWidgetManager.getAppWidgetInfo(it.widgetId))
-        )
-      } else {
-        listOf(WidgetViewItem(it))
+  ): List<ViewItem> = buildList {
+    for (widget in widgets) {
+      if (appWidgetManager.getAppWidgetInfo(widget.widgetId).profile == activeProfile) {
+        add(WidgetViewItem(widget))
+        if (isInEditMode) {
+          add(WidgetEditorViewItem(widget, appWidgetManager.getAppWidgetInfo(widget.widgetId)))
+        }
       }
     }
+  }
 
   private suspend fun getPinnedListViewItems(
     launcherActivities: List<ActivityData>,
@@ -230,22 +224,26 @@ class LauncherFragment : Fragment() {
     activeProfile: UserHandle,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
-      merge(
-          launcherActivities
-            .asFlow()
-            .filter { it.isPinned && it.userHandle == activeProfile }
-            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
-          shortcuts
-            .asFlow()
-            .filter { it.userHandle == activeProfile }
-            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
-        )
-        .toList()
-        .sortedBy { it.name.toString().lowercase() }
-        .takeIf { it.isNotEmpty() }
-        ?.let {
-          listOf(GroupHeaderViewItem(requireContext().getString(R.string.pinned_items))) + it
-        } ?: listOf()
+      val pinnedItems =
+        merge(
+            launcherActivities
+              .asFlow()
+              .filter { it.isPinned && it.userHandle == activeProfile }
+              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+            shortcuts
+              .asFlow()
+              .filter { it.userHandle == activeProfile }
+              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+          )
+          .toList()
+          .sortedBy { it.name.toString().lowercase() }
+
+      buildList {
+        if (pinnedItems.isNotEmpty()) {
+          add(GroupHeaderViewItem(requireContext().getString(R.string.pinned_items)))
+          addAll(pinnedItems)
+        }
+      }
     }
 
   private suspend fun getAppListViewItems(
@@ -253,29 +251,33 @@ class LauncherFragment : Fragment() {
     activeProfile: UserHandle,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
-      launcherActivities
-        .asFlow()
-        .filter { !it.isHidden && it.userHandle == activeProfile }
-        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
-        .toList()
-        .groupBy {
-          val initial = it.name.first().uppercaseChar()
-          when {
-            initial.isLetter() -> initial.toString()
-            else -> ellipses
+      val (alphabetical, miscellaneous) =
+        launcherActivities
+          .asFlow()
+          .filter { !it.isHidden && it.userHandle == activeProfile }
+          .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+          .toList()
+          .partition { it.name.first().isLetter() }
+
+      val groupedMiscellaneous = buildList {
+        if (miscellaneous.isNotEmpty()) {
+          add(GroupHeaderViewItem(requireContext().getString(R.string.ellipses)))
+          addAll(miscellaneous.sortedBy { it.name.toString().lowercase() })
+        }
+      }
+
+      val groupedAlphabetical =
+        alphabetical
+          .groupBy { it.name.first().uppercaseChar() }
+          .toSortedMap()
+          .flatMap { (groupName, activityItems) ->
+            buildList {
+              add(GroupHeaderViewItem(groupName.toString()))
+              addAll(activityItems.sortedBy { it.name.toString().lowercase() })
+            }
           }
-        }
-        .toSortedMap { first, second ->
-          if (first == ellipses) {
-            -1
-          } else {
-            first.toString().compareTo(second.toString())
-          }
-        }
-        .flatMap { (groupName, activityItems) ->
-          listOf(GroupHeaderViewItem(groupName.toString())) +
-            activityItems.sortedBy { it.name.toString().lowercase() }
-        }
+
+      groupedMiscellaneous + groupedAlphabetical
     }
 
   private fun maybeAnimateGestureContract(gestureContract: GestureContract) {
