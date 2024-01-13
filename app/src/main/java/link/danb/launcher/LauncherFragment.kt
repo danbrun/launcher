@@ -54,8 +54,6 @@ import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.tiles.TransparentTileViewBinder
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
-import link.danb.launcher.ui.InvertedCornerDrawable
-import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.AppWidgetViewProvider
@@ -130,8 +128,6 @@ class LauncherFragment : Fragment() {
   ): View? {
     val view = inflater.inflate(R.layout.launcher_fragment, container, false)
 
-    val radius = resources.getDimensionPixelSize(R.dimen.apps_list_corner_radius)
-
     recyclerView = view.findViewById(R.id.app_list)
     recyclerView.apply {
       this.adapter = recyclerAdapter
@@ -150,11 +146,7 @@ class LauncherFragment : Fragment() {
               }
             }
           }
-      clipToOutline = true
-      outlineProvider = RoundedCornerOutlineProvider(radius)
     }
-
-    view.findViewById<View>(R.id.app_list_background).background = InvertedCornerDrawable(radius)
 
     view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
 
