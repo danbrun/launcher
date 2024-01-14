@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:fitsSystemWindows="true"
-        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior">
+        app:layout_behavior=".BottomBarScrollBehavior">
 
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.Material3.CardView.Elevated"
