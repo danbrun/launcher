@@ -7,6 +7,7 @@ import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Process
 import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,9 +16,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.resolveConfigurableShortcut
 import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.profiles.ProfilesModel
@@ -37,10 +36,7 @@ constructor(
 
   init {
     viewModelScope.launch {
-      combine(profilesModel.activeProfile, profilesModel.workProfileData, ::Pair).collect {
-        (activeProfile, workProfileData) ->
-        update(activeProfile, workProfileData)
-      }
+      profilesModel.workProfileData.collect { workProfileData -> update(workProfileData) }
     }
   }
 
@@ -108,20 +104,26 @@ constructor(
       shortcutIds.toList(),
       shortcutData.userHandle
     )
-    update(profilesModel.activeProfile.value, profilesModel.workProfileData.value)
+    update(profilesModel.workProfileData.value)
   }
 
-  private fun update(activeProfile: UserHandle, workProfileData: ProfilesModel.WorkProfileData) {
-    _pinnedShortcuts.value =
-      if (activeProfile.isPersonalProfile || workProfileData.isEnabled) {
-        launcherApps
-          .getShortcuts(
-            ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
-            activeProfile
-          )!!
-          .map { it.toShortcutData() }
+  private fun update(workProfileData: ProfilesModel.WorkProfileData) {
+    val personalShortcuts =
+      launcherApps.getShortcuts(
+        ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
+        Process.myUserHandle()
+      )!!
+
+    val workShortcuts =
+      if (workProfileData.user != null && workProfileData.isEnabled) {
+        launcherApps.getShortcuts(
+          ShortcutQuery().setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED),
+          workProfileData.user
+        )!!
       } else {
         listOf()
       }
+
+    _pinnedShortcuts.value = (personalShortcuts + workShortcuts).map { it.toShortcutData() }
   }
 }
