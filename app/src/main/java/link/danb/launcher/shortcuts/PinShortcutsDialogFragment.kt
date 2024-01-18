@@ -34,6 +34,7 @@ import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.database.ActivityData
+import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.extensions.toConfigurableShortcutData
 import link.danb.launcher.extensions.toShortcutData
@@ -132,7 +133,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         .transform {
           emitAll(
             launcherApps
-              .getShortcutConfigActivityList(it.componentName.packageName, it.userHandle)
+              .getConfigurableShortcuts(it.componentName.packageName, it.userHandle)
               .asFlow()
           )
         }

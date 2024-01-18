@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.resolveActivity
@@ -179,7 +180,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     val configurableShortcuts =
       launcherApps
-        .getShortcutConfigActivityList(activityData.componentName.packageName, activeProfile)
+        .getConfigurableShortcuts(activityData.componentName.packageName, activeProfile)
         .map {
           tileViewItemFactory.getTileViewItem(
             it.toConfigurableShortcutData(),

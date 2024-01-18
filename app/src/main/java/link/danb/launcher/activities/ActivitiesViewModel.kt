@@ -24,7 +24,7 @@ import link.danb.launcher.extensions.toDefaultActivityData
 class ActivitiesViewModel
 @Inject
 constructor(
-  application: Application,
+  private val application: Application,
   launcherDatabase: LauncherDatabase,
   private val launcherApps: LauncherApps,
 ) : AndroidViewModel(application) {
@@ -74,5 +74,7 @@ constructor(
     withContext(Dispatchers.IO) { activityData.put(activityMetadata) }
 
   private fun getAllActivities(): List<LauncherActivityInfo> =
-    launcherApps.profiles.flatMap { launcherApps.getActivityList(null, it) }
+    launcherApps.profiles
+      .flatMap { launcherApps.getActivityList(null, it) }
+      .filter { it.componentName.packageName != application.packageName }
 }

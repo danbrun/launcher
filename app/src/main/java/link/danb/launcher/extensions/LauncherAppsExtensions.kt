@@ -19,22 +19,40 @@ fun LauncherApps.resolveActivity(
 fun LauncherApps.resolveActivity(activityData: ActivityData): LauncherActivityInfo =
   resolveActivity(activityData.componentName, activityData.userHandle)
 
+fun LauncherApps.getShortcuts(
+  userHandle: UserHandle,
+  queryBuilder: ShortcutQuery.() -> Unit,
+): List<ShortcutInfo> =
+  if (hasShortcutHostPermission()) {
+    getShortcuts(ShortcutQuery().apply(queryBuilder), userHandle) ?: listOf()
+  } else {
+    listOf()
+  }
+
 fun LauncherApps.resolveShortcut(shortcutData: ShortcutData): ShortcutInfo =
-  getShortcuts(
-      ShortcutQuery()
-        .setQueryFlags(
-          ShortcutQuery.FLAG_MATCH_DYNAMIC or
-            ShortcutQuery.FLAG_MATCH_MANIFEST or
-            ShortcutQuery.FLAG_MATCH_PINNED
-        )
-        .setPackage(shortcutData.packageName)
-        .setShortcutIds(listOf(shortcutData.shortcutId)),
-      shortcutData.userHandle
-    )!!
+  getShortcuts(shortcutData.userHandle) {
+      setQueryFlags(
+        ShortcutQuery.FLAG_MATCH_DYNAMIC or
+          ShortcutQuery.FLAG_MATCH_MANIFEST or
+          ShortcutQuery.FLAG_MATCH_PINNED
+      )
+      setPackage(shortcutData.packageName)
+      setShortcutIds(listOf(shortcutData.shortcutId))
+    }
     .first()
+
+fun LauncherApps.getConfigurableShortcuts(
+  packageName: String,
+  userHandle: UserHandle
+): List<LauncherActivityInfo> =
+  if (hasShortcutHostPermission()) {
+    getShortcutConfigActivityList(packageName, userHandle)
+  } else {
+    listOf()
+  }
 
 fun LauncherApps.resolveConfigurableShortcut(
   shortcutData: ConfigurableShortcutData
 ): LauncherActivityInfo =
-  getShortcutConfigActivityList(shortcutData.componentName.packageName, shortcutData.userHandle)
+  getConfigurableShortcuts(shortcutData.componentName.packageName, shortcutData.userHandle)
     .first { it.componentName == shortcutData.componentName }
