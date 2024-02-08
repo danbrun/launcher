@@ -43,7 +43,10 @@ constructor(private val application: Application, private val launcherApps: Laun
 
   private fun IconHandle.getSourceIcon(): Drawable =
     when (this) {
-      is ApplicationHandle -> application.packageManager.getApplicationIcon(packageName)
+      is ApplicationHandle ->
+        launcherApps
+          .getApplicationInfo(packageName, 0, userHandle)
+          .loadUnbadgedIcon(application.packageManager)
       is ComponentHandle -> launcherApps.resolveActivity(componentName, userHandle).getIcon(density)
       is ShortcutHandle ->
         launcherApps.getShortcutIconDrawable(
