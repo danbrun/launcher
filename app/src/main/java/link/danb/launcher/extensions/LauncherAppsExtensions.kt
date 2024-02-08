@@ -13,7 +13,7 @@ import link.danb.launcher.shortcuts.ShortcutData
 
 fun LauncherApps.resolveActivity(
   componentName: ComponentName,
-  userHandle: UserHandle
+  userHandle: UserHandle,
 ): LauncherActivityInfo = resolveActivity(Intent().setComponent(componentName), userHandle)
 
 fun LauncherApps.resolveActivity(activityData: ActivityData): LauncherActivityInfo =
@@ -29,21 +29,24 @@ fun LauncherApps.getShortcuts(
     listOf()
   }
 
-fun LauncherApps.resolveShortcut(shortcutData: ShortcutData): ShortcutInfo =
-  getShortcuts(shortcutData.userHandle) {
+fun LauncherApps.resolveShortcut(packageName: String, shortcutId: String, userHandle: UserHandle) =
+  getShortcuts(userHandle) {
       setQueryFlags(
         ShortcutQuery.FLAG_MATCH_DYNAMIC or
           ShortcutQuery.FLAG_MATCH_MANIFEST or
           ShortcutQuery.FLAG_MATCH_PINNED
       )
-      setPackage(shortcutData.packageName)
-      setShortcutIds(listOf(shortcutData.shortcutId))
+      setPackage(packageName)
+      setShortcutIds(listOf(shortcutId))
     }
     .first()
 
+fun LauncherApps.resolveShortcut(shortcutData: ShortcutData): ShortcutInfo =
+  resolveShortcut(shortcutData.packageName, shortcutData.shortcutId, shortcutData.userHandle)
+
 fun LauncherApps.getConfigurableShortcuts(
   packageName: String,
-  userHandle: UserHandle
+  userHandle: UserHandle,
 ): List<LauncherActivityInfo> =
   if (hasShortcutHostPermission()) {
     getShortcutConfigActivityList(packageName, userHandle)
@@ -54,5 +57,6 @@ fun LauncherApps.getConfigurableShortcuts(
 fun LauncherApps.resolveConfigurableShortcut(
   shortcutData: ConfigurableShortcutData
 ): LauncherActivityInfo =
-  getConfigurableShortcuts(shortcutData.componentName.packageName, shortcutData.userHandle)
-    .first { it.componentName == shortcutData.componentName }
+  getConfigurableShortcuts(shortcutData.componentName.packageName, shortcutData.userHandle).first {
+    it.componentName == shortcutData.componentName
+  }

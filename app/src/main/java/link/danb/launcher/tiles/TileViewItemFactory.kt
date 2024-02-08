@@ -7,7 +7,9 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.resolveConfigurableShortcut
 import link.danb.launcher.extensions.resolveShortcut
+import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
+import link.danb.launcher.icons.ShortcutHandle
 import link.danb.launcher.shortcuts.ConfigurableShortcutData
 import link.danb.launcher.shortcuts.ShortcutData
 import link.danb.launcher.tiles.TileViewItem.Style
@@ -17,7 +19,7 @@ class TileViewItemFactory
 @Inject
 constructor(
   private val launcherApps: LauncherApps,
-  private val launcherIconCache: LauncherIconCache
+  private val launcherIconCache: LauncherIconCache,
 ) {
 
   suspend fun getTileViewItem(data: ActivityData, style: Style) =
@@ -25,7 +27,7 @@ constructor(
       style,
       data,
       launcherApps.resolveActivity(data).label.toString(),
-      launcherIconCache.get(data)
+      launcherIconCache.getIcon(ComponentHandle(data.componentName, data.userHandle)).await(),
     ) { other ->
       this is ActivityData &&
         other is ActivityData &&
@@ -38,7 +40,9 @@ constructor(
       style,
       data,
       launcherApps.resolveShortcut(data).shortLabel.toString(),
-      launcherIconCache.get(data)
+      launcherIconCache
+        .getIcon(ShortcutHandle(data.packageName, data.shortcutId, data.userHandle))
+        .await(),
     )
 
   suspend fun getTileViewItem(data: ConfigurableShortcutData, style: Style) =
@@ -46,6 +50,6 @@ constructor(
       style,
       data,
       launcherApps.resolveConfigurableShortcut(data).label.toString(),
-      launcherIconCache.get(data)
+      launcherIconCache.getIcon(ComponentHandle(data.componentName, data.userHandle)).await(),
     )
 }

@@ -1,86 +1,64 @@
 package link.danb.launcher.icons
 
 import android.app.Application
-import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
 import link.danb.launcher.apps.LauncherAppsCallback
-import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.resolveActivity
-import link.danb.launcher.extensions.resolveConfigurableShortcut
 import link.danb.launcher.extensions.resolveShortcut
-import link.danb.launcher.shortcuts.ConfigurableShortcutData
-import link.danb.launcher.shortcuts.ShortcutData
 
 @Singleton
 class LauncherIconCache
 @Inject
 constructor(private val application: Application, private val launcherApps: LauncherApps) {
 
-  private val icons: MutableMap<Any, Drawable> = mutableMapOf()
+  private val icons: MutableMap<IconHandle, Deferred<Drawable>> = mutableMapOf()
 
   private val density: Int
     get() = application.resources.displayMetrics.densityDpi
 
   init {
     launcherApps.registerCallback(
-      LauncherAppsCallback { packageNames: List<String>, user: UserHandle ->
-        icons.keys.removeIf {
-          when (it) {
-            is ApplicationWithUser -> it.packageName in packageNames && it.user == user
-            is ActivityData -> it.componentName.packageName in packageNames && it.userHandle == user
-            is ShortcutData -> it.packageName in packageNames && it.userHandle == user
-            is ConfigurableShortcutData ->
-              it.componentName.packageName in packageNames && it.userHandle == user
-            else -> throw NotImplementedError()
-          }
-        }
+      LauncherAppsCallback { packageNames: List<String>, userHandle: UserHandle ->
+        icons.keys.removeIf { it.packageName in packageNames && it.userHandle == userHandle }
       }
     )
   }
 
-  suspend fun get(info: ApplicationInfo, user: UserHandle): Drawable =
-    getIcon(ApplicationWithUser(info.packageName, user), user)
-
-  suspend fun get(info: ActivityData): Drawable = getIcon(info, info.userHandle)
-
-  suspend fun get(info: ShortcutData): Drawable = getIcon(info, info.userHandle)
-
-  suspend fun get(info: ConfigurableShortcutData): Drawable = getIcon(info, info.userHandle)
-
-  private suspend fun getIcon(info: Any, user: UserHandle): Drawable =
-    withContext(Dispatchers.IO) {
-      icons.getOrPut(info) {
-        application.packageManager.getUserBadgedIcon(
-          loadIcon(info).let {
-            if (it is AdaptiveIconDrawable) {
-              AdaptiveLauncherIconDrawable(it)
-            } else {
-              LegacyLauncherIconDrawable.create(it)
-            }
-          },
-          user
-        )
+  @Synchronized
+  fun getIcon(iconHandle: IconHandle): Deferred<Drawable> =
+    icons.getOrPut(iconHandle) {
+      CoroutineScope(Dispatchers.IO).async {
+        iconHandle.getSourceIcon().toLauncherIcon().getBadged(iconHandle.userHandle)
       }
     }
 
-  private fun loadIcon(info: Any): Drawable =
-    when (info) {
-      is ApplicationWithUser -> application.packageManager.getApplicationIcon(info.packageName)
-      is ActivityData ->
-        launcherApps.resolveActivity(info.componentName, info.userHandle).getIcon(density)
-      is ShortcutData ->
-        launcherApps.getShortcutIconDrawable(launcherApps.resolveShortcut(info), density)
-          ?: application.packageManager.getApplicationIcon(info.packageName)
-      is ConfigurableShortcutData -> launcherApps.resolveConfigurableShortcut(info).getIcon(density)
-      else -> throw IllegalArgumentException()
+  private fun IconHandle.getSourceIcon(): Drawable =
+    when (this) {
+      is ApplicationHandle -> application.packageManager.getApplicationIcon(packageName)
+      is ComponentHandle -> launcherApps.resolveActivity(componentName, userHandle).getIcon(density)
+      is ShortcutHandle ->
+        launcherApps.getShortcutIconDrawable(
+          launcherApps.resolveShortcut(packageName, shortcutId, userHandle),
+          density,
+        ) ?: ApplicationHandle(packageName, userHandle).getSourceIcon()
     }
 
-  private data class ApplicationWithUser(val packageName: String, val user: UserHandle)
+  private suspend fun Drawable.toLauncherIcon(): Drawable =
+    if (this is AdaptiveIconDrawable) {
+      AdaptiveLauncherIconDrawable(this)
+    } else {
+      LegacyLauncherIconDrawable.create(this)
+    }
+
+  private fun Drawable.getBadged(user: UserHandle) =
+    application.packageManager.getUserBadgedIcon(this, user)
 }

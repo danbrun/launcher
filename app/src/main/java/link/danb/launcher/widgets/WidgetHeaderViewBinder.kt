@@ -9,13 +9,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
+import javax.inject.Inject
 import link.danb.launcher.R
 import link.danb.launcher.extensions.inflate
 import link.danb.launcher.extensions.setSize
+import link.danb.launcher.icons.ApplicationHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
-import javax.inject.Inject
 
 class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
   ViewBinder<WidgetHeaderViewHolder, WidgetHeaderViewItem> {
@@ -49,7 +50,7 @@ class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
       viewItem.icon.apply { setSize(appIconSize) },
       null,
       ContextCompat.getDrawable(context, dropdownDrawableRes)?.apply { setSize(dropdownIconSize) },
-      null
+      null,
     )
   }
 }
@@ -85,8 +86,8 @@ private constructor(
       WidgetHeaderViewItem(
         info,
         info.loadLabel(application.packageManager),
-        launcherIconCache.get(info, user),
-        isExpanded
+        launcherIconCache.getIcon(ApplicationHandle(info.packageName, user)).await(),
+        isExpanded,
       )
   }
 }

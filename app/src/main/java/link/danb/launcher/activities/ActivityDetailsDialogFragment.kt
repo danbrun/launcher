@@ -38,6 +38,7 @@ import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.extensions.toConfigurableShortcutData
 import link.danb.launcher.extensions.toShortcutData
+import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ConfigurableShortcutData
@@ -86,7 +87,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   private val shortcutActivityLauncher =
     registerForActivityResult(
       ActivityResultContracts.StartIntentSenderForResult(),
-      ::onPinShortcutActivityResult
+      ::onPinShortcutActivityResult,
     )
 
   private val bindWidgetActivityLauncher =
@@ -116,7 +117,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
           { _, it -> onPinButtonClick(it) },
           { _, it -> onVisibilityButtonClick(it) },
           ::onUninstallButtonClick,
-          ::onSettingsButtonClick
+          ::onSettingsButtonClick,
         ),
         GroupHeaderViewBinder(),
         CardTileViewBinder(::onTileClick) { _, it -> onTileLongClick(it) },
@@ -128,7 +129,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       layoutManager =
         GridLayoutManager(
             context,
-            requireContext().resources.getInteger(R.integer.launcher_columns)
+            requireContext().resources.getInteger(R.integer.launcher_columns),
           )
           .apply {
             setSpanSizeProvider { position, spanCount ->
@@ -157,13 +158,15 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private suspend fun getViewItems(
     activityData: ActivityData,
-    activeProfile: UserHandle
+    activeProfile: UserHandle,
   ): List<ViewItem> = buildList {
     add(
       ActivityHeaderViewItem(
         activityData,
-        launcherIconCache.get(activityData),
-        launcherApps.resolveActivity(activityData).label
+        launcherIconCache
+          .getIcon(ComponentHandle(activityData.componentName, activityData.userHandle))
+          .await(),
+        launcherApps.resolveActivity(activityData).label,
       )
     )
 
@@ -184,7 +187,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         .map {
           tileViewItemFactory.getTileViewItem(
             it.toConfigurableShortcutData(),
-            TileViewItem.Style.CARD
+            TileViewItem.Style.CARD,
           )
         }
         .sortedBy { it.name.toString() }
@@ -198,7 +201,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       appWidgetManager
         .getInstalledProvidersForPackage(
           activityData.componentName.packageName,
-          activityData.userHandle
+          activityData.userHandle,
         )
         .map { WidgetPreviewViewItem(it, activityData.userHandle) }
 
@@ -222,7 +225,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     activitiesViewModel.launchAppDetails(
       viewItem.data,
       view.boundsOnScreen,
-      view.makeScaleUpAnimation().toBundle()
+      view.makeScaleUpAnimation().toBundle(),
     )
     dismiss()
   }
@@ -247,7 +250,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         shortcutsViewModel.launchShortcut(
           data,
           view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle(),
         )
         dismiss()
       }
