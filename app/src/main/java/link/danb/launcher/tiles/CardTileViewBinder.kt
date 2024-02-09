@@ -2,12 +2,12 @@ package link.danb.launcher.tiles
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.extensions.inflate
-import link.danb.launcher.extensions.setSize
 import link.danb.launcher.ui.ViewBinder
 
 class CardTileViewBinder(
@@ -30,15 +30,13 @@ class CardTileViewBinder(
       }
     }
 
-    holder.textView.apply {
-      text = viewItem.name
-      viewItem.icon.setSize(context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size))
-      setCompoundDrawables(viewItem.icon, null, null, null)
-    }
+    holder.iconView.setImageDrawable(viewItem.icon)
+    holder.textView.text = viewItem.name
   }
 }
 
 class CardTileViewHolder(view: View) : ViewHolder(view) {
   val cardView = view as CardView
-  val textView: TextView = view.findViewById(R.id.text_view)
+  val iconView: ImageView = view.findViewById(R.id.tile_icon)
+  val textView: TextView = view.findViewById(R.id.tile_label)
 }

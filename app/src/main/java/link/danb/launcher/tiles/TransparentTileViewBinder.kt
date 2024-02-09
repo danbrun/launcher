@@ -2,11 +2,11 @@ package link.danb.launcher.tiles
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import link.danb.launcher.R
 import link.danb.launcher.extensions.inflate
-import link.danb.launcher.extensions.setSize
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.ui.ViewBinder
 
@@ -21,10 +21,7 @@ class TransparentTileViewBinder(
     TransparentTileViewHolder(parent.inflate(R.layout.transparent_tile_view))
 
   override fun bindViewHolder(holder: TransparentTileViewHolder, viewItem: TileViewItem) {
-    holder.textView.apply {
-      text = viewItem.name
-      viewItem.icon.setSize(context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size))
-      setCompoundDrawables(viewItem.icon, null, null, null)
+    holder.itemView.apply {
       setOnClickListener { onClick?.invoke(it, viewItem.data) }
       setOnLongClickListener {
         onLongClick?.invoke(it, viewItem.data)
@@ -36,9 +33,13 @@ class TransparentTileViewBinder(
           resources.getDimensionPixelSize(R.dimen.app_item_corner_radius)
         )
     }
+
+    holder.iconView.setImageDrawable(viewItem.icon)
+    holder.textView.text = viewItem.name
   }
 }
 
 class TransparentTileViewHolder(view: View) : ViewHolder(view) {
-  val textView: TextView = view as TextView
+  val iconView: ImageView = view.findViewById(R.id.tile_icon)
+  val textView: TextView = view.findViewById(R.id.tile_label)
 }

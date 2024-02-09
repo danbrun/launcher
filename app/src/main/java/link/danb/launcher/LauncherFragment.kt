@@ -5,13 +5,15 @@ import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.content.pm.LauncherApps
+import android.os.Build
 import android.os.Bundle
 import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.graphics.toRectF
+import androidx.annotation.RequiresApi
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.util.Consumer
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -46,12 +48,14 @@ import link.danb.launcher.extensions.gestureContract
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
+import link.danb.launcher.icons.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutData
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.tiles.TransparentTileViewBinder
+import link.danb.launcher.tiles.TransparentTileViewHolder
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -81,6 +85,7 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
 
   private lateinit var recyclerView: RecyclerView
+  private lateinit var gestureIconView: GestureIconView
 
   private val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
@@ -98,7 +103,7 @@ class LauncherFragment : Fragment() {
             widgetData.widgetId,
             /* intentFlags = */ 0,
             R.id.app_widget_configure_request_id,
-            view.makeScaleUpAnimation().allowPendingIntentBackgroundActivityStart().toBundle()
+            view.makeScaleUpAnimation().allowPendingIntentBackgroundActivityStart().toBundle(),
           )
         },
         { widgetsViewModel.delete(it.widgetId) },
@@ -107,26 +112,30 @@ class LauncherFragment : Fragment() {
           widgetsViewModel.setHeight(widgetData.widgetId, height)
         },
         { widgetsViewModel.moveDown(it.widgetId) },
-        { isInEditMode.value = false }
+        { isInEditMode.value = false },
       ),
     )
   }
 
+  @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
     intent.gestureContract?.let { maybeAnimateGestureContract(it) }
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    requireActivity().addOnNewIntentListener(onNewIntentListener)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      requireActivity().addOnNewIntentListener(onNewIntentListener)
+    }
   }
 
   override fun onCreateView(
     inflater: LayoutInflater,
     container: ViewGroup?,
-    savedInstanceState: Bundle?
-  ): View? {
-    val view = inflater.inflate(R.layout.launcher_fragment, container, false)
+    savedInstanceState: Bundle?,
+  ): View {
+    val view = inflater.inflate(R.layout.launcher_fragment, container, false) as CoordinatorLayout
 
     recyclerView = view.findViewById(R.id.app_list)
     recyclerView.apply {
@@ -134,7 +143,7 @@ class LauncherFragment : Fragment() {
       layoutManager =
         GridLayoutManager(
             context,
-            requireContext().resources.getInteger(R.integer.launcher_columns)
+            requireContext().resources.getInteger(R.integer.launcher_columns),
           )
           .apply {
             setSpanSizeProvider { position, spanCount ->
@@ -148,6 +157,11 @@ class LauncherFragment : Fragment() {
           }
     }
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      gestureIconView = GestureIconView(view.context)
+      view.addView(gestureIconView)
+    }
+
     view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
 
     view.findViewById<FloatingActionButton>(R.id.floating_action).setOnClickListener { button ->
@@ -158,7 +172,7 @@ class LauncherFragment : Fragment() {
           // This extra is for Firefox to open a new tab.
           putExtra("open_to_search", "static_shortcut_new_tab")
         },
-        button.makeScaleUpAnimation().toBundle()
+        button.makeScaleUpAnimation().toBundle(),
       )
     }
 
@@ -170,7 +184,7 @@ class LauncherFragment : Fragment() {
             widgetsViewModel.widgets,
             activitiesViewModel.activities,
             shortcutsViewModel.pinnedShortcuts,
-            ::getViewItems
+            ::getViewItems,
           )
           .collectLatest { recyclerAdapter.submitList(it) }
       }
@@ -181,7 +195,10 @@ class LauncherFragment : Fragment() {
 
   override fun onDestroy() {
     super.onDestroy()
-    requireActivity().removeOnNewIntentListener(onNewIntentListener)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      requireActivity().removeOnNewIntentListener(onNewIntentListener)
+    }
   }
 
   private suspend fun getViewItems(
@@ -225,7 +242,7 @@ class LauncherFragment : Fragment() {
             shortcuts
               .asFlow()
               .filter { it.userHandle == activeProfile }
-              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
           )
           .toList()
           .sortedBy { it.name.toString().lowercase() }
@@ -272,18 +289,19 @@ class LauncherFragment : Fragment() {
       groupedMiscellaneous + groupedAlphabetical
     }
 
+  @RequiresApi(Build.VERSION_CODES.Q)
   private fun maybeAnimateGestureContract(gestureContract: GestureContract) {
     for ((index, item) in recyclerAdapter.currentList.withIndex()) {
       if (
         item is TileViewItem &&
           item.data is ActivityData &&
-          item.data.componentName == gestureContract.componentName &&
+          item.data.componentName.packageName == gestureContract.componentName.packageName &&
           item.data.userHandle == gestureContract.userHandle
       ) {
         val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
-        if (viewHolder != null) {
-          gestureContract.sendBounds(viewHolder.itemView.boundsOnScreen.toRectF())
-          break
+        if (viewHolder != null && viewHolder is TransparentTileViewHolder) {
+          gestureIconView.animateNavigationGesture(gestureContract, viewHolder.iconView)
+          return
         }
       }
     }
@@ -295,14 +313,14 @@ class LauncherFragment : Fragment() {
         activitiesViewModel.launchActivity(
           data,
           view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle(),
         )
       }
       is ShortcutData -> {
         shortcutsViewModel.launchShortcut(
           data,
           view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle(),
         )
       }
       else -> throw NotImplementedError()
