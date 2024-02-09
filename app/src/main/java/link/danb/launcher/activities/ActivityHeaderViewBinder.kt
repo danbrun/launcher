@@ -3,13 +3,13 @@ package link.danb.launcher.activities
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.google.android.material.button.MaterialButton
 import link.danb.launcher.R
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.inflate
-import link.danb.launcher.extensions.setSize
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 
@@ -26,11 +26,8 @@ class ActivityHeaderViewBinder(
     ActivityHeaderViewHolder(parent.inflate(R.layout.activity_details_header_view))
 
   override fun bindViewHolder(holder: ActivityHeaderViewHolder, viewItem: ActivityHeaderViewItem) {
-    holder.activityItem.apply {
-      text = viewItem.name
-      viewItem.icon.setSize(context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size))
-      setCompoundDrawables(viewItem.icon, null, null, null)
-    }
+    holder.activityIcon.setImageDrawable(viewItem.icon)
+    holder.activityLabel.text = viewItem.name
 
     holder.pinButton.apply {
       setIconResource(
@@ -61,7 +58,8 @@ class ActivityHeaderViewBinder(
 }
 
 class ActivityHeaderViewHolder(view: View) : ViewHolder(view) {
-  val activityItem: TextView = view.findViewById(R.id.activity_item)
+  val activityIcon: ImageView = view.findViewById(R.id.activity_icon)
+  val activityLabel: TextView = view.findViewById(R.id.activity_label)
   val pinButton: MaterialButton = view.findViewById(R.id.pin_button)
   val visibilityButton: MaterialButton = view.findViewById(R.id.visibility_button)
   val uninstallButton: MaterialButton = view.findViewById(R.id.uninstall_button)
