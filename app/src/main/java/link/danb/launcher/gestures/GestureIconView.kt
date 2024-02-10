@@ -1,4 +1,4 @@
-package link.danb.launcher.icons
+package link.danb.launcher.gestures
 
 import android.content.Context
 import android.graphics.Matrix
@@ -21,7 +21,6 @@ import androidx.core.graphics.toRectF
 import androidx.core.graphics.withMatrix
 import link.danb.launcher.R
 import link.danb.launcher.extensions.boundsOnScreen
-import link.danb.launcher.gestures.GestureContract
 
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureIconView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
@@ -75,26 +74,8 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
 
   @RequiresApi(Build.VERSION_CODES.Q)
   fun animateNavigationGesture(gestureContract: GestureContract, iconView: ImageView) {
-    start(GestureAnimationData(gestureContract, iconView, iconView.drawable))
+    gestureAnimationData = GestureAnimationData(gestureContract, iconView, iconView.drawable)
     update()
-    draw()
-  }
-
-  private fun start(data: GestureAnimationData) {
-    gestureAnimationData = data
-
-    data.iconView.setImageDrawable(null)
-
-    with(surfaceView.layoutParams as LayoutParams) {
-      val bounds = data.icon.bounds
-      width = bounds.width()
-      height = bounds.height()
-      leftMargin = bounds.left
-      topMargin = bounds.top
-    }
-    surfaceView.requestLayout()
-
-    visibility = View.VISIBLE
   }
 
   private fun update() {
@@ -109,31 +90,33 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
   }
 
   private fun draw() {
-    val gestureAnimationData = gestureAnimationData ?: return
-
-    val bounds = gestureAnimationData.iconView.boundsOnScreen
+    val data = gestureAnimationData ?: return
 
     val canvas = surfaceView.holder.lockCanvas() ?: return
     canvas.withMatrix(
       Matrix().apply {
+        val bounds = data.iconView.boundsOnScreen.toRectF()
         setRectToRect(
-          gestureAnimationData.icon.bounds.toRectF(),
-          RectF(0f, 0f, bounds.width().toFloat(), bounds.height().toFloat()),
+          data.icon.bounds.toRectF(),
+          RectF(0f, 0f, bounds.width(), bounds.height()),
           Matrix.ScaleToFit.FILL,
         )
       }
     ) {
-      gestureAnimationData.icon.draw(canvas)
+      data.icon.draw(canvas)
     }
     surfaceView.holder.unlockCanvasAndPost(canvas)
+
+    data.iconView.setImageDrawable(null)
+    visibility = View.VISIBLE
   }
 
   private fun finish() {
-    visibility = View.GONE
-
     val data = gestureAnimationData ?: return
-    data.iconView.setImageDrawable(data.icon)
     gestureAnimationData = null
+
+    data.iconView.setImageDrawable(data.icon)
+    visibility = View.GONE
   }
 
   data class GestureAnimationData(

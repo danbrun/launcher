@@ -48,7 +48,7 @@ import link.danb.launcher.extensions.gestureContract
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
-import link.danb.launcher.icons.GestureIconView
+import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutData
 import link.danb.launcher.shortcuts.ShortcutsViewModel
