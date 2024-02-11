@@ -47,25 +47,13 @@ constructor(
   override fun onStart(owner: LifecycleOwner) {
     fragment.viewLifecycleOwner.lifecycleScope.launch {
       fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        launch {
-          combine(activitiesViewModel.activities, profilesModel.activeProfile) {
-              activities,
-              activeProfile ->
-              Pair(
-                activities.any { !it.userComponent.userHandle.isPersonalProfile },
-                activities.any { it.isHidden && it.userComponent.userHandle == activeProfile },
-              )
-            }
-            .collect { (hasWorkProfileApps, hasHiddenApps) ->
-              profileToggle.isVisible = hasWorkProfileApps
-              workToggle.isVisible = hasWorkProfileApps
-              visibilityToggle.isVisible = hasHiddenApps
-            }
-        }
-
-        launch {
-          combine(profilesModel.workProfileData, profilesModel.activeProfile, ::Pair).collect {
-            (workProfileData, activeProfile) ->
+        combine(
+            activitiesViewModel.activities,
+            profilesModel.workProfileData,
+            profilesModel.activeProfile,
+            ::Triple,
+          )
+          .collect { (activities, workProfileData, activeProfile) ->
             profileToggle.isVisible = workProfileData.user != null
             profileToggle.setTitle(
               if (activeProfile.isPersonalProfile) {
@@ -97,8 +85,10 @@ constructor(
                 R.drawable.ic_baseline_work_off_24
               }
             )
+
+            visibilityToggle.isVisible =
+              activities.any { it.isHidden && it.userComponent.userHandle == activeProfile }
           }
-        }
       }
     }
   }
