@@ -1,7 +1,6 @@
 package link.danb.launcher.activities
 
 import android.app.Application
-import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.graphics.Rect
 import android.os.Bundle
@@ -15,9 +14,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherAppsCallback
+import link.danb.launcher.data.UserComponent
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
-import link.danb.launcher.extensions.toDefaultActivityData
 
 /** View model for launch icons. */
 @HiltViewModel
@@ -31,39 +30,55 @@ constructor(
 
   private val activityData = launcherDatabase.activityData()
 
-  private val launcherActivityInfo: Flow<List<LauncherActivityInfo>> =
-    callbackFlow {
-        val callback = LauncherAppsCallback { _, _ -> trySend(getAllActivities()) }
-        launcherApps.registerCallback(callback)
-        awaitClose { launcherApps.unregisterCallback(callback) }
+  private val launcherActivityInfo: Flow<List<UserComponent>> = callbackFlow {
+    var activities =
+      launcherApps.profiles
+        .flatMap { launcherApps.getActivityList(null, it) }
+        .filter { it.componentName.packageName != application.packageName }
+        .map { UserComponent(it.componentName, it.user) }
+    trySend(activities)
+
+    val callback = LauncherAppsCallback { packageNames, userHandle ->
+      synchronized(this) {
+        activities =
+          activities.filter {
+            it.componentName.packageName !in packageNames || it.userHandle != userHandle
+          } +
+            packageNames
+              .flatMap { launcherApps.getActivityList(it, userHandle) }
+              .map { UserComponent(it.componentName, it.user) }
+        trySend(activities)
       }
-      .onStart { emit(getAllActivities()) }
+    }
+
+    launcherApps.registerCallback(callback)
+    awaitClose { launcherApps.unregisterCallback(callback) }
+  }
 
   val activities: Flow<List<ActivityData>> =
-    combine(launcherActivityInfo, activityData.get()) { infoList, dataList ->
-        infoList.map { info ->
-          dataList.firstOrNull { data ->
-            info.componentName == data.componentName && info.user == data.userHandle
-          } ?: info.toDefaultActivityData()
-        }
+    combine(launcherActivityInfo, activityData.get()) { components, dataList ->
+        dataList.filter { it.userComponent in components } +
+          components
+            .filter { component -> dataList.none { it.userComponent == component } }
+            .map { ActivityData(it, isPinned = false, isHidden = false, tags = setOf()) }
       }
       .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
 
-  fun launchActivity(activityData: ActivityData, sourceBounds: Rect, opts: Bundle) {
+  fun launchActivity(userComponent: UserComponent, sourceBounds: Rect, opts: Bundle) {
     launcherApps.startMainActivity(
-      activityData.componentName,
-      activityData.userHandle,
+      userComponent.componentName,
+      userComponent.userHandle,
       sourceBounds,
-      opts
+      opts,
     )
   }
 
-  fun launchAppDetails(activityData: ActivityData, sourceBounds: Rect, opts: Bundle) {
+  fun launchAppDetails(userComponent: UserComponent, sourceBounds: Rect, opts: Bundle) {
     launcherApps.startAppDetailsActivity(
-      activityData.componentName,
-      activityData.userHandle,
+      userComponent.componentName,
+      userComponent.userHandle,
       sourceBounds,
-      opts
+      opts,
     )
   }
 
@@ -72,9 +87,4 @@ constructor(
 
   private suspend fun putMetadata(activityMetadata: ActivityData) =
     withContext(Dispatchers.IO) { activityData.put(activityMetadata) }
-
-  private fun getAllActivities(): List<LauncherActivityInfo> =
-    launcherApps.profiles
-      .flatMap { launcherApps.getActivityList(null, it) }
-      .filter { it.componentName.packageName != application.packageName }
 }

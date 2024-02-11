@@ -52,8 +52,8 @@ constructor(
               activities,
               activeProfile ->
               Pair(
-                activities.any { !it.userHandle.isPersonalProfile },
-                activities.any { it.isHidden && it.userHandle == activeProfile }
+                activities.any { !it.userComponent.userHandle.isPersonalProfile },
+                activities.any { it.isHidden && it.userComponent.userHandle == activeProfile },
               )
             }
             .collect { (hasWorkProfileApps, hasHiddenApps) ->
@@ -144,7 +144,7 @@ constructor(
           fragment.view
             ?.findViewById<View>(R.id.settings_button)
             ?.makeScaleUpAnimation()
-            ?.toBundle()
+            ?.toBundle(),
         )
         true
       }

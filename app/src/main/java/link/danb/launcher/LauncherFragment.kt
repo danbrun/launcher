@@ -233,7 +233,7 @@ class LauncherFragment : Fragment() {
         merge(
             launcherActivities
               .asFlow()
-              .filter { it.isPinned && it.userHandle == activeProfile }
+              .filter { it.isPinned && it.userComponent.userHandle == activeProfile }
               .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
             shortcuts
               .asFlow()
@@ -259,7 +259,7 @@ class LauncherFragment : Fragment() {
       val (alphabetical, miscellaneous) =
         launcherActivities
           .asFlow()
-          .filter { !it.isHidden && it.userHandle == activeProfile }
+          .filter { !it.isHidden && it.userComponent.userHandle == activeProfile }
           .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
           .toList()
           .partition { it.name.first().isLetter() }
@@ -291,8 +291,9 @@ class LauncherFragment : Fragment() {
       if (
         item is TileViewItem &&
           item.data is ActivityData &&
-          item.data.componentName.packageName == gestureContract.componentName.packageName &&
-          item.data.userHandle == gestureContract.userHandle
+          item.data.userComponent.componentName.packageName ==
+            gestureContract.componentName.packageName &&
+          item.data.userComponent.userHandle == gestureContract.userHandle
       ) {
         val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
         if (viewHolder != null && viewHolder is TransparentTileViewHolder) {
@@ -307,7 +308,7 @@ class LauncherFragment : Fragment() {
     when (data) {
       is ActivityData -> {
         activitiesViewModel.launchActivity(
-          data,
+          data.userComponent,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle(),
         )

@@ -111,7 +111,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
     withContext(Dispatchers.IO) {
       activities
         .asFlow()
-        .filter { it.isHidden && it.userHandle == activeProfile }
+        .filter { it.isHidden && it.userComponent.userHandle == activeProfile }
         .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
         .toList()
         .sortedBy { it.name.toString().lowercase() }
@@ -121,7 +121,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
     when (data) {
       is ActivityData -> {
         activitiesViewModel.launchActivity(
-          data,
+          data.userComponent,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle(),
         )

@@ -125,11 +125,14 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     withContext(Dispatchers.IO) {
       activityData
         .asFlow()
-        .filter { it.userHandle == activeProfile }
+        .filter { it.userComponent.userHandle == activeProfile }
         .transform {
           emitAll(
             launcherApps
-              .getConfigurableShortcuts(it.componentName.packageName, it.userHandle)
+              .getConfigurableShortcuts(
+                it.userComponent.componentName.packageName,
+                it.userComponent.userHandle,
+              )
               .asFlow()
           )
         }

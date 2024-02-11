@@ -1,14 +1,19 @@
 package link.danb.launcher.database
 
-import android.content.ComponentName
-import android.os.UserHandle
-import androidx.room.*
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Embedded
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import link.danb.launcher.data.UserComponent
 
-@Entity(primaryKeys = ["componentName", "userHandle"])
+@Entity
 data class ActivityData(
-  val componentName: ComponentName,
-  val userHandle: UserHandle,
+  @PrimaryKey @Embedded val userComponent: UserComponent,
   @ColumnInfo(defaultValue = "0") val isPinned: Boolean,
   val isHidden: Boolean,
   val tags: Set<String>,
