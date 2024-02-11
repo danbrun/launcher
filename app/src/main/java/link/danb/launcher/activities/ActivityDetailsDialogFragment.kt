@@ -19,7 +19,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,6 +46,7 @@ import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
+import link.danb.launcher.ui.DynamicGridLayoutManager
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -127,20 +127,16 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     recyclerView.apply {
       this.adapter = adapter
       layoutManager =
-        GridLayoutManager(
-            context,
-            requireContext().resources.getInteger(R.integer.launcher_columns),
-          )
-          .apply {
-            setSpanSizeProvider { position, spanCount ->
-              when (adapter.currentList[position]) {
-                is ActivityHeaderViewItem,
-                is GroupHeaderViewItem,
-                is WidgetPreviewViewItem -> spanCount
-                else -> 1
-              }
+        DynamicGridLayoutManager(context, R.dimen.min_column_width).apply {
+          setSpanSizeProvider { position, spanCount ->
+            when (adapter.currentList[position]) {
+              is ActivityHeaderViewItem,
+              is GroupHeaderViewItem,
+              is WidgetPreviewViewItem -> spanCount
+              else -> 1
             }
           }
+        }
     }
 
     viewLifecycleOwner.lifecycleScope.launch {

@@ -20,7 +20,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -56,6 +55,7 @@ import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.tiles.TransparentTileViewBinder
 import link.danb.launcher.tiles.TransparentTileViewHolder
+import link.danb.launcher.ui.DynamicGridLayoutManager
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -141,20 +141,16 @@ class LauncherFragment : Fragment() {
     recyclerView.apply {
       this.adapter = recyclerAdapter
       layoutManager =
-        GridLayoutManager(
-            context,
-            requireContext().resources.getInteger(R.integer.launcher_columns),
-          )
-          .apply {
-            setSpanSizeProvider { position, spanCount ->
-              when (recyclerAdapter.currentList[position]) {
-                is WidgetViewItem,
-                is WidgetEditorViewItem,
-                is GroupHeaderViewItem -> spanCount
-                else -> 1
-              }
+        DynamicGridLayoutManager(context, R.dimen.min_column_width).apply {
+          setSpanSizeProvider { position, spanCount ->
+            when (recyclerAdapter.currentList[position]) {
+              is WidgetViewItem,
+              is WidgetEditorViewItem,
+              is GroupHeaderViewItem -> spanCount
+              else -> 1
             }
           }
+        }
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

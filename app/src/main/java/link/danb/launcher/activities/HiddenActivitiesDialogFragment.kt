@@ -10,7 +10,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,6 +33,7 @@ import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
+import link.danb.launcher.ui.DynamicGridLayoutManager
 import link.danb.launcher.ui.LoadingSpinnerViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -51,7 +51,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   private val header by lazy {
     DialogHeaderViewItem(
       requireContext().getString(R.string.hidden_apps),
-      R.drawable.ic_baseline_visibility_24
+      R.drawable.ic_baseline_visibility_24,
     )
   }
 
@@ -69,25 +69,21 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
       ViewBinderAdapter(
         DialogHeaderViewBinder(),
         LoadingSpinnerViewBinder(),
-        CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) }
+        CardTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
       )
 
     recyclerView.apply {
       this.adapter = adapter
       layoutManager =
-        GridLayoutManager(
-            context,
-            requireContext().resources.getInteger(R.integer.launcher_columns)
-          )
-          .apply {
-            setSpanSizeProvider { position, spanCount ->
-              when (adapter.currentList[position]) {
-                is DialogHeaderViewItem,
-                is LoadingSpinnerViewItem -> spanCount
-                else -> 1
-              }
+        DynamicGridLayoutManager(context, R.dimen.min_column_width).apply {
+          setSpanSizeProvider { position, spanCount ->
+            when (adapter.currentList[position]) {
+              is DialogHeaderViewItem,
+              is LoadingSpinnerViewItem -> spanCount
+              else -> 1
             }
           }
+        }
     }
 
     adapter.submitList(listOf(header, LoadingSpinnerViewItem))
@@ -127,7 +123,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         activitiesViewModel.launchActivity(
           data,
           view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle()
+          view.makeScaleUpAnimation().toBundle(),
         )
         dismiss()
       }
