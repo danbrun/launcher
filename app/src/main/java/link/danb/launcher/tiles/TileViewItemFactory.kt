@@ -11,7 +11,7 @@ import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.icons.ShortcutHandle
 import link.danb.launcher.shortcuts.ConfigurableShortcutData
-import link.danb.launcher.shortcuts.ShortcutData
+import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.tiles.TileViewItem.Style
 
 @Singleton
@@ -34,7 +34,7 @@ constructor(
       this is ActivityData && other is ActivityData && userActivity == other.userActivity
     }
 
-  suspend fun getTileViewItem(data: ShortcutData, style: Style) =
+  suspend fun getTileViewItem(data: UserShortcut, style: Style) =
     TileViewItem(
       style,
       data,

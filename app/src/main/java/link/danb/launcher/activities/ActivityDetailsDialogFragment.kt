@@ -41,7 +41,7 @@ import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ConfigurableShortcutData
-import link.danb.launcher.shortcuts.ShortcutData
+import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
@@ -249,7 +249,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onTileClick(view: View, data: Any) =
     when (data) {
-      is ShortcutData -> {
+      is UserShortcut -> {
         shortcutsViewModel.launchShortcut(
           data,
           view.boundsOnScreen,
@@ -268,7 +268,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onTileLongClick(data: Any) =
     when (data) {
-      is ShortcutData -> {
+      is UserShortcut -> {
         shortcutsViewModel.pinShortcut(data)
         Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
       }

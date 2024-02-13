@@ -49,7 +49,7 @@ import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.shortcuts.ShortcutData
+import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -202,7 +202,7 @@ class LauncherFragment : Fragment() {
     isInEditMode: Boolean,
     widgets: List<WidgetData>,
     launcherActivities: List<ActivityData>,
-    shortcuts: List<ShortcutData>,
+    shortcuts: List<UserShortcut>,
   ): List<ViewItem> =
     getWidgetListViewItems(widgets, activeProfile, isInEditMode) +
       getPinnedListViewItems(launcherActivities, shortcuts, activeProfile) +
@@ -225,7 +225,7 @@ class LauncherFragment : Fragment() {
 
   private suspend fun getPinnedListViewItems(
     launcherActivities: List<ActivityData>,
-    shortcuts: List<ShortcutData>,
+    shortcuts: List<UserShortcut>,
     activeProfile: UserHandle,
   ): List<ViewItem> =
     withContext(Dispatchers.IO) {
@@ -313,7 +313,7 @@ class LauncherFragment : Fragment() {
           view.makeScaleUpAnimation().toBundle(),
         )
       }
-      is ShortcutData -> {
+      is UserShortcut -> {
         shortcutsViewModel.launchShortcut(
           data,
           view.boundsOnScreen,
@@ -330,7 +330,7 @@ class LauncherFragment : Fragment() {
         ActivityDetailsDialogFragment.newInstance(tileViewData)
           .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
       }
-      is ShortcutData -> {
+      is UserShortcut -> {
         MaterialAlertDialogBuilder(requireContext())
           .setTitle(R.string.unpin_shortcut)
           .setPositiveButton(R.string.unpin) { _, _ ->

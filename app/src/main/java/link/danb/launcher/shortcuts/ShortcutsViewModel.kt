@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.extensions.getShortcuts
 import link.danb.launcher.extensions.resolveConfigurableShortcut
 import link.danb.launcher.extensions.toShortcutData
@@ -31,9 +32,9 @@ constructor(
   private val profilesModel: ProfilesModel,
 ) : AndroidViewModel(application) {
 
-  private val _pinnedShortcuts: MutableStateFlow<List<ShortcutData>> = MutableStateFlow(listOf())
+  private val _pinnedShortcuts: MutableStateFlow<List<UserShortcut>> = MutableStateFlow(listOf())
 
-  val pinnedShortcuts: StateFlow<List<ShortcutData>> = _pinnedShortcuts.asStateFlow()
+  val pinnedShortcuts: StateFlow<List<UserShortcut>> = _pinnedShortcuts.asStateFlow()
 
   init {
     viewModelScope.launch {
@@ -55,27 +56,27 @@ constructor(
     }
   }
 
-  fun pinShortcut(shortcutData: ShortcutData) {
+  fun pinShortcut(userShortcut: UserShortcut) {
     setPinnedShortcuts(
-      shortcutData,
-      getPinnedShortcutIds(shortcutData.packageName) + shortcutData.shortcutId
+      userShortcut,
+      getPinnedShortcutIds(userShortcut.packageName) + userShortcut.shortcutId
     )
   }
 
-  fun unpinShortcut(shortcutData: ShortcutData) {
+  fun unpinShortcut(userShortcut: UserShortcut) {
     setPinnedShortcuts(
-      shortcutData,
-      getPinnedShortcutIds(shortcutData.packageName) - shortcutData.shortcutId
+      userShortcut,
+      getPinnedShortcutIds(userShortcut.packageName) - userShortcut.shortcutId
     )
   }
 
-  fun launchShortcut(shortcutData: ShortcutData, sourceBounds: Rect, startActivityOptions: Bundle) {
+  fun launchShortcut(userShortcut: UserShortcut, sourceBounds: Rect, startActivityOptions: Bundle) {
     launcherApps.startShortcut(
-      shortcutData.packageName,
-      shortcutData.shortcutId,
+      userShortcut.packageName,
+      userShortcut.shortcutId,
       sourceBounds,
       startActivityOptions,
-      shortcutData.userHandle
+      userShortcut.userHandle
     )
   }
 
@@ -97,11 +98,11 @@ constructor(
       }
       .toSet()
 
-  private fun setPinnedShortcuts(shortcutData: ShortcutData, shortcutIds: Set<String>) {
+  private fun setPinnedShortcuts(userShortcut: UserShortcut, shortcutIds: Set<String>) {
     launcherApps.pinShortcuts(
-      shortcutData.packageName,
+      userShortcut.packageName,
       shortcutIds.toList(),
-      shortcutData.userHandle
+      userShortcut.userHandle
     )
     update(profilesModel.workProfileData.value)
   }
