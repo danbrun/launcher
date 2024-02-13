@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.extensions.getShortcuts
 import link.danb.launcher.extensions.resolveConfigurableShortcut
@@ -81,10 +82,10 @@ constructor(
   }
 
   fun getConfigurableShortcutIntent(
-    configurableShortcutData: ConfigurableShortcutData
+    userShortcutCreator: UserShortcutCreator
   ): IntentSender =
     launcherApps.getShortcutConfigActivityIntent(
-      launcherApps.resolveConfigurableShortcut(configurableShortcutData)
+      launcherApps.resolveConfigurableShortcut(userShortcutCreator)
     )!!
 
   private fun getPinnedShortcutIds(packageName: String): Set<String> =

@@ -40,7 +40,7 @@ import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.shortcuts.ConfigurableShortcutData
+import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.CardTileViewBinder
@@ -257,7 +257,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         )
         dismiss()
       }
-      is ConfigurableShortcutData -> {
+      is UserShortcutCreator -> {
         shortcutActivityLauncher.launch(
           IntentSenderRequest.Builder(shortcutsViewModel.getConfigurableShortcutIntent(data))
             .build()
@@ -272,7 +272,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         shortcutsViewModel.pinShortcut(data)
         Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
       }
-      is ConfigurableShortcutData -> Unit
+      is UserShortcutCreator -> Unit
       else -> throw NotImplementedError()
     }
 

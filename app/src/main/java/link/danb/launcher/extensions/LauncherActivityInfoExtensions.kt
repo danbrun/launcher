@@ -1,7 +1,7 @@
 package link.danb.launcher.extensions
 
 import android.content.pm.LauncherActivityInfo
-import link.danb.launcher.shortcuts.ConfigurableShortcutData
+import link.danb.launcher.data.UserShortcutCreator
 
-fun LauncherActivityInfo.toConfigurableShortcutData(): ConfigurableShortcutData =
-  ConfigurableShortcutData(componentName, user)
+fun LauncherActivityInfo.toConfigurableShortcutData(): UserShortcutCreator =
+  UserShortcutCreator(componentName, user)

@@ -10,7 +10,7 @@ import link.danb.launcher.extensions.resolveShortcut
 import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.icons.ShortcutHandle
-import link.danb.launcher.shortcuts.ConfigurableShortcutData
+import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.tiles.TileViewItem.Style
 
@@ -44,7 +44,7 @@ constructor(
         .await(),
     )
 
-  suspend fun getTileViewItem(data: ConfigurableShortcutData, style: Style) =
+  suspend fun getTileViewItem(data: UserShortcutCreator, style: Style) =
     TileViewItem(
       style,
       data,

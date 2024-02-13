@@ -8,7 +8,7 @@ import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
 import android.os.UserHandle
 import link.danb.launcher.data.UserActivity
-import link.danb.launcher.shortcuts.ConfigurableShortcutData
+import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.data.UserShortcut
 
 fun LauncherApps.resolveActivity(
@@ -55,7 +55,7 @@ fun LauncherApps.getConfigurableShortcuts(
   }
 
 fun LauncherApps.resolveConfigurableShortcut(
-  shortcutData: ConfigurableShortcutData
+  shortcutData: UserShortcutCreator
 ): LauncherActivityInfo =
   getConfigurableShortcuts(shortcutData.componentName.packageName, shortcutData.userHandle).first {
     it.componentName == shortcutData.componentName
