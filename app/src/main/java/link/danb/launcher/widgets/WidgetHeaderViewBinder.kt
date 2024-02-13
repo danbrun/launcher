@@ -1,6 +1,5 @@
 package link.danb.launcher.widgets
 
-import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.graphics.drawable.Drawable
 import android.os.UserHandle
@@ -11,10 +10,10 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import javax.inject.Inject
 import link.danb.launcher.R
+import link.danb.launcher.apps.LauncherResourceProvider
+import link.danb.launcher.data.UserApplication
 import link.danb.launcher.extensions.inflate
 import link.danb.launcher.extensions.setSize
-import link.danb.launcher.icons.ApplicationHandle
-import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 
@@ -78,15 +77,13 @@ private constructor(
 
   class WidgetHeaderViewItemFactory
   @Inject
-  constructor(
-    private val application: Application,
-    private val launcherIconCache: LauncherIconCache,
-  ) {
+  constructor(private val launcherResourceProvider: LauncherResourceProvider) {
+
     suspend fun create(info: ApplicationInfo, user: UserHandle, isExpanded: Boolean) =
       WidgetHeaderViewItem(
         info,
-        info.loadLabel(application.packageManager),
-        launcherIconCache.getIcon(ApplicationHandle(info.packageName, user)).await(),
+        launcherResourceProvider.getLabel(UserApplication(info.packageName, user)),
+        launcherResourceProvider.getIcon(UserApplication(info.packageName, user)).await(),
         isExpanded,
       )
   }

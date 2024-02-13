@@ -6,4 +6,5 @@ import android.os.UserHandle
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class UserActivity(val componentName: ComponentName, val userHandle: UserHandle) : Parcelable
+data class UserActivity(val componentName: ComponentName, override val userHandle: UserHandle) :
+  UserComponent, Parcelable

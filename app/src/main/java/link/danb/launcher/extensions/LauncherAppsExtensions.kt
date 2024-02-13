@@ -2,14 +2,19 @@ package link.danb.launcher.extensions
 
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
 import android.os.UserHandle
 import link.danb.launcher.data.UserActivity
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.data.UserApplication
 import link.danb.launcher.data.UserShortcut
+import link.danb.launcher.data.UserShortcutCreator
+
+fun LauncherApps.resolveApplication(userApplication: UserApplication): ApplicationInfo =
+  getApplicationInfo(userApplication.packageName, 0, userApplication.userHandle)
 
 fun LauncherApps.resolveActivity(
   componentName: ComponentName,

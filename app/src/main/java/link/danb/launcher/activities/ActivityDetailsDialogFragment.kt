@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
+import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.data.UserActivity
 import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.data.UserShortcutCreator
@@ -35,10 +36,7 @@ import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
-import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.icons.ComponentHandle
-import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.CardTileViewBinder
@@ -67,7 +65,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var launcherApps: LauncherApps
-  @Inject lateinit var launcherIconCache: LauncherIconCache
+  @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
   @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
@@ -156,15 +154,8 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     add(
       ActivityHeaderViewItem(
         activityData,
-        launcherIconCache
-          .getIcon(
-            ComponentHandle(
-              activityData.userActivity.componentName,
-              activityData.userActivity.userHandle,
-            )
-          )
-          .await(),
-        launcherApps.resolveActivity(activityData.userActivity).label,
+        launcherResourceProvider.getIcon(activityData.userActivity).await(),
+        launcherResourceProvider.getLabel(activityData.userActivity),
       )
     )
 
