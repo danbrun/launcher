@@ -26,12 +26,12 @@ constructor(
     TileViewItem(
       style,
       data,
-      launcherApps.resolveActivity(data.userComponent).label.toString(),
+      launcherApps.resolveActivity(data.userActivity).label.toString(),
       launcherIconCache
-        .getIcon(ComponentHandle(data.userComponent.componentName, data.userComponent.userHandle))
+        .getIcon(ComponentHandle(data.userActivity.componentName, data.userActivity.userHandle))
         .await(),
     ) { other ->
-      this is ActivityData && other is ActivityData && userComponent == other.userComponent
+      this is ActivityData && other is ActivityData && userActivity == other.userActivity
     }
 
   suspend fun getTileViewItem(data: ShortcutData, style: Style) =

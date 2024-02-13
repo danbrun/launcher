@@ -9,11 +9,11 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import link.danb.launcher.data.UserComponent
+import link.danb.launcher.data.UserActivity
 
 @Entity
 data class ActivityData(
-  @PrimaryKey @Embedded val userComponent: UserComponent,
+  @PrimaryKey @Embedded val userActivity: UserActivity,
   @ColumnInfo(defaultValue = "0") val isPinned: Boolean,
   val isHidden: Boolean,
   val tags: Set<String>,

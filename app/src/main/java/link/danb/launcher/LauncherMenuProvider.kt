@@ -87,7 +87,7 @@ constructor(
             )
 
             visibilityToggle.isVisible =
-              activities.any { it.isHidden && it.userComponent.userHandle == activeProfile }
+              activities.any { it.isHidden && it.userActivity.userHandle == activeProfile }
           }
       }
     }

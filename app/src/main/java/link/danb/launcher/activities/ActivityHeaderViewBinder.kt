@@ -72,7 +72,7 @@ class ActivityHeaderViewItem(val data: ActivityData, val icon: Drawable, val nam
   override val viewType: Int = R.id.activity_header_view_type_id
 
   override fun areItemsTheSame(other: ViewItem): Boolean =
-    other is ActivityHeaderViewItem && data.userComponent == other.data.userComponent
+    other is ActivityHeaderViewItem && data.userActivity == other.data.userActivity
 
   override fun areContentsTheSame(other: ViewItem): Boolean =
     other is ActivityHeaderViewItem && name == other.name && icon == other.icon
