@@ -32,12 +32,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.extensions.toConfigurableShortcutData
-import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
@@ -138,10 +137,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
           )
         }
         .map {
-          tileViewItemFactory.getTileViewItem(
-            it.toConfigurableShortcutData(),
-            TileViewItem.Style.CARD,
-          )
+          tileViewItemFactory.getTileViewItem(UserShortcutCreator(it), TileViewItem.Style.CARD)
         }
         .toList()
         .sortedBy { it.name.toString().lowercase() }
@@ -168,7 +164,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     val info = pinItemRequest.shortcutInfo ?: return
 
     pinItemRequest.accept()
-    shortcutsViewModel.pinShortcut(info.toShortcutData())
+    shortcutsViewModel.pinShortcut(UserShortcut(info))
     Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
     dismiss()
   }

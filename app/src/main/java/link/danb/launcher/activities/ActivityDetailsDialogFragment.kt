@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.data.UserActivity
+import link.danb.launcher.data.UserShortcut
+import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getConfigurableShortcuts
@@ -35,13 +37,9 @@ import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.extensions.toConfigurableShortcutData
-import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.icons.ComponentHandle
 import link.danb.launcher.icons.LauncherIconCache
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.data.UserShortcutCreator
-import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
@@ -173,7 +171,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     val shortcuts =
       shortcutsViewModel
         .getShortcuts(activityData.userActivity.componentName.packageName, activeProfile)
-        .map { tileViewItemFactory.getTileViewItem(it.toShortcutData(), TileViewItem.Style.CARD) }
+        .map { tileViewItemFactory.getTileViewItem(UserShortcut(it), TileViewItem.Style.CARD) }
         .sortedBy { it.name.toString() }
 
     if (shortcuts.isNotEmpty()) {
@@ -188,10 +186,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
           activeProfile,
         )
         .map {
-          tileViewItemFactory.getTileViewItem(
-            it.toConfigurableShortcutData(),
-            TileViewItem.Style.CARD,
-          )
+          tileViewItemFactory.getTileViewItem(UserShortcutCreator(it), TileViewItem.Style.CARD)
         }
         .sortedBy { it.name.toString() }
 
@@ -289,7 +284,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     if (!pinItemRequest.isValid) return
     if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
 
-    val info = pinItemRequest.shortcutInfo?.toShortcutData() ?: return
+    val info = pinItemRequest.shortcutInfo?.let { UserShortcut(it) } ?: return
 
     pinItemRequest.accept()
     shortcutsViewModel.pinShortcut(info)

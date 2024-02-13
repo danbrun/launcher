@@ -39,17 +39,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
+import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.boundsOnScreen
-import link.danb.launcher.extensions.gestureContract
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -119,7 +118,7 @@ class LauncherFragment : Fragment() {
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
-    intent.gestureContract?.let { maybeAnimateGestureContract(it) }
+    GestureContract.fromIntent(intent)?.let { maybeAnimateGestureContract(it) }
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {

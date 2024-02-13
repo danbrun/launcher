@@ -17,11 +17,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.data.UserShortcut
+import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.extensions.getShortcuts
 import link.danb.launcher.extensions.resolveConfigurableShortcut
-import link.danb.launcher.extensions.toShortcutData
 import link.danb.launcher.profiles.ProfilesModel
 
 @HiltViewModel
@@ -60,14 +59,14 @@ constructor(
   fun pinShortcut(userShortcut: UserShortcut) {
     setPinnedShortcuts(
       userShortcut,
-      getPinnedShortcutIds(userShortcut.packageName) + userShortcut.shortcutId
+      getPinnedShortcutIds(userShortcut.packageName) + userShortcut.shortcutId,
     )
   }
 
   fun unpinShortcut(userShortcut: UserShortcut) {
     setPinnedShortcuts(
       userShortcut,
-      getPinnedShortcutIds(userShortcut.packageName) - userShortcut.shortcutId
+      getPinnedShortcutIds(userShortcut.packageName) - userShortcut.shortcutId,
     )
   }
 
@@ -77,13 +76,11 @@ constructor(
       userShortcut.shortcutId,
       sourceBounds,
       startActivityOptions,
-      userShortcut.userHandle
+      userShortcut.userHandle,
     )
   }
 
-  fun getConfigurableShortcutIntent(
-    userShortcutCreator: UserShortcutCreator
-  ): IntentSender =
+  fun getConfigurableShortcutIntent(userShortcutCreator: UserShortcutCreator): IntentSender =
     launcherApps.getShortcutConfigActivityIntent(
       launcherApps.resolveConfigurableShortcut(userShortcutCreator)
     )!!
@@ -103,7 +100,7 @@ constructor(
     launcherApps.pinShortcuts(
       userShortcut.packageName,
       shortcutIds.toList(),
-      userShortcut.userHandle
+      userShortcut.userHandle,
     )
     update(profilesModel.workProfileData.value)
   }
@@ -125,6 +122,6 @@ constructor(
         listOf()
       }
 
-    _pinnedShortcuts.value = (personalShortcuts + workShortcuts).map { it.toShortcutData() }
+    _pinnedShortcuts.value = (personalShortcuts + workShortcuts).map { UserShortcut(it) }
   }
 }
