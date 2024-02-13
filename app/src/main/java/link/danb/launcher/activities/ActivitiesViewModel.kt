@@ -30,24 +30,26 @@ constructor(
 
   private val activityData = launcherDatabase.activityData()
 
-  private val launcherActivityInfo: Flow<List<UserComponent>> = callbackFlow {
-    var activities =
+  private val activityComponents: Flow<List<UserComponent>> = callbackFlow {
+    val components =
       launcherApps.profiles
         .flatMap { launcherApps.getActivityList(null, it) }
         .filter { it.componentName.packageName != application.packageName }
         .map { UserComponent(it.componentName, it.user) }
-    trySend(activities)
+        .toMutableList()
+    trySend(components)
 
     val callback = LauncherAppsCallback { packageNames, userHandle ->
       synchronized(this) {
-        activities =
-          activities.filter {
-            it.componentName.packageName !in packageNames || it.userHandle != userHandle
-          } +
-            packageNames
-              .flatMap { launcherApps.getActivityList(it, userHandle) }
-              .map { UserComponent(it.componentName, it.user) }
-        trySend(activities)
+        components.removeIf {
+          it.componentName.packageName in packageNames && it.userHandle == userHandle
+        }
+        components.addAll(
+          packageNames
+            .flatMap { launcherApps.getActivityList(it, userHandle) }
+            .map { UserComponent(it.componentName, it.user) }
+        )
+        trySend(components.toList())
       }
     }
 
@@ -56,11 +58,13 @@ constructor(
   }
 
   val activities: Flow<List<ActivityData>> =
-    combine(launcherActivityInfo, activityData.get()) { components, dataList ->
-        dataList.filter { it.userComponent in components } +
-          components
-            .filter { component -> dataList.none { it.userComponent == component } }
-            .map { ActivityData(it, isPinned = false, isHidden = false, tags = setOf()) }
+    combine(activityComponents, activityData.get()) { components, data ->
+        val dataMap =
+          data
+            .associateBy { it.userComponent }
+            .withDefault { ActivityData(it, isPinned = false, isHidden = false, tags = setOf()) }
+
+        components.map { component -> dataMap.getValue(component) }
       }
       .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
 
