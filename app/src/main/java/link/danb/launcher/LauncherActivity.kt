@@ -4,6 +4,7 @@ import android.app.role.RoleManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.getSystemService
@@ -24,6 +25,7 @@ class LauncherActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
+    enableEdgeToEdge()
     setContentView(R.layout.launcher_activity)
 
     if (savedInstanceState == null) {
