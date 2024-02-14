@@ -21,27 +21,16 @@
         app:showAsAction="always" />
 
     <item
-        android:icon="@drawable/baseline_push_pin_24"
-        android:title="@string/add_item"
-        app:showAsAction="always">
+        android:id="@+id/pin_shortcut_button"
+        android:icon="@drawable/baseline_shortcut_24"
+        android:title="@string/pin_shortcut"
+        app:showAsAction="always" />
 
-        <menu>
-
-            <item
-                android:id="@+id/pin_shortcut_button"
-                android:icon="@drawable/baseline_shortcut_24"
-                android:title="@string/pin_shortcut"
-                app:showAsAction="always" />
-
-            <item
-                android:id="@+id/pin_widget_button"
-                android:icon="@drawable/ic_baseline_widgets_24"
-                android:title="@string/pin_widget"
-                app:showAsAction="always" />
-
-        </menu>
-
-    </item>
+    <item
+        android:id="@+id/pin_widget_button"
+        android:icon="@drawable/ic_baseline_widgets_24"
+        android:title="@string/pin_widget"
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/settings_button"
