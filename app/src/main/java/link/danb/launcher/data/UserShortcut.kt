@@ -4,7 +4,7 @@ import android.content.pm.ShortcutInfo
 import android.os.UserHandle
 
 data class UserShortcut(
-  val packageName: String,
+  override val packageName: String,
   val shortcutId: String,
   override val userHandle: UserHandle,
 ) : UserComponent {

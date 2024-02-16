@@ -7,4 +7,8 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class UserActivity(val componentName: ComponentName, override val userHandle: UserHandle) :
-  UserComponent, Parcelable
+  UserComponent, Parcelable {
+
+  override val packageName: String
+    get() = componentName.packageName
+}

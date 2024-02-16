@@ -10,4 +10,7 @@ data class UserShortcutCreator(
 ) : UserComponent {
 
   constructor(info: LauncherActivityInfo) : this(info.componentName, info.user)
+
+  override val packageName: String
+    get() = componentName.packageName
 }

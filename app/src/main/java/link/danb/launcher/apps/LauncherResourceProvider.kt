@@ -36,15 +36,7 @@ constructor(@ApplicationContext private val context: Context) {
   init {
     launcherApps.registerCallback(
       LauncherAppsCallback { packageNames: List<String>, userHandle: UserHandle ->
-        icons.keys.removeIf {
-          it.userHandle == userHandle &&
-            when (it) {
-              is UserApplication -> it.packageName in packageNames
-              is UserActivity -> it.componentName.packageName in packageNames
-              is UserShortcut -> it.packageName in packageNames
-              is UserShortcutCreator -> it.componentName.packageName in packageNames
-            }
-        }
+        icons.keys.removeIf { it.packageName in packageNames && it.userHandle == userHandle }
       }
     )
   }
