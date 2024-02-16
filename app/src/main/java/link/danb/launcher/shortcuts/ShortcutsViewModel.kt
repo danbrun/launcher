@@ -8,82 +8,65 @@ import android.content.IntentFilter
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.os.Build
-import android.os.Process
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.extensions.getShortcuts
-import link.danb.launcher.profiles.ProfilesModel
 
 @HiltViewModel
 class ShortcutsViewModel
 @Inject
-constructor(
-  application: Application,
-  private val launcherApps: LauncherApps,
-  private val profilesModel: ProfilesModel,
-) : AndroidViewModel(application) {
+constructor(application: Application, private val launcherApps: LauncherApps) :
+  AndroidViewModel(application) {
 
-  private val _shortcuts: MutableStateFlow<List<UserShortcut>> = MutableStateFlow(listOf())
+  val shortcuts: Flow<List<UserShortcut>> = callbackFlow {
+    trySend(getPinnedShortcuts())
 
-  val shortcuts: StateFlow<List<UserShortcut>> = _shortcuts.asStateFlow()
-
-  private val receiver =
-    object : BroadcastReceiver() {
-      override fun onReceive(context: Context?, intent: Intent?) {
-        update(profilesModel.workProfileData.value)
+    val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(getPinnedShortcuts()) }
+    val broadcastReceiver =
+      object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+          trySend(getPinnedShortcuts())
+        }
       }
-    }
 
-  init {
-    viewModelScope.launch {
-      profilesModel.workProfileData.collect { workProfileData -> update(workProfileData) }
-    }
-
+    launcherApps.registerCallback(launcherAppsCallback)
     application.registerReceiver(
-      receiver,
-      IntentFilter().apply { addAction(ShortcutManager.ACTION_PINNED_SHORTCUTS_CHANGED) },
+      broadcastReceiver,
+      IntentFilter().apply {
+        addAction(ShortcutManager.ACTION_PINNED_SHORTCUTS_CHANGED)
+
+        addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
+        addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+        addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+        addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
+      },
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Context.RECEIVER_NOT_EXPORTED
       } else {
         0
       },
     )
+
+    awaitClose {
+      launcherApps.unregisterCallback(launcherAppsCallback)
+      application.unregisterReceiver(broadcastReceiver)
+    }
   }
 
-  override fun onCleared() {
-    super.onCleared()
-
-    getApplication<Application>().unregisterReceiver(receiver)
-  }
-
-  private fun update(workProfileData: ProfilesModel.WorkProfileData) {
-    if (!launcherApps.hasShortcutHostPermission()) return
-
-    val personalShortcuts =
-      launcherApps.getShortcuts(Process.myUserHandle()) {
-        setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED)
-      }
-
-    val workShortcuts =
-      if (workProfileData.user != null && workProfileData.isEnabled) {
-        launcherApps.getShortcuts(workProfileData.user) {
-          setQueryFlags(
-            ShortcutQuery.FLAG_MATCH_DYNAMIC or
-              ShortcutQuery.FLAG_MATCH_MANIFEST or
-              ShortcutQuery.FLAG_MATCH_PINNED
-          )
+  private fun getPinnedShortcuts(): List<UserShortcut> =
+    launcherApps.profiles
+      .flatMap {
+        try {
+          launcherApps.getShortcuts(it) { setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED) }
+        } catch (exception: Exception) {
+          listOf()
         }
-      } else {
-        listOf()
       }
-
-    _shortcuts.value = (personalShortcuts + workShortcuts).map { UserShortcut(it) }
-  }
+      .map { UserShortcut(it) }
 }
