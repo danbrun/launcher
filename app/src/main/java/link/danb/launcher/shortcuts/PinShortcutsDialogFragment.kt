@@ -43,7 +43,6 @@ import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.DynamicGridLayoutManager
-import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewBinder
 import link.danb.launcher.ui.LoadingSpinnerViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -87,7 +86,6 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     val adapter =
       ViewBinderAdapter(
         DialogHeaderViewBinder(),
-        GroupHeaderViewBinder(),
         LoadingSpinnerViewBinder(),
         CardTileViewBinder({ _, it -> onTileClick(it) }),
       )

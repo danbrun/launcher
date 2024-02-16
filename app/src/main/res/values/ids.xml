@@ -8,6 +8,7 @@
     <id name="activity_header_view_type_id" />
     <id name="card_tile_view_type_id" />
     <id name="dialog_header_view_type_id" />
+    <id name="dialog_subtitle_view_type_id" />
     <id name="group_header_view_type_id" />
     <id name="loading_spinner_view_type_id" />
     <id name="transparent_tile_view_type_id" />

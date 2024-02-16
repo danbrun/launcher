@@ -36,9 +36,9 @@ import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
+import link.danb.launcher.ui.DialogSubtitleViewBinder
+import link.danb.launcher.ui.DialogSubtitleViewItem
 import link.danb.launcher.ui.DynamicGridLayoutManager
-import link.danb.launcher.ui.GroupHeaderViewBinder
-import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
@@ -105,7 +105,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
           ::onUninstallButtonClick,
           ::onSettingsButtonClick,
         ),
-        GroupHeaderViewBinder(),
+        DialogSubtitleViewBinder(),
         CardTileViewBinder(::onTileClick) { _, it -> onTileLongClick(it) },
         WidgetPreviewViewBinder(appWidgetViewProvider) { _, it -> onWidgetPreviewClick(it) },
       )
@@ -117,7 +117,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
           setSpanSizeProvider { position, spanCount ->
             when (adapter.currentList[position]) {
               is ActivityHeaderViewItem,
-              is GroupHeaderViewItem,
+              is DialogSubtitleViewItem,
               is WidgetPreviewViewItem -> spanCount
               else -> 1
             }
@@ -150,7 +150,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         .sortedBy { it.name.toString() }
 
     if (shortcuts.isNotEmpty()) {
-      add(GroupHeaderViewItem(requireContext().getString(R.string.shortcuts)))
+      add(DialogSubtitleViewItem(requireContext().getString(R.string.shortcuts)))
       addAll(shortcuts)
     }
 
@@ -161,7 +161,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         .sortedBy { it.name.toString() }
 
     if (configurableShortcuts.isNotEmpty()) {
-      add(GroupHeaderViewItem(requireContext().getString(R.string.configurable_shortcuts)))
+      add(DialogSubtitleViewItem(requireContext().getString(R.string.configurable_shortcuts)))
       addAll(configurableShortcuts)
     }
 
@@ -174,7 +174,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
         .map { WidgetPreviewViewItem(it, activityData.userActivity.userHandle) }
 
     if (widgets.isNotEmpty()) {
-      add(GroupHeaderViewItem(requireContext().getString(R.string.widgets)))
+      add(DialogSubtitleViewItem(requireContext().getString(R.string.widgets)))
       addAll(widgets)
     }
   }
