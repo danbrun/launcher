@@ -1,12 +1,14 @@
 package link.danb.launcher.activities
 
-import android.app.Application
+import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Rect
 import android.os.Bundle
-import androidx.lifecycle.AndroidViewModel
+import androidx.core.content.getSystemService
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -22,11 +24,10 @@ import link.danb.launcher.database.LauncherDatabase
 @HiltViewModel
 class ActivitiesViewModel
 @Inject
-constructor(
-  private val application: Application,
-  launcherDatabase: LauncherDatabase,
-  private val launcherApps: LauncherApps,
-) : AndroidViewModel(application) {
+constructor(@ApplicationContext context: Context, launcherDatabase: LauncherDatabase) :
+  ViewModel() {
+
+  private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
   private val activityData = launcherDatabase.activityData()
 
@@ -34,7 +35,7 @@ constructor(
     val components =
       launcherApps.profiles
         .flatMap { launcherApps.getActivityList(null, it) }
-        .filter { it.componentName.packageName != application.packageName }
+        .filter { it.componentName.packageName != context.packageName }
         .map { UserActivity(it.componentName, it.user) }
         .toMutableList()
     trySend(components)

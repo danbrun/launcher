@@ -5,15 +5,15 @@ import android.content.pm.LauncherApps.PinItemRequest
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.getSystemService
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.R
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class ConfirmPinWidgetActivity : AppCompatActivity() {
 
-  @Inject lateinit var launcherApps: LauncherApps
+  private val launcherApps: LauncherApps by lazy { checkNotNull(getSystemService()) }
 
   private val bindWidgetActivityLauncher =
     registerForActivityResult(AppWidgetSetupActivityResultContract()) {

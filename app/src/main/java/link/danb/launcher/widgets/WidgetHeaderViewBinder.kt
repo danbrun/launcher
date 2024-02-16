@@ -1,8 +1,6 @@
 package link.danb.launcher.widgets
 
-import android.content.pm.ApplicationInfo
 import android.graphics.drawable.Drawable
-import android.os.UserHandle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -17,7 +15,7 @@ import link.danb.launcher.extensions.setSize
 import link.danb.launcher.ui.ViewBinder
 import link.danb.launcher.ui.ViewItem
 
-class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
+class WidgetHeaderViewBinder(private val onClick: (UserApplication) -> Unit) :
   ViewBinder<WidgetHeaderViewHolder, WidgetHeaderViewItem> {
 
   override val viewType: Int = R.id.widget_header_view_type_id
@@ -31,7 +29,7 @@ class WidgetHeaderViewBinder(private val onClick: (ApplicationInfo) -> Unit) :
       updateDrawables(viewItem)
 
       setOnClickListener {
-        onClick.invoke(viewItem.applicationInfo)
+        onClick.invoke(viewItem.userApplication)
         viewItem.isExpanded = !viewItem.isExpanded
         updateDrawables(viewItem)
       }
@@ -60,7 +58,7 @@ class WidgetHeaderViewHolder(view: View) : ViewHolder(view) {
 
 class WidgetHeaderViewItem
 private constructor(
-  val applicationInfo: ApplicationInfo,
+  val userApplication: UserApplication,
   val name: CharSequence,
   val icon: Drawable,
   var isExpanded: Boolean,
@@ -70,7 +68,7 @@ private constructor(
 
   override fun areItemsTheSame(other: ViewItem): Boolean =
     other is WidgetHeaderViewItem &&
-      applicationInfo.packageName == other.applicationInfo.packageName
+      userApplication.packageName == other.userApplication.packageName
 
   override fun areContentsTheSame(other: ViewItem): Boolean =
     other is WidgetHeaderViewItem && name == other.name && icon == other.icon
@@ -79,11 +77,11 @@ private constructor(
   @Inject
   constructor(private val launcherResourceProvider: LauncherResourceProvider) {
 
-    suspend fun create(info: ApplicationInfo, user: UserHandle, isExpanded: Boolean) =
+    suspend fun create(userApplication: UserApplication, isExpanded: Boolean) =
       WidgetHeaderViewItem(
-        info,
-        launcherResourceProvider.getLabel(UserApplication(info.packageName, user)),
-        launcherResourceProvider.getIcon(UserApplication(info.packageName, user)).await(),
+        userApplication,
+        launcherResourceProvider.getLabel(userApplication),
+        launcherResourceProvider.getIcon(userApplication).await(),
         isExpanded,
       )
   }

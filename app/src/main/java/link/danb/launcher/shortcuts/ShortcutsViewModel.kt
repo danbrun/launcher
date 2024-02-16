@@ -1,6 +1,5 @@
 package link.danb.launcher.shortcuts
 
-import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,8 +7,10 @@ import android.content.IntentFilter
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.os.Build
-import androidx.lifecycle.AndroidViewModel
+import androidx.core.content.getSystemService
+import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -19,10 +20,9 @@ import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.extensions.getShortcuts
 
 @HiltViewModel
-class ShortcutsViewModel
-@Inject
-constructor(application: Application, private val launcherApps: LauncherApps) :
-  AndroidViewModel(application) {
+class ShortcutsViewModel @Inject constructor(@ApplicationContext context: Context) : ViewModel() {
+
+  private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
   val shortcuts: Flow<List<UserShortcut>> = callbackFlow {
     trySend(getPinnedShortcuts())
@@ -36,7 +36,7 @@ constructor(application: Application, private val launcherApps: LauncherApps) :
       }
 
     launcherApps.registerCallback(launcherAppsCallback)
-    application.registerReceiver(
+    context.registerReceiver(
       broadcastReceiver,
       IntentFilter().apply {
         addAction(ShortcutManager.ACTION_PINNED_SHORTCUTS_CHANGED)
@@ -55,7 +55,7 @@ constructor(application: Application, private val launcherApps: LauncherApps) :
 
     awaitClose {
       launcherApps.unregisterCallback(launcherAppsCallback)
-      application.unregisterReceiver(broadcastReceiver)
+      context.unregisterReceiver(broadcastReceiver)
     }
   }
 

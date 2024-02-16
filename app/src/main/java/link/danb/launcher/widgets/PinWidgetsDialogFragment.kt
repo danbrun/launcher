@@ -1,9 +1,6 @@
 package link.danb.launcher.widgets
 
 import android.appwidget.AppWidgetManager
-import android.content.pm.ApplicationInfo
-import android.content.pm.LauncherApps
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.UserHandle
 import android.view.LayoutInflater
@@ -25,8 +22,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
+import link.danb.launcher.apps.LauncherResourceProvider
+import link.danb.launcher.data.UserApplication
 import link.danb.launcher.extensions.getParcelableCompat
-import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.LoadingSpinnerViewBinder
@@ -44,10 +42,8 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
+  @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
   @Inject lateinit var widgetHeaderViewItemFactory: WidgetHeaderViewItemFactory
-  @Inject lateinit var launcherApps: LauncherApps
-
-  private val packageManager: PackageManager by lazy { requireContext().packageManager }
 
   private val bindWidgetActivityLauncher =
     registerForActivityResult(AppWidgetSetupActivityResultContract()) {
@@ -110,15 +106,12 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
     withContext(Dispatchers.IO) {
       appWidgetManager
         .getInstalledProvidersForProfile(userHandle)
-        .groupBy { it.provider.packageName }
-        .mapKeys { launcherApps.getApplicationInfo(it.key, 0, userHandle) }
-        .toSortedMap(
-          compareBy<ApplicationInfo> { it.loadLabel(packageManager).toString().lowercase() }
-        )
+        .groupBy { UserApplication(it.provider.packageName, userHandle) }
+        .toSortedMap(compareBy { launcherResourceProvider.getLabel(it).lowercase() })
         .flatMap { (appInfo, widgets) ->
           buildList {
             val isExpanded = expandedPackages.contains(appInfo.packageName)
-            add(widgetHeaderViewItemFactory.create(appInfo, userHandle, isExpanded))
+            add(widgetHeaderViewItemFactory.create(appInfo, isExpanded))
             if (isExpanded) {
               addAll(widgets.map { WidgetPreviewViewItem(it, userHandle) })
             }
@@ -137,7 +130,7 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
     private const val EXTRA_USER_HANDLE = "extra_user_handle"
 
-    fun newInstance(userHandle: UserHandle): PinShortcutsDialogFragment =
-      PinShortcutsDialogFragment().apply { arguments = bundleOf(EXTRA_USER_HANDLE to userHandle) }
+    fun newInstance(userHandle: UserHandle): PinWidgetsDialogFragment =
+      PinWidgetsDialogFragment().apply { arguments = bundleOf(EXTRA_USER_HANDLE to userHandle) }
   }
 }
