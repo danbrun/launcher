@@ -4,7 +4,6 @@ import android.app.SearchManager
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.Intent
-import android.content.pm.LauncherApps
 import android.os.Build
 import android.os.Bundle
 import android.os.UserHandle
@@ -49,6 +48,7 @@ import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -77,11 +77,11 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
-  @Inject lateinit var launcherApps: LauncherApps
   @Inject lateinit var launcherMenuProvider: LauncherMenuProvider
   @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
+  @Inject lateinit var shortcutManager: ShortcutManager
 
   private lateinit var recyclerView: RecyclerView
   private lateinit var gestureIconView: GestureIconView
@@ -178,7 +178,7 @@ class LauncherFragment : Fragment() {
             isInEditMode,
             widgetsViewModel.widgets,
             activitiesViewModel.activities,
-            shortcutsViewModel.pinnedShortcuts,
+            shortcutsViewModel.shortcuts,
             ::getViewItems,
           )
           .collectLatest { recyclerAdapter.submitList(it) }
@@ -313,7 +313,7 @@ class LauncherFragment : Fragment() {
         )
       }
       is UserShortcut -> {
-        shortcutsViewModel.launchShortcut(
+        shortcutManager.launchShortcut(
           data,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle(),
@@ -334,7 +334,7 @@ class LauncherFragment : Fragment() {
           .setTitle(R.string.unpin_shortcut)
           .setPositiveButton(R.string.unpin) { _, _ ->
             Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-            shortcutsViewModel.unpinShortcut(tileViewData)
+            shortcutManager.pinShortcut(tileViewData, isPinned = false)
           }
           .setNegativeButton(android.R.string.cancel, null)
           .show()

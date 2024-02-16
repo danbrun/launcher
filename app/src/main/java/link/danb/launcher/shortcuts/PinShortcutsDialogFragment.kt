@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
-import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.getConfigurableShortcuts
@@ -54,13 +53,13 @@ import link.danb.launcher.ui.ViewItem
 class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
-  private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
 
   @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var launcherApps: LauncherApps
   @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
+  @Inject lateinit var shortcutManager: ShortcutManager
 
   private val shortcutActivityLauncher =
     registerForActivityResult(
@@ -147,24 +146,15 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     when (data) {
       is UserShortcutCreator ->
         shortcutActivityLauncher.launch(
-          IntentSenderRequest.Builder(shortcutsViewModel.getConfigurableShortcutIntent(data))
-            .build()
+          IntentSenderRequest.Builder(shortcutManager.getShortcutCreatorIntent(data)).build()
         )
       else -> throw NotImplementedError()
     }
   }
 
   private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
-    if (activityResult.data == null) return
-
-    val pinItemRequest = launcherApps.getPinItemRequest(activityResult.data) ?: return
-    if (!pinItemRequest.isValid) return
-    if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
-
-    val info = pinItemRequest.shortcutInfo ?: return
-
-    pinItemRequest.accept()
-    shortcutsViewModel.pinShortcut(UserShortcut(info))
+    val data = activityResult.data ?: return
+    shortcutManager.acceptPinRequest(data)
     Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
     dismiss()
   }

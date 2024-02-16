@@ -1,12 +1,9 @@
 package link.danb.launcher.activities
 
-import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.Intent
-import android.content.pm.LauncherApps
 import android.net.Uri
 import android.os.Bundle
-import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,7 +20,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
@@ -33,12 +29,10 @@ import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
-import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.shortcuts.ShortcutsViewModel
+import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -59,14 +53,11 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
-  private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
 
-  @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
-  @Inject lateinit var launcherApps: LauncherApps
   @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
-  @Inject lateinit var profilesModel: ProfilesModel
+  @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
   private val userActivity: UserActivity by lazy {
@@ -136,21 +127,14 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        launch {
-          combine(activityData, profilesModel.activeProfile, ::getViewItems).collect {
-            adapter.submitList(it)
-          }
-        }
+        activityData.collect { adapter.submitList(getViewItems(it)) }
       }
     }
 
     return recyclerView
   }
 
-  private suspend fun getViewItems(
-    activityData: ActivityData,
-    activeProfile: UserHandle,
-  ): List<ViewItem> = buildList {
+  private suspend fun getViewItems(activityData: ActivityData): List<ViewItem> = buildList {
     add(
       ActivityHeaderViewItem(
         activityData,
@@ -160,9 +144,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     )
 
     val shortcuts =
-      shortcutsViewModel
-        .getShortcuts(activityData.userActivity.componentName.packageName, activeProfile)
-        .map { tileViewItemFactory.getTileViewItem(UserShortcut(it), TileViewItem.Style.CARD) }
+      shortcutManager
+        .getShortcuts(activityData.userActivity)
+        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
         .sortedBy { it.name.toString() }
 
     if (shortcuts.isNotEmpty()) {
@@ -171,14 +155,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     }
 
     val configurableShortcuts =
-      launcherApps
-        .getConfigurableShortcuts(
-          activityData.userActivity.componentName.packageName,
-          activeProfile,
-        )
-        .map {
-          tileViewItemFactory.getTileViewItem(UserShortcutCreator(it), TileViewItem.Style.CARD)
-        }
+      shortcutManager
+        .getShortcutCreators(activityData.userActivity)
+        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
         .sortedBy { it.name.toString() }
 
     if (configurableShortcuts.isNotEmpty()) {
@@ -236,7 +215,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   private fun onTileClick(view: View, data: Any) =
     when (data) {
       is UserShortcut -> {
-        shortcutsViewModel.launchShortcut(
+        shortcutManager.launchShortcut(
           data,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle(),
@@ -245,8 +224,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       }
       is UserShortcutCreator -> {
         shortcutActivityLauncher.launch(
-          IntentSenderRequest.Builder(shortcutsViewModel.getConfigurableShortcutIntent(data))
-            .build()
+          IntentSenderRequest.Builder(shortcutManager.getShortcutCreatorIntent(data)).build()
         )
       }
       else -> throw NotImplementedError()
@@ -255,7 +233,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   private fun onTileLongClick(data: Any) =
     when (data) {
       is UserShortcut -> {
-        shortcutsViewModel.pinShortcut(data)
+        shortcutManager.pinShortcut(data, isPinned = true)
         Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
       }
       is UserShortcutCreator -> Unit
@@ -269,16 +247,8 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
-    if (activityResult.data == null) return
-
-    val pinItemRequest = launcherApps.getPinItemRequest(activityResult.data) ?: return
-    if (!pinItemRequest.isValid) return
-    if (pinItemRequest.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
-
-    val info = pinItemRequest.shortcutInfo?.let { UserShortcut(it) } ?: return
-
-    pinItemRequest.accept()
-    shortcutsViewModel.pinShortcut(info)
+    val data = activityResult.data ?: return
+    shortcutManager.acceptPinRequest(data)
     Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
     dismiss()
   }
