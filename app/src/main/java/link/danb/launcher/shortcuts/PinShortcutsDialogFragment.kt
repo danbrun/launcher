@@ -1,8 +1,5 @@
 package link.danb.launcher.shortcuts
 
-import android.appwidget.AppWidgetHost
-import android.appwidget.AppWidgetManager
-import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.os.UserHandle
 import android.view.LayoutInflater
@@ -10,8 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -22,7 +21,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -34,9 +32,8 @@ import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.data.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.extensions.getConfigurableShortcuts
+import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -53,24 +50,17 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
 
-  @Inject lateinit var appWidgetHost: AppWidgetHost
-  @Inject lateinit var appWidgetManager: AppWidgetManager
-  @Inject lateinit var launcherApps: LauncherApps
-  @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
   @Inject lateinit var shortcutManager: ShortcutManager
 
-  private val shortcutActivityLauncher =
+  private val shortcutActivityLauncher: ActivityResultLauncher<IntentSenderRequest> =
     registerForActivityResult(
       ActivityResultContracts.StartIntentSenderForResult(),
       ::onPinShortcutActivityResult,
     )
 
-  private val header by lazy {
-    DialogHeaderViewItem(
-      requireContext().getString(R.string.shortcuts),
-      R.drawable.baseline_push_pin_24,
-    )
+  private val userHandle: UserHandle by lazy {
+    checkNotNull(requireArguments().getParcelableCompat(EXTRA_USER_HANDLE))
   }
 
   override fun onCreateView(
@@ -103,39 +93,32 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
+    val header =
+      DialogHeaderViewItem(
+        requireContext().getString(R.string.shortcuts),
+        R.drawable.baseline_push_pin_24,
+      )
+
     adapter.submitList(listOf(header, LoadingSpinnerViewItem))
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-        combine(activitiesViewModel.activities, profilesModel.activeProfile, ::getViewItems)
-          .collect { adapter.submitList(listOf(header) + it) }
+        activitiesViewModel.activities.collect {
+          adapter.submitList(listOf(header) + getViewItems(it))
+        }
       }
     }
 
     return recyclerView
   }
 
-  private suspend fun getViewItems(
-    activityData: List<ActivityData>,
-    activeProfile: UserHandle,
-  ): List<ViewItem> =
+  private suspend fun getViewItems(activityData: List<ActivityData>): List<ViewItem> =
     withContext(Dispatchers.IO) {
       activityData
         .asFlow()
-        .filter { it.userActivity.userHandle == activeProfile }
-        .transform {
-          emitAll(
-            launcherApps
-              .getConfigurableShortcuts(
-                it.userActivity.componentName.packageName,
-                it.userActivity.userHandle,
-              )
-              .asFlow()
-          )
-        }
-        .map {
-          tileViewItemFactory.getTileViewItem(UserShortcutCreator(it), TileViewItem.Style.CARD)
-        }
+        .filter { it.userActivity.userHandle == userHandle }
+        .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
+        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
         .toList()
         .sortedBy { it.name.toString().lowercase() }
     }
@@ -159,5 +142,10 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
   companion object {
     const val TAG = "widget_dialog_fragment"
+
+    private const val EXTRA_USER_HANDLE = "extra_user_handle"
+
+    fun newInstance(userHandle: UserHandle): PinShortcutsDialogFragment =
+      PinShortcutsDialogFragment().apply { arguments = bundleOf(EXTRA_USER_HANDLE to userHandle) }
   }
 }

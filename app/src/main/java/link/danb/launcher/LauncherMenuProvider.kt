@@ -114,17 +114,17 @@ constructor(
         true
       }
       R.id.visibility_toggle -> {
-        HiddenActivitiesDialogFragment()
-          .show(fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG)
+        HiddenActivitiesDialogFragment.newInstance(profilesModel.activeProfile.value)
+          .showNow(fragment.childFragmentManager, HiddenActivitiesDialogFragment.TAG)
         true
       }
       R.id.pin_shortcut_button -> {
-        PinShortcutsDialogFragment()
+        PinShortcutsDialogFragment.newInstance(profilesModel.activeProfile.value)
           .showNow(fragment.childFragmentManager, PinShortcutsDialogFragment.TAG)
         true
       }
       R.id.pin_widget_button -> {
-        PinWidgetsDialogFragment()
+        PinWidgetsDialogFragment.newInstance(profilesModel.activeProfile.value)
           .showNow(fragment.childFragmentManager, PinWidgetsDialogFragment.TAG)
         true
       }

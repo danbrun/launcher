@@ -1,11 +1,11 @@
 package link.danb.launcher.activities
 
-import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -16,7 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -25,9 +24,9 @@ import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -44,15 +43,10 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
 
-  @Inject lateinit var launcherApps: LauncherApps
-  @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
-  private val header by lazy {
-    DialogHeaderViewItem(
-      requireContext().getString(R.string.hidden_apps),
-      R.drawable.ic_baseline_visibility_24,
-    )
+  private val userHandle: UserHandle by lazy {
+    checkNotNull(requireArguments().getParcelableCompat(EXTRA_USER_HANDLE))
   }
 
   override fun onCreateView(
@@ -86,17 +80,18 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
+    val header =
+      DialogHeaderViewItem(
+        requireContext().getString(R.string.hidden_apps),
+        R.drawable.ic_baseline_visibility_24,
+      )
+
     adapter.submitList(listOf(header, LoadingSpinnerViewItem))
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        launch {
-          combine(activitiesViewModel.activities, profilesModel.activeProfile) {
-              activities,
-              currentUser ->
-              listOf(header) + getViewItems(activities, currentUser)
-            }
-            .collect(adapter::submitList)
+        activitiesViewModel.activities.collect {
+          adapter.submitList(listOf(header) + getViewItems(it))
         }
       }
     }
@@ -104,14 +99,11 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
     return recyclerView
   }
 
-  private suspend fun getViewItems(
-    activities: List<ActivityData>,
-    activeProfile: UserHandle,
-  ): List<ViewItem> =
+  private suspend fun getViewItems(activities: List<ActivityData>): List<ViewItem> =
     withContext(Dispatchers.IO) {
       activities
         .asFlow()
-        .filter { it.isHidden && it.userActivity.userHandle == activeProfile }
+        .filter { it.isHidden && it.userActivity.userHandle == userHandle }
         .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
         .toList()
         .sortedBy { it.name.toString().lowercase() }
@@ -143,5 +135,12 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
   companion object {
     const val TAG = "hidden_apps_dialog"
+
+    private const val EXTRA_USER_HANDLE = "extra_user_handle"
+
+    fun newInstance(userHandle: UserHandle): HiddenActivitiesDialogFragment =
+      HiddenActivitiesDialogFragment().apply {
+        arguments = bundleOf(EXTRA_USER_HANDLE to userHandle)
+      }
   }
 }

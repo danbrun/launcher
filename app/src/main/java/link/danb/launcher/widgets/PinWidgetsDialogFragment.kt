@@ -1,15 +1,16 @@
 package link.danb.launcher.widgets
 
-import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -19,11 +20,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
-import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.extensions.getParcelableCompat
+import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.LoadingSpinnerViewBinder
@@ -32,7 +35,6 @@ import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
 import link.danb.launcher.widgets.WidgetHeaderViewItem.WidgetHeaderViewItemFactory
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
@@ -40,12 +42,10 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
   private val widgetDialogViewModel: WidgetDialogViewModel by viewModels()
 
-  @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var widgetHeaderViewItemFactory: WidgetHeaderViewItemFactory
   @Inject lateinit var launcherApps: LauncherApps
-  @Inject lateinit var profilesModel: ProfilesModel
 
   private val packageManager: PackageManager by lazy { requireContext().packageManager }
 
@@ -60,17 +60,14 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
       widgetsViewModel.checkForNewWidgets()
     }
 
-  private val header by lazy {
-    DialogHeaderViewItem(
-      requireContext().getString(R.string.widgets),
-      R.drawable.ic_baseline_widgets_24
-    )
+  private val userHandle: UserHandle by lazy {
+    checkNotNull(requireArguments().getParcelableCompat(EXTRA_USER_HANDLE))
   }
 
   override fun onCreateView(
     inflater: LayoutInflater,
     container: ViewGroup?,
-    savedInstanceState: Bundle?
+    savedInstanceState: Bundle?,
   ): View {
     super.onCreateView(inflater, container, savedInstanceState)
 
@@ -90,6 +87,12 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
       layoutManager = LinearLayoutManager(context)
     }
 
+    val header =
+      DialogHeaderViewItem(
+        requireContext().getString(R.string.widgets),
+        R.drawable.ic_baseline_widgets_24,
+      )
+
     adapter.submitList(listOf(header, LoadingSpinnerViewItem))
 
     viewLifecycleOwner.lifecycleScope.launch {
@@ -105,20 +108,19 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
   private suspend fun getViewItems(expandedPackages: Set<String>): List<ViewItem> =
     withContext(Dispatchers.IO) {
-      val user = profilesModel.activeProfile.value
       appWidgetManager
-        .getInstalledProvidersForProfile(user)
+        .getInstalledProvidersForProfile(userHandle)
         .groupBy { it.provider.packageName }
-        .mapKeys { launcherApps.getApplicationInfo(it.key, 0, user) }
+        .mapKeys { launcherApps.getApplicationInfo(it.key, 0, userHandle) }
         .toSortedMap(
           compareBy<ApplicationInfo> { it.loadLabel(packageManager).toString().lowercase() }
         )
         .flatMap { (appInfo, widgets) ->
           buildList {
             val isExpanded = expandedPackages.contains(appInfo.packageName)
-            add(widgetHeaderViewItemFactory.create(appInfo, user, isExpanded))
+            add(widgetHeaderViewItemFactory.create(appInfo, userHandle, isExpanded))
             if (isExpanded) {
-              addAll(widgets.map { WidgetPreviewViewItem(it, user) })
+              addAll(widgets.map { WidgetPreviewViewItem(it, userHandle) })
             }
           }
         }
@@ -126,11 +128,16 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onWidgetPreviewClick(widgetPreviewViewItem: WidgetPreviewViewItem) {
     bindWidgetActivityLauncher.launch(
-      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, profilesModel.activeProfile.value)
+      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, userHandle)
     )
   }
 
   companion object {
     const val TAG = "widget_dialog_fragment"
+
+    private const val EXTRA_USER_HANDLE = "extra_user_handle"
+
+    fun newInstance(userHandle: UserHandle): PinShortcutsDialogFragment =
+      PinShortcutsDialogFragment().apply { arguments = bundleOf(EXTRA_USER_HANDLE to userHandle) }
   }
 }

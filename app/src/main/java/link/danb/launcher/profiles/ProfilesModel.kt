@@ -8,12 +8,12 @@ import android.content.IntentFilter
 import android.os.Process.myUserHandle
 import android.os.UserHandle
 import android.os.UserManager
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import link.danb.launcher.extensions.isPersonalProfile
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class ProfilesModel
@@ -44,7 +44,7 @@ constructor(application: Application, private val userManager: UserManager) {
         addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
         addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
         addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
-      }
+      },
     )
 
     onProfileChange()
@@ -59,8 +59,7 @@ constructor(application: Application, private val userManager: UserManager) {
     _activeProfile.value =
       _workProfileData.value.user?.takeIf {
         showWorkProfile ?: _activeProfile.value.isPersonalProfile
-      }
-        ?: personalProfile
+      } ?: personalProfile
   }
 
   @Synchronized
