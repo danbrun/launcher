@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
-import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -41,8 +40,6 @@ import link.danb.launcher.ui.ViewItem
 
 @AndroidEntryPoint
 class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
-
-  private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
@@ -92,9 +89,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        activitiesViewModel.activities.collect {
-          adapter.submitList(listOf(header) + getViewItems(it))
-        }
+        activityManager.data.collect { adapter.submitList(listOf(header) + getViewItems(it)) }
       }
     }
 

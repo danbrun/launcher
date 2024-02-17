@@ -11,7 +11,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.bundleOf
-import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -29,7 +28,7 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
-import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.getParcelableCompat
@@ -48,8 +47,7 @@ import link.danb.launcher.ui.ViewItem
 @AndroidEntryPoint
 class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
-  private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
-
+  @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
   @Inject lateinit var shortcutManager: ShortcutManager
 
@@ -103,9 +101,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-        activitiesViewModel.activities.collect {
-          adapter.submitList(listOf(header) + getViewItems(it))
-        }
+        activityManager.data.collect { adapter.submitList(listOf(header) + getViewItems(it)) }
       }
     }
 

@@ -8,7 +8,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -17,7 +16,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
@@ -32,9 +31,8 @@ constructor(
   private val fragment: Fragment,
   private val profilesModel: ProfilesModel,
   private val toggleWorkProfileDialogBuilder: ToggleWorkProfileDialogBuilder,
+  private val activityManager: ActivityManager,
 ) : DefaultLifecycleObserver, MenuProvider {
-
-  private val activitiesViewModel: ActivitiesViewModel by fragment.activityViewModels()
 
   private lateinit var profileToggle: MenuItem
   private lateinit var workToggle: MenuItem
@@ -48,7 +46,7 @@ constructor(
     fragment.viewLifecycleOwner.lifecycleScope.launch {
       fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
         combine(
-            activitiesViewModel.activities,
+            activityManager.data,
             profilesModel.workProfileData,
             profilesModel.activeProfile,
             ::Triple,

@@ -67,9 +67,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private val activityData: Flow<ActivityData> by lazy {
-    activitiesViewModel.activities.map { activities ->
-      activities.first { it.userActivity == userActivity }
-    }
+    activityManager.data.map { activities -> activities.first { it.userActivity == userActivity } }
   }
 
   private val shortcutActivityLauncher =

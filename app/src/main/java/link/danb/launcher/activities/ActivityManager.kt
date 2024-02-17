@@ -6,59 +6,74 @@ import android.graphics.Rect
 import android.os.Bundle
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserActivity
-import javax.inject.Inject
+import link.danb.launcher.database.ActivityData
+import link.danb.launcher.database.LauncherDatabase
 
-class ActivityManager @Inject constructor(@ApplicationContext context: Context) {
+class ActivityManager
+@Inject
+constructor(@ApplicationContext context: Context, launcherDatabase: LauncherDatabase) {
 
-    private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
+  private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
-    val activities: Flow<List<UserActivity>> = callbackFlow {
-        val components =
-            launcherApps.profiles
-                .flatMap { launcherApps.getActivityList(null, it) }
-                .filter { it.componentName.packageName != context.packageName }
-                .map { UserActivity(it.componentName, it.user) }
-                .toMutableList()
-        trySend(components)
+  val activities: Flow<List<UserActivity>> = callbackFlow {
+    val components =
+      launcherApps.profiles
+        .flatMap { launcherApps.getActivityList(null, it) }
+        .filter { it.componentName.packageName != context.packageName }
+        .map { UserActivity(it.componentName, it.user) }
+        .toMutableList()
+    trySend(components)
 
-        val callback = LauncherAppsCallback { packageNames, userHandle ->
-            synchronized(this) {
-                components.removeIf {
-                    it.componentName.packageName in packageNames && it.userHandle == userHandle
-                }
-                components.addAll(
-                    packageNames
-                        .flatMap { launcherApps.getActivityList(it, userHandle) }
-                        .map { UserActivity(it.componentName, it.user) }
-                )
-                trySend(components.toList())
-            }
+    val callback = LauncherAppsCallback { packageNames, userHandle ->
+      synchronized(this) {
+        components.removeIf {
+          it.componentName.packageName in packageNames && it.userHandle == userHandle
         }
-
-        launcherApps.registerCallback(callback)
-        awaitClose { launcherApps.unregisterCallback(callback) }
-    }
-
-    fun launchActivity(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
-        launcherApps.startMainActivity(
-            userActivity.componentName,
-            userActivity.userHandle,
-            sourceBounds,
-            opts,
+        components.addAll(
+          packageNames
+            .flatMap { launcherApps.getActivityList(it, userHandle) }
+            .map { UserActivity(it.componentName, it.user) }
         )
+        trySend(components.toList())
+      }
     }
 
-    fun launchAppDetails(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
-        launcherApps.startAppDetailsActivity(
-            userActivity.componentName,
-            userActivity.userHandle,
-            sourceBounds,
-            opts,
-        )
+    launcherApps.registerCallback(callback)
+    awaitClose { launcherApps.unregisterCallback(callback) }
+  }
+
+  val data: Flow<List<ActivityData>> =
+    combine(activities, launcherDatabase.activityData().get()) { activities, data ->
+      val dataMap =
+        data
+          .associateBy { it.userActivity }
+          .withDefault { ActivityData(it, isPinned = false, isHidden = false) }
+
+      activities.map { component -> dataMap.getValue(component) }
     }
+
+  fun launchActivity(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
+    launcherApps.startMainActivity(
+      userActivity.componentName,
+      userActivity.userHandle,
+      sourceBounds,
+      opts,
+    )
+  }
+
+  fun launchAppDetails(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
+    launcherApps.startAppDetailsActivity(
+      userActivity.componentName,
+      userActivity.userHandle,
+      sourceBounds,
+      opts,
+    )
+  }
 }

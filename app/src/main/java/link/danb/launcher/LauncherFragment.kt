@@ -36,7 +36,6 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcut
@@ -71,7 +70,6 @@ import link.danb.launcher.widgets.WidgetsViewModel
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
-  private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
   private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
@@ -179,7 +177,7 @@ class LauncherFragment : Fragment() {
             profilesModel.activeProfile,
             isInEditMode,
             widgetsViewModel.widgets,
-            activitiesViewModel.activities,
+            activityManager.data,
             shortcutsViewModel.shortcuts,
             ::getViewItems,
           )
