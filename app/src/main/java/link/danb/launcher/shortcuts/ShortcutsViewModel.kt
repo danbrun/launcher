@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
-import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +36,8 @@ class ShortcutsViewModel @Inject constructor(@ApplicationContext context: Contex
       }
 
     launcherApps.registerCallback(launcherAppsCallback)
-    context.registerReceiver(
+    ContextCompat.registerReceiver(
+      context,
       broadcastReceiver,
       IntentFilter().apply {
         addAction(ShortcutManager.ACTION_PINNED_SHORTCUTS_CHANGED)
@@ -46,11 +47,7 @@ class ShortcutsViewModel @Inject constructor(@ApplicationContext context: Contex
         addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
         addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
       },
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        Context.RECEIVER_NOT_EXPORTED
-      } else {
-        0
-      },
+      ContextCompat.RECEIVER_NOT_EXPORTED,
     )
 
     awaitClose {
