@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
+import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.data.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
@@ -74,6 +75,7 @@ class LauncherFragment : Fragment() {
   private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
+  @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
@@ -306,7 +308,7 @@ class LauncherFragment : Fragment() {
   private fun onTileClick(view: View, data: Any) {
     when (data) {
       is ActivityData -> {
-        activitiesViewModel.launchActivity(
+        activityManager.launchActivity(
           data.userActivity,
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle(),

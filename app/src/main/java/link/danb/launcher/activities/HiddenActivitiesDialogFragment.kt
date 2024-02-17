@@ -44,6 +44,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
 
+  @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
 
   private val userHandle: UserHandle by lazy {
@@ -113,7 +114,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   private fun onTileClick(holder: CardTileViewHolder, data: Any) {
     when (data) {
       is ActivityData -> {
-        activitiesViewModel.launchActivity(
+        activityManager.launchActivity(
           data.userActivity,
           holder.iconView.boundsOnScreen,
           holder.iconView.makeScaleUpAnimation().toBundle(),

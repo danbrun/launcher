@@ -55,6 +55,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
+  @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var appWidgetManager: AppWidgetManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
@@ -191,7 +192,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private fun onSettingsButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
-    activitiesViewModel.launchAppDetails(
+    activityManager.launchAppDetails(
       viewItem.data.userActivity,
       view.boundsOnScreen,
       view.makeScaleUpAnimation().toBundle(),
@@ -200,16 +201,12 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   }
 
   private fun onPinButtonClick(viewItem: ActivityHeaderViewItem) {
-    activitiesViewModel.putMetadataInBackground(
-      viewItem.data.copy(isPinned = !viewItem.data.isPinned)
-    )
+    activitiesViewModel.setMetadata(viewItem.data.copy(isPinned = !viewItem.data.isPinned))
     dismiss()
   }
 
   private fun onVisibilityButtonClick(viewItem: ActivityHeaderViewItem) {
-    activitiesViewModel.putMetadataInBackground(
-      viewItem.data.copy(isHidden = !viewItem.data.isHidden)
-    )
+    activitiesViewModel.setMetadata(viewItem.data.copy(isHidden = !viewItem.data.isHidden))
     dismiss()
   }
 
