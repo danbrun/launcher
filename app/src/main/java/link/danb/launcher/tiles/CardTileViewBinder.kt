@@ -11,8 +11,8 @@ import link.danb.launcher.extensions.inflate
 import link.danb.launcher.ui.ViewBinder
 
 class CardTileViewBinder(
-  private val onClick: ((View, Any) -> Unit)? = null,
-  private val onLongClick: ((View, Any) -> Unit)? = null,
+  private val onClick: ((CardTileViewHolder, Any) -> Unit)? = null,
+  private val onLongClick: ((CardTileViewHolder, Any) -> Unit)? = null,
 ) : ViewBinder<CardTileViewHolder, TileViewItem> {
 
   override val viewType: Int = R.id.card_tile_view_type_id
@@ -23,9 +23,9 @@ class CardTileViewBinder(
   override fun bindViewHolder(holder: CardTileViewHolder, viewItem: TileViewItem) {
     holder.cardView.apply {
       isClickable = onClick !== null || onLongClick != null
-      setOnClickListener { onClick?.invoke(it, viewItem.data) }
+      setOnClickListener { onClick?.invoke(holder, viewItem.data) }
       setOnLongClickListener {
-        onLongClick?.invoke(it, viewItem.data)
+        onLongClick?.invoke(holder, viewItem.data)
         true
       }
     }

@@ -34,6 +34,7 @@ import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.CardTileViewBinder
+import link.danb.launcher.tiles.CardTileViewHolder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogSubtitleViewBinder
@@ -212,13 +213,13 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     dismiss()
   }
 
-  private fun onTileClick(view: View, data: Any) =
+  private fun onTileClick(holder: CardTileViewHolder, data: Any) =
     when (data) {
       is UserShortcut -> {
         shortcutManager.launchShortcut(
           data,
-          view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle(),
+          holder.iconView.boundsOnScreen,
+          holder.iconView.makeScaleUpAnimation().toBundle(),
         )
         dismiss()
       }

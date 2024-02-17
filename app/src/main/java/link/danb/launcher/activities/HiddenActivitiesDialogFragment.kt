@@ -28,6 +28,7 @@ import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.tiles.CardTileViewBinder
+import link.danb.launcher.tiles.CardTileViewHolder
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
@@ -109,13 +110,13 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
         .sortedBy { it.name.toString().lowercase() }
     }
 
-  private fun onTileClick(view: View, data: Any) {
+  private fun onTileClick(holder: CardTileViewHolder, data: Any) {
     when (data) {
       is ActivityData -> {
         activitiesViewModel.launchActivity(
           data.userActivity,
-          view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle(),
+          holder.iconView.boundsOnScreen,
+          holder.iconView.makeScaleUpAnimation().toBundle(),
         )
         dismiss()
       }
