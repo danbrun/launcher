@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.database.LauncherDatabase
@@ -21,20 +19,17 @@ constructor(
   private val application: Application,
   private val launcherDatabase: LauncherDatabase,
   private val appWidgetHost: AppWidgetHost,
+  private val widgetManager: WidgetManager,
   private val widgetSizeUtil: WidgetSizeUtil,
 ) : ViewModel() {
 
   private val widgetData by lazy { launcherDatabase.widgetData() }
 
-  private val _widgets: MutableStateFlow<List<WidgetData>> = MutableStateFlow(listOf())
-
-  val widgets: StateFlow<List<WidgetData>> = _widgets
-
   init {
     viewModelScope.launch(Dispatchers.IO) {
       cleanupUnboundWidgets()
       checkForNewWidgets()
-      reloadFromDatabase()
+      widgetManager.notifyChange()
     }
   }
 
@@ -42,7 +37,7 @@ constructor(
     viewModelScope.launch(Dispatchers.IO) {
       insertNewWidgets()
       updatePositions()
-      reloadFromDatabase()
+      widgetManager.notifyChange()
     }
   }
 
@@ -51,7 +46,7 @@ constructor(
       appWidgetHost.deleteAppWidgetId(widgetId)
       cleanupUnboundWidgets()
       updatePositions()
-      reloadFromDatabase()
+      widgetManager.notifyChange()
     }
   }
 
@@ -71,7 +66,7 @@ constructor(
           .first { it.widgetId == widgetId }
           .copy(height = widgetSizeUtil.getWidgetHeight(height))
       )
-      reloadFromDatabase()
+      widgetManager.notifyChange()
     }
   }
 
@@ -84,7 +79,7 @@ constructor(
     widgets.add((originalPosition + positionChange).coerceIn(0, widgets.size), widget)
 
     updatePositions(widgets)
-    reloadFromDatabase()
+    widgetManager.notifyChange()
   }
 
   private suspend fun insertNewWidgets() {
@@ -97,7 +92,7 @@ constructor(
           WidgetData(
             it,
             Int.MAX_VALUE,
-            application.resources.getDimensionPixelSize(R.dimen.widget_min_height)
+            application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
           )
         }
         .toTypedArray()
@@ -118,9 +113,5 @@ constructor(
         widgetData.delete(it)
       }
     }
-  }
-
-  private fun reloadFromDatabase() {
-    _widgets.value = widgetData.get().sortedBy { it.position }
   }
 }

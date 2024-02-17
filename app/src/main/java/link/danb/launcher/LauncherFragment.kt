@@ -61,6 +61,7 @@ import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetEditorViewItem
+import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetViewItem
@@ -78,6 +79,7 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var launcherMenuProvider: LauncherMenuProvider
   @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
+  @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
   @Inject lateinit var shortcutManager: ShortcutManager
 
@@ -174,7 +176,7 @@ class LauncherFragment : Fragment() {
         combine(
             profilesModel.activeProfile,
             isInEditMode,
-            widgetsViewModel.widgets,
+            widgetManager.data,
             activityManager.data,
             shortcutManager.shortcuts,
             ::getViewItems,
