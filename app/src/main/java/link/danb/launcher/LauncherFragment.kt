@@ -49,7 +49,6 @@ import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.shortcuts.ShortcutsViewModel
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.tiles.TransparentTileViewBinder
@@ -70,7 +69,6 @@ import link.danb.launcher.widgets.WidgetsViewModel
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
-  private val shortcutsViewModel: ShortcutsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
@@ -178,7 +176,7 @@ class LauncherFragment : Fragment() {
             isInEditMode,
             widgetsViewModel.widgets,
             activityManager.data,
-            shortcutsViewModel.shortcuts,
+            shortcutManager.shortcuts,
             ::getViewItems,
           )
           .collectLatest { recyclerAdapter.submitList(it) }
