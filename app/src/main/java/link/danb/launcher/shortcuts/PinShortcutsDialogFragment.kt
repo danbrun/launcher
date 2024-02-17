@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.activities.ActivitiesViewModel
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.setSpanSizeProvider

@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
-import link.danb.launcher.data.UserShortcut
+import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart

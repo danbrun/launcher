@@ -3,8 +3,8 @@ package link.danb.launcher.tiles
 import javax.inject.Inject
 import javax.inject.Singleton
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.data.UserShortcut
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.tiles.TileViewItem.Style
 

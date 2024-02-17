@@ -11,9 +11,9 @@ import android.os.Bundle
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import link.danb.launcher.data.UserComponent
-import link.danb.launcher.data.UserShortcut
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.components.UserComponent
+import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.getShortcuts
 import link.danb.launcher.extensions.resolveConfigurableShortcut

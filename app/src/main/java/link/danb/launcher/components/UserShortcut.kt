@@ -1,4 +1,4 @@
-package link.danb.launcher.data
+package link.danb.launcher.components
 
 import android.content.pm.ShortcutInfo
 import android.os.UserHandle

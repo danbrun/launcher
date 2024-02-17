@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import javax.inject.Inject
 import link.danb.launcher.R
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.data.UserApplication
+import link.danb.launcher.components.UserApplication
 import link.danb.launcher.extensions.inflate
 import link.danb.launcher.extensions.setSize
 import link.danb.launcher.ui.ViewBinder

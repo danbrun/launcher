@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import link.danb.launcher.data.UserActivity
+import link.danb.launcher.components.UserActivity
 
 @Entity
 data class ActivityData(

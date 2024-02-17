@@ -8,10 +8,10 @@ import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
 import android.os.UserHandle
-import link.danb.launcher.data.UserActivity
-import link.danb.launcher.data.UserApplication
-import link.danb.launcher.data.UserShortcut
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserApplication
+import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 
 fun LauncherApps.resolveApplication(userApplication: UserApplication): ApplicationInfo =
   getApplicationInfo(userApplication.packageName, 0, userApplication.userHandle)

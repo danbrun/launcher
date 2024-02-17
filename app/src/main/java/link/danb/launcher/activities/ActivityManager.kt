@@ -10,7 +10,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import link.danb.launcher.apps.LauncherAppsCallback
-import link.danb.launcher.data.UserActivity
+import link.danb.launcher.components.UserActivity
 import javax.inject.Inject
 
 class ActivityManager @Inject constructor(@ApplicationContext context: Context) {

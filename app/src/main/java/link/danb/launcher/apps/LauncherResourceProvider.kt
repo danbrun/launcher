@@ -13,11 +13,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import link.danb.launcher.data.UserActivity
-import link.danb.launcher.data.UserApplication
-import link.danb.launcher.data.UserComponent
-import link.danb.launcher.data.UserShortcut
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserApplication
+import link.danb.launcher.components.UserComponent
+import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.resolveApplication
 import link.danb.launcher.extensions.resolveShortcut

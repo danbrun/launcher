@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.data.UserApplication
+import link.danb.launcher.components.UserApplication
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem

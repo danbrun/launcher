@@ -16,7 +16,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import link.danb.launcher.apps.LauncherAppsCallback
-import link.danb.launcher.data.UserShortcut
+import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.extensions.getShortcuts
 
 @HiltViewModel

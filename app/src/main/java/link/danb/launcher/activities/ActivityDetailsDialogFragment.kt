@@ -24,9 +24,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.data.UserActivity
-import link.danb.launcher.data.UserShortcut
-import link.danb.launcher.data.UserShortcutCreator
+import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
