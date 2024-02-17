@@ -57,7 +57,7 @@ constructor(
           getPinnedListViewItems(activities, shortcuts, activeProfile) +
           getAppListViewItems(activities, activeProfile)
       }
-      .shareIn(viewModelScope, SharingStarted.Lazily)
+      .shareIn(viewModelScope, SharingStarted.Lazily, replay = 1)
 
   private fun getWidgetListViewItems(
     widgets: List<WidgetData>,
