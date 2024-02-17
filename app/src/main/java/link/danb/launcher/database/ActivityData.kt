@@ -16,7 +16,6 @@ data class ActivityData(
   @PrimaryKey @Embedded val userActivity: UserActivity,
   @ColumnInfo(defaultValue = "0") val isPinned: Boolean,
   val isHidden: Boolean,
-  val tags: Set<String>,
 ) {
 
   @Dao

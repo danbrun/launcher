@@ -7,11 +7,16 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import link.danb.launcher.database.migrations.DeleteActivityDataTagsColumn
 
 @Database(
   entities = [ActivityData::class, WidgetData::class],
-  version = 6,
-  autoMigrations = [AutoMigration(from = 1, to = 6)],
+  version = 7,
+  autoMigrations =
+    [
+      AutoMigration(from = 1, to = 6),
+      AutoMigration(from = 6, to = 7, spec = DeleteActivityDataTagsColumn::class),
+    ],
 )
 @TypeConverters(
   ComponentNameConverter::class,
@@ -32,7 +37,7 @@ abstract class LauncherDatabase : RoomDatabase() {
     @Singleton
     fun getDatabase(
       application: Application,
-      userHandleConverter: UserHandleConverter
+      userHandleConverter: UserHandleConverter,
     ): LauncherDatabase =
       Room.databaseBuilder(application, LauncherDatabase::class.java, DATABASE_NAME)
         .addTypeConverter(userHandleConverter)

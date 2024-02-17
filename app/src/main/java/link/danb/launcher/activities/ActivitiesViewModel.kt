@@ -23,7 +23,7 @@ constructor(activityManager: ActivityManager, launcherDatabase: LauncherDatabase
         val dataMap =
           data
             .associateBy { it.userActivity }
-            .withDefault { ActivityData(it, isPinned = false, isHidden = false, tags = setOf()) }
+            .withDefault { ActivityData(it, isPinned = false, isHidden = false) }
 
         activities.map { component -> dataMap.getValue(component) }
       }
