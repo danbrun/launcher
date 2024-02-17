@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import link.danb.launcher.R
@@ -23,6 +24,8 @@ constructor(
   appWidgetHost: AppWidgetHost,
   launcherDatabase: LauncherDatabase,
 ) {
+
+  val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   val widgets: Flow<List<Int>> = callbackFlow {
     trySend(appWidgetHost.appWidgetIds.toList())
