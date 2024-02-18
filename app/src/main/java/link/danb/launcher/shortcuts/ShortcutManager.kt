@@ -14,9 +14,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.shareIn
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserComponent
 import link.danb.launcher.components.UserShortcut
@@ -25,41 +29,44 @@ import link.danb.launcher.extensions.getConfigurableShortcuts
 import link.danb.launcher.extensions.getShortcuts
 import link.danb.launcher.extensions.resolveConfigurableShortcut
 
+@Singleton
 class ShortcutManager @Inject constructor(@ApplicationContext private val context: Context) {
 
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
-  val shortcuts: Flow<List<UserShortcut>> = callbackFlow {
-    trySend(getPinnedShortcuts())
+  val shortcuts: Flow<List<UserShortcut>> =
+    callbackFlow {
+        trySend(getPinnedShortcuts())
 
-    val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(getPinnedShortcuts()) }
-    val broadcastReceiver =
-      object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-          trySend(getPinnedShortcuts())
+        val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(getPinnedShortcuts()) }
+        val broadcastReceiver =
+          object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+              trySend(getPinnedShortcuts())
+            }
+          }
+
+        launcherApps.registerCallback(launcherAppsCallback)
+        ContextCompat.registerReceiver(
+          context,
+          broadcastReceiver,
+          IntentFilter().apply {
+            addAction(ACTION_PINNED_SHORTCUTS_CHANGED)
+
+            addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
+            addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+            addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+            addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
+          },
+          ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+
+        awaitClose {
+          launcherApps.unregisterCallback(launcherAppsCallback)
+          context.unregisterReceiver(broadcastReceiver)
         }
       }
-
-    launcherApps.registerCallback(launcherAppsCallback)
-    ContextCompat.registerReceiver(
-      context,
-      broadcastReceiver,
-      IntentFilter().apply {
-        addAction(ACTION_PINNED_SHORTCUTS_CHANGED)
-
-        addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
-        addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
-        addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
-        addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
-      },
-      ContextCompat.RECEIVER_NOT_EXPORTED,
-    )
-
-    awaitClose {
-      launcherApps.unregisterCallback(launcherAppsCallback)
-      context.unregisterReceiver(broadcastReceiver)
-    }
-  }
+      .shareIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
 
   private fun getPinnedShortcuts(): List<UserShortcut> =
     launcherApps.profiles
