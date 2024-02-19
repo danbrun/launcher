@@ -21,6 +21,8 @@ import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.profiles.WorkProfileInstalled
+import link.danb.launcher.profiles.WorkProfileManager
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
 
@@ -28,8 +30,9 @@ class LauncherMenuProvider
 @Inject
 constructor(
   private val fragment: Fragment,
-  private val profilesModel: ProfilesModel,
   private val activityManager: ActivityManager,
+  private val profilesModel: ProfilesModel,
+  private val workProfileManager: WorkProfileManager,
 ) : DefaultLifecycleObserver, MenuProvider {
 
   private lateinit var profileToggle: MenuItem
@@ -44,12 +47,12 @@ constructor(
       fragment.viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
         combine(
             activityManager.data,
-            profilesModel.workProfileData,
+            workProfileManager.status,
             profilesModel.activeProfile,
             ::Triple,
           )
-          .collect { (activities, workProfileData, activeProfile) ->
-            profileToggle.isVisible = workProfileData.user != null
+          .collect { (activities, workProfileStatus, activeProfile) ->
+            profileToggle.isVisible = workProfileStatus is WorkProfileInstalled
             profileToggle.setTitle(
               if (activeProfile.isPersonalProfile) {
                 R.string.show_work

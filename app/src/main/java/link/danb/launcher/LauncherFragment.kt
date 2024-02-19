@@ -39,6 +39,8 @@ import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.profiles.WorkProfileInstalled
+import link.danb.launcher.profiles.WorkProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TransparentTileViewBinder
@@ -67,9 +69,10 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var launcherMenuProvider: LauncherMenuProvider
   @Inject lateinit var profilesModel: ProfilesModel
+  @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
-  @Inject lateinit var shortcutManager: ShortcutManager
+  @Inject lateinit var workProfileManager: WorkProfileManager
 
   private lateinit var recyclerView: RecyclerView
   private lateinit var gestureIconView: GestureIconView
@@ -140,7 +143,7 @@ class LauncherFragment : Fragment() {
     val workProfileCard = view.findViewById<View>(R.id.work_profile_card)
     val workProfileToggle = view.findViewById<SwitchMaterial>(R.id.work_profile_toggle)
     workProfileToggle.setOnCheckedChangeListener { _, isChecked ->
-      profilesModel.setWorkProfileEnabled(isChecked)
+      workProfileManager.setWorkProfileEnabled(isChecked)
     }
 
     view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
@@ -162,17 +165,18 @@ class LauncherFragment : Fragment() {
         launch { launcherViewModel.viewItems.collectLatest { recyclerAdapter.submitList(it) } }
 
         launch {
-          combine(profilesModel.activeProfile, profilesModel.workProfileData, ::Pair)
-            .collectLatest {
-              workProfileCard.visibility =
-                if (it.first.isPersonalProfile) {
-                  View.GONE
-                } else {
-                  View.VISIBLE
-                }
+          combine(profilesModel.activeProfile, workProfileManager.status, ::Pair).collectLatest {
+            workProfileCard.visibility =
+              if (it.first.isPersonalProfile) {
+                View.GONE
+              } else {
+                View.VISIBLE
+              }
 
-              workProfileToggle.isChecked = it.second.isEnabled
-            }
+            val workProfileStatus = it.second
+            workProfileToggle.isChecked =
+              workProfileStatus is WorkProfileInstalled && workProfileStatus.isEnabled
+          }
         }
       }
     }
