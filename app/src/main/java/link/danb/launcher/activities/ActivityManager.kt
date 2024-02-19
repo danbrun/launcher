@@ -45,6 +45,7 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
             components.addAll(
               packageNames
                 .flatMap { launcherApps.getActivityList(it, userHandle) }
+                .filter { it.componentName.packageName != context.packageName }
                 .map { UserActivity(it.componentName, it.user) }
             )
             trySend(components.toList())
