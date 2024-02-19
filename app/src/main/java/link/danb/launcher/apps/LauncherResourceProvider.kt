@@ -76,6 +76,7 @@ constructor(@ApplicationContext private val context: Context) {
       }
       is UserShortcut -> {
         launcherApps.getShortcutIconDrawable(launcherApps.resolveShortcut(this), density)
+          ?: UserApplication(packageName, userHandle).getSourceIcon()
       }
       is UserShortcutCreator -> {
         UserActivity(componentName, userHandle).getSourceIcon()
