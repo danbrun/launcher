@@ -1,6 +1,5 @@
 package link.danb.launcher.widgets
 
-import android.app.Application
 import android.appwidget.AppWidgetHost
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,7 +7,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import link.danb.launcher.R
 import link.danb.launcher.database.LauncherDatabase
 import link.danb.launcher.database.WidgetData
 
@@ -16,7 +14,6 @@ import link.danb.launcher.database.WidgetData
 class WidgetsViewModel
 @Inject
 constructor(
-  private val application: Application,
   private val launcherDatabase: LauncherDatabase,
   private val appWidgetHost: AppWidgetHost,
   private val widgetManager: WidgetManager,
@@ -25,27 +22,9 @@ constructor(
 
   private val widgetData by lazy { launcherDatabase.widgetData() }
 
-  init {
-    viewModelScope.launch(Dispatchers.IO) {
-      cleanupUnboundWidgets()
-      checkForNewWidgets()
-      widgetManager.notifyChange()
-    }
-  }
-
-  fun checkForNewWidgets() {
-    viewModelScope.launch(Dispatchers.IO) {
-      insertNewWidgets()
-      updatePositions()
-      widgetManager.notifyChange()
-    }
-  }
-
   fun delete(widgetId: Int) {
     viewModelScope.launch(Dispatchers.IO) {
       appWidgetHost.deleteAppWidgetId(widgetId)
-      cleanupUnboundWidgets()
-      updatePositions()
       widgetManager.notifyChange()
     }
   }
@@ -66,7 +45,6 @@ constructor(
           .first { it.widgetId == widgetId }
           .copy(height = widgetSizeUtil.getWidgetHeight(height))
       )
-      widgetManager.notifyChange()
     }
   }
 
@@ -79,24 +57,6 @@ constructor(
     widgets.add((originalPosition + positionChange).coerceIn(0, widgets.size), widget)
 
     updatePositions(widgets)
-    widgetManager.notifyChange()
-  }
-
-  private suspend fun insertNewWidgets() {
-    val widgetIdsToAdd =
-      appWidgetHost.appWidgetIds.toSet() - widgetData.get().map { it.widgetId }.toSet()
-
-    widgetData.put(
-      *widgetIdsToAdd
-        .map {
-          WidgetData(
-            it,
-            Int.MAX_VALUE,
-            application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
-          )
-        }
-        .toTypedArray()
-    )
   }
 
   private suspend fun updatePositions(
@@ -105,13 +65,5 @@ constructor(
     widgetData.put(
       *widgets.mapIndexed { index, widgetData -> widgetData.copy(position = index) }.toTypedArray()
     )
-  }
-
-  private suspend fun cleanupUnboundWidgets() {
-    widgetData.get().forEach {
-      if (!appWidgetHost.appWidgetIds.contains(it.widgetId)) {
-        widgetData.delete(it)
-      }
-    }
   }
 }

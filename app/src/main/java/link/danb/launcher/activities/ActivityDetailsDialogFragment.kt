@@ -47,13 +47,11 @@ import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidget
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetPreviewViewBinder
 import link.danb.launcher.widgets.WidgetPreviewViewItem
-import link.danb.launcher.widgets.WidgetsViewModel
 
 @AndroidEntryPoint
 class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
-  private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var appWidgetManager: AppWidgetManager
@@ -78,13 +76,9 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private val bindWidgetActivityLauncher =
     registerForActivityResult(AppWidgetSetupActivityResultContract()) {
-      if (it.success) {
-        Toast.makeText(context, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
+      if (it) {
         dismiss()
-      } else {
-        Toast.makeText(context, it.errorMessage, Toast.LENGTH_SHORT).show()
       }
-      widgetsViewModel.checkForNewWidgets()
     }
 
   override fun onCreateView(
@@ -238,7 +232,10 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onWidgetPreviewClick(widgetPreviewViewItem: WidgetPreviewViewItem) {
     bindWidgetActivityLauncher.launch(
-      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, userActivity.userHandle)
+      AppWidgetSetupInput(
+        widgetPreviewViewItem.providerInfo.provider,
+        widgetPreviewViewItem.providerInfo.profile,
+      )
     )
   }
 

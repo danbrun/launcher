@@ -30,7 +30,6 @@ import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
-import link.danb.launcher.extensions.allowPendingIntentBackgroundActivityStart
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
@@ -81,13 +80,7 @@ class LauncherFragment : Fragment() {
         appWidgetViewProvider,
         widgetSizeUtil,
         { widgetData: WidgetData, view: View ->
-          appWidgetHost.startAppWidgetConfigureActivityForResult(
-            this@LauncherFragment.requireActivity(),
-            widgetData.widgetId,
-            /* intentFlags = */ 0,
-            R.id.app_widget_configure_request_id,
-            view.makeScaleUpAnimation().allowPendingIntentBackgroundActivityStart().toBundle(),
-          )
+          widgetManager.startConfigurationActivity(requireActivity(), view, widgetData.widgetId)
         },
         { widgetsViewModel.delete(it.widgetId) },
         { widgetsViewModel.moveUp(it.widgetId) },

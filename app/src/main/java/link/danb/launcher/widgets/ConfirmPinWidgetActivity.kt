@@ -3,11 +3,9 @@ package link.danb.launcher.widgets
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.PinItemRequest
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.getSystemService
 import dagger.hilt.android.AndroidEntryPoint
-import link.danb.launcher.R
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract.AppWidgetSetupInput
 
 @AndroidEntryPoint
@@ -16,14 +14,7 @@ class ConfirmPinWidgetActivity : AppCompatActivity() {
   private val launcherApps: LauncherApps by lazy { checkNotNull(getSystemService()) }
 
   private val bindWidgetActivityLauncher =
-    registerForActivityResult(AppWidgetSetupActivityResultContract()) {
-      if (it.success) {
-        Toast.makeText(this, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
-      } else {
-        Toast.makeText(this, it.errorMessage, Toast.LENGTH_SHORT).show()
-      }
-      finish()
-    }
+    registerForActivityResult(AppWidgetSetupActivityResultContract()) { finish() }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -38,6 +29,7 @@ class ConfirmPinWidgetActivity : AppCompatActivity() {
     val info = pinItemRequest.getAppWidgetProviderInfo(this) ?: return
 
     pinItemRequest.accept()
-    bindWidgetActivityLauncher.launch(AppWidgetSetupInput(info, info.profile))
+
+    bindWidgetActivityLauncher.launch(AppWidgetSetupInput(info.provider, info.profile))
   }
 }

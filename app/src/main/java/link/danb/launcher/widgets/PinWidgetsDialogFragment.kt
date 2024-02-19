@@ -6,9 +6,7 @@ import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.os.bundleOf
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -37,7 +35,6 @@ import link.danb.launcher.widgets.WidgetHeaderViewItem.WidgetHeaderViewItemFacto
 @AndroidEntryPoint
 class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
-  private val widgetsViewModel: WidgetsViewModel by activityViewModels()
   private val widgetDialogViewModel: WidgetDialogViewModel by viewModels()
 
   @Inject lateinit var appWidgetManager: AppWidgetManager
@@ -47,13 +44,9 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
   private val bindWidgetActivityLauncher =
     registerForActivityResult(AppWidgetSetupActivityResultContract()) {
-      if (it.success) {
-        Toast.makeText(context, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
+      if (it) {
         dismiss()
-      } else {
-        Toast.makeText(context, it.errorMessage, Toast.LENGTH_SHORT).show()
       }
-      widgetsViewModel.checkForNewWidgets()
     }
 
   private val userHandle: UserHandle by lazy {
@@ -121,7 +114,10 @@ class PinWidgetsDialogFragment : BottomSheetDialogFragment() {
 
   private fun onWidgetPreviewClick(widgetPreviewViewItem: WidgetPreviewViewItem) {
     bindWidgetActivityLauncher.launch(
-      AppWidgetSetupInput(widgetPreviewViewItem.providerInfo, userHandle)
+      AppWidgetSetupInput(
+        widgetPreviewViewItem.providerInfo.provider,
+        widgetPreviewViewItem.providerInfo.profile,
+      )
     )
   }
 
