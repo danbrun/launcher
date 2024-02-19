@@ -31,8 +31,6 @@ constructor(application: Application, private val userManager: UserManager) {
       }
     }
 
-  private var switchToWorkProfileWhenAvailable: Boolean = false
-
   val workProfileData: StateFlow<WorkProfileData> = _workProfileData.asStateFlow()
   val activeProfile: StateFlow<UserHandle> = _activeProfile.asStateFlow()
 
@@ -51,7 +49,6 @@ constructor(application: Application, private val userManager: UserManager) {
   }
 
   fun setWorkProfileEnabled(isEnabled: Boolean) {
-    switchToWorkProfileWhenAvailable = isEnabled
     _workProfileData.value.user?.let { userManager.requestQuietModeEnabled(!isEnabled, it) }
   }
 
@@ -68,13 +65,6 @@ constructor(application: Application, private val userManager: UserManager) {
     val isWorkProfileEnabled =
       !userManager.isQuietModeEnabled(workProfile) && userManager.isUserUnlocked(workProfile)
     _workProfileData.value = WorkProfileData(workProfile, isWorkProfileEnabled)
-
-    if (_activeProfile.value == workProfile && !isWorkProfileEnabled) {
-      _activeProfile.value = personalProfile
-    } else if (isWorkProfileEnabled && switchToWorkProfileWhenAvailable) {
-      switchToWorkProfileWhenAvailable = false
-      _activeProfile.value = workProfile
-    }
   }
 
   data class WorkProfileData(val user: UserHandle?, val isEnabled: Boolean)

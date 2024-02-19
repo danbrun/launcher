@@ -8,6 +8,7 @@
     <string name="widgets">Widgets</string>
     <string name="hidden_apps">Hidden apps</string>
     <string name="ellipses">&#8230;</string>
+    <string name="work_profile">Work profile</string>
 
     <!-- Error messages -->
     <string name="widget_permission_denied">Cannot bind widget without permission</string>
@@ -27,10 +28,6 @@
     <string name="show_hidden">Show hidden apps</string>
     <string name="turn_on">Turn on</string>
     <string name="turn_off">Turn off</string>
-    <string name="turn_on_work_profile_title">Turn on work profile?</string>
-    <string name="turn_off_work_profile_title">Turn off work profile?</string>
-    <string name="turn_on_work_profile">Turn on work profile</string>
-    <string name="turn_off_work_profile">Turn off work profile</string>
     <string name="add_item">Add item</string>
     <string name="unpin_shortcut">Unpin shortcut?</string>
     <string name="unpin">Unpin</string>

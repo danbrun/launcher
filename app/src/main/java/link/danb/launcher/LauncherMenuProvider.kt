@@ -21,7 +21,6 @@ import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.profiles.ToggleWorkProfileDialogBuilder
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
 
@@ -30,12 +29,10 @@ class LauncherMenuProvider
 constructor(
   private val fragment: Fragment,
   private val profilesModel: ProfilesModel,
-  private val toggleWorkProfileDialogBuilder: ToggleWorkProfileDialogBuilder,
   private val activityManager: ActivityManager,
 ) : DefaultLifecycleObserver, MenuProvider {
 
   private lateinit var profileToggle: MenuItem
-  private lateinit var workToggle: MenuItem
   private lateinit var visibilityToggle: MenuItem
 
   init {
@@ -62,25 +59,9 @@ constructor(
             )
             profileToggle.setIcon(
               if (activeProfile.isPersonalProfile) {
-                R.drawable.baseline_person_24
-              } else {
-                R.drawable.ic_baseline_work_account_24
-              }
-            )
-
-            workToggle.isVisible = workProfileData.user != null
-            workToggle.setTitle(
-              if (workProfileData.isEnabled) {
-                R.string.turn_off_work_profile
-              } else {
-                R.string.turn_on_work_profile
-              }
-            )
-            workToggle.setIcon(
-              if (workProfileData.isEnabled) {
                 R.drawable.ic_baseline_work_24
               } else {
-                R.drawable.ic_baseline_work_off_24
+                R.drawable.baseline_person_24
               }
             )
 
@@ -95,7 +76,6 @@ constructor(
     menuInflater.inflate(R.menu.launcher_menu, menu)
 
     profileToggle = menu.findItem(R.id.profile_toggle)
-    workToggle = menu.findItem(R.id.work_toggle)
     visibilityToggle = menu.findItem(R.id.visibility_toggle)
   }
 
@@ -103,12 +83,6 @@ constructor(
     when (menuItem.itemId) {
       R.id.profile_toggle -> {
         profilesModel.toggleActiveProfile()
-        true
-      }
-      R.id.work_toggle -> {
-        toggleWorkProfileDialogBuilder
-          .getToggleWorkProfileDialogBuilder(fragment.requireContext())
-          .show()
         true
       }
       R.id.visibility_toggle -> {

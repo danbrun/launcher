@@ -21,9 +21,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.switchmaterial.SwitchMaterial
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
@@ -31,6 +33,7 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
@@ -134,6 +137,12 @@ class LauncherFragment : Fragment() {
       view.addView(gestureIconView)
     }
 
+    val workProfileCard = view.findViewById<View>(R.id.work_profile_card)
+    val workProfileToggle = view.findViewById<SwitchMaterial>(R.id.work_profile_toggle)
+    workProfileToggle.setOnCheckedChangeListener { _, isChecked ->
+      profilesModel.setWorkProfileEnabled(isChecked)
+    }
+
     view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
 
     view.findViewById<FloatingActionButton>(R.id.floating_action).setOnClickListener { button ->
@@ -150,7 +159,21 @@ class LauncherFragment : Fragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        launcherViewModel.viewItems.collectLatest { recyclerAdapter.submitList(it) }
+        launch { launcherViewModel.viewItems.collectLatest { recyclerAdapter.submitList(it) } }
+
+        launch {
+          combine(profilesModel.activeProfile, profilesModel.workProfileData, ::Pair)
+            .collectLatest {
+              workProfileCard.visibility =
+                if (it.first.isPersonalProfile) {
+                  View.GONE
+                } else {
+                  View.VISIBLE
+                }
+
+              workProfileToggle.isChecked = it.second.isEnabled
+            }
+        }
       }
     }
 

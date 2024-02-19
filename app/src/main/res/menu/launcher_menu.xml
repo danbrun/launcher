@@ -10,11 +10,6 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/work_toggle"
-        android:title="@null"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/visibility_toggle"
         android:icon="@drawable/ic_baseline_visibility_24"
         android:title="@string/show_hidden"
