@@ -21,7 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.materialswitch.MaterialSwitch
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
@@ -140,8 +140,8 @@ class LauncherFragment : Fragment() {
       view.addView(gestureIconView)
     }
 
-    val workProfileCard = view.findViewById<View>(R.id.work_profile_card)
-    val workProfileToggle = view.findViewById<SwitchMaterial>(R.id.work_profile_toggle)
+    val workProfileGroup = view.findViewById<View>(R.id.work_profile_group)
+    val workProfileToggle = view.findViewById<MaterialSwitch>(R.id.work_profile_toggle)
     workProfileToggle.setOnCheckedChangeListener { _, isChecked ->
       workProfileManager.setWorkProfileEnabled(isChecked)
     }
@@ -166,7 +166,7 @@ class LauncherFragment : Fragment() {
 
         launch {
           combine(profilesModel.activeProfile, workProfileManager.status, ::Pair).collectLatest {
-            workProfileCard.visibility =
+            workProfileGroup.visibility =
               if (it.first.isPersonalProfile) {
                 View.GONE
               } else {
