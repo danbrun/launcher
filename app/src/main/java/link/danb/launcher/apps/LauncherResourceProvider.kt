@@ -12,6 +12,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserApplication
@@ -32,6 +33,7 @@ constructor(@ApplicationContext private val context: Context) {
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
   private val density: Int by lazy { context.resources.displayMetrics.densityDpi }
   private val icons: MutableMap<UserComponent, Deferred<Drawable>> = mutableMapOf()
+  private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   init {
     launcherApps.registerCallback(
@@ -60,7 +62,7 @@ constructor(@ApplicationContext private val context: Context) {
   fun getIcon(userComponent: UserComponent): Deferred<Drawable> =
     synchronized(this) {
       icons.getOrPut(userComponent) {
-        CoroutineScope(Dispatchers.IO).async {
+        coroutineScope.async {
           userComponent.getSourceIcon().toLauncherIcon().getBadged(userComponent.userHandle)
         }
       }
