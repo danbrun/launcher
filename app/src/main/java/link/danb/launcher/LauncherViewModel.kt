@@ -8,16 +8,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
@@ -45,19 +47,23 @@ constructor(
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
+  @OptIn(FlowPreview::class)
   val viewItems: Flow<List<ViewItem>> =
     combine(
-        profilesModel.activeProfile,
-        widgetManager.isInEditMode,
-        widgetManager.data,
         activityManager.data,
         shortcutManager.shortcuts,
-      ) { activeProfile, isInEditMode, widgets, activities, shortcuts ->
-        getWidgetListViewItems(widgets, activeProfile, isInEditMode) +
-          getPinnedListViewItems(activities, shortcuts, activeProfile) +
-          getAppListViewItems(activities, activeProfile)
+        widgetManager.data,
+        profilesModel.activeProfile,
+        widgetManager.isInEditMode,
+        ::CombinedData,
+      )
+      .debounce(100)
+      .map {
+        getWidgetListViewItems(it.widgets, it.activeProfile, it.isInEditMode) +
+          getPinnedListViewItems(it.activities, it.shortcuts, it.activeProfile) +
+          getAppListViewItems(it.activities, it.activeProfile)
       }
-      .shareIn(viewModelScope, SharingStarted.Lazily, replay = 1)
+      .shareIn(viewModelScope + Dispatchers.IO, SharingStarted.Lazily, replay = 1)
 
   private fun getWidgetListViewItems(
     widgets: List<WidgetData>,
@@ -75,64 +81,60 @@ constructor(
   }
 
   private suspend fun getPinnedListViewItems(
-    launcherActivities: List<ActivityData>,
+    activities: List<ActivityData>,
     shortcuts: List<UserShortcut>,
     activeProfile: UserHandle,
-  ): List<ViewItem> =
-    withContext(Dispatchers.IO) {
-      val pinnedItems =
-        merge(
-            launcherActivities
-              .asFlow()
-              .filter { it.isPinned && it.userActivity.userHandle == activeProfile }
-              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
-            shortcuts
-              .asFlow()
-              .filter { it.userHandle == activeProfile }
-              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
-          )
-          .toList()
-          .sortedBy { it.name.toString().lowercase() }
+  ): List<ViewItem> = buildList {
+    val pinnedItems =
+      merge(
+          activities
+            .asFlow()
+            .filter { it.isPinned && it.userActivity.userHandle == activeProfile }
+            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+          shortcuts
+            .asFlow()
+            .filter { it.userHandle == activeProfile }
+            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+        )
+        .toList()
+        .sortedBy { it.name.toString().lowercase() }
 
-      buildList {
-        if (pinnedItems.isNotEmpty()) {
-          add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
-          addAll(pinnedItems)
-        }
-      }
+    if (pinnedItems.isNotEmpty()) {
+      add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
+      addAll(pinnedItems)
     }
+  }
 
   private suspend fun getAppListViewItems(
-    launcherActivities: List<ActivityData>,
+    activities: List<ActivityData>,
     activeProfile: UserHandle,
-  ): List<ViewItem> =
-    withContext(Dispatchers.IO) {
-      val (alphabetical, miscellaneous) =
-        launcherActivities
-          .asFlow()
-          .filter { !it.isHidden && it.userActivity.userHandle == activeProfile }
-          .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
-          .toList()
-          .partition { it.name.first().isLetter() }
+  ): List<ViewItem> = buildList {
+    val (alphabetical, miscellaneous) =
+      activities
+        .asFlow()
+        .filter { !it.isHidden && it.userActivity.userHandle == activeProfile }
+        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+        .toList()
+        .partition { it.name.first().isLetter() }
 
-      val groupedMiscellaneous = buildList {
-        if (miscellaneous.isNotEmpty()) {
-          add(GroupHeaderViewItem(application.getString(R.string.ellipses)))
-          addAll(miscellaneous.sortedBy { it.name.toString().lowercase() })
-        }
-      }
-
-      val groupedAlphabetical =
-        alphabetical
-          .groupBy { it.name.first().uppercaseChar() }
-          .toSortedMap()
-          .flatMap { (groupName, activityItems) ->
-            buildList {
-              add(GroupHeaderViewItem(groupName.toString()))
-              addAll(activityItems.sortedBy { it.name.toString().lowercase() })
-            }
-          }
-
-      groupedMiscellaneous + groupedAlphabetical
+    if (miscellaneous.isNotEmpty()) {
+      add(GroupHeaderViewItem(application.getString(R.string.ellipses)))
+      addAll(miscellaneous.sortedBy { it.name.toString().lowercase() })
     }
+
+    for ((groupName, activityItems) in
+      alphabetical.groupBy { it.name.first().uppercaseChar() }.toSortedMap()) {
+
+      add(GroupHeaderViewItem(groupName.toString()))
+      addAll(activityItems.sortedBy { it.name.toString().lowercase() })
+    }
+  }
+
+  private data class CombinedData(
+    val activities: List<ActivityData>,
+    val shortcuts: List<UserShortcut>,
+    val widgets: List<WidgetData>,
+    val activeProfile: UserHandle,
+    val isInEditMode: Boolean,
+  )
 }
