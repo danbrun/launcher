@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.database.LauncherDatabase
@@ -39,7 +39,7 @@ constructor(
   val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   val widgets: Flow<List<Int>> =
-    callbackFlow {
+    callbackFlow<List<Int>> {
         trySend(appWidgetHost.appWidgetIds.toList())
 
         val broadcastReceiver =
@@ -57,7 +57,7 @@ constructor(
         )
         awaitClose { context.unregisterReceiver(broadcastReceiver) }
       }
-      .shareIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
 
   val data: Flow<List<WidgetData>> =
     combine(widgets, launcherDatabase.widgetData().getFlow()) { widgets, data ->
@@ -80,7 +80,7 @@ constructor(
 
         dataList
       }
-      .shareIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
 
   fun startConfigurationActivity(activity: Activity, view: View, widgetId: Int) {
     appWidgetHost.startAppWidgetConfigureActivityForResult(

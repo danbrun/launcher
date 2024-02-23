@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
@@ -63,7 +63,7 @@ constructor(
           getPinnedListViewItems(it.activities, it.shortcuts, it.activeProfile) +
           getAppListViewItems(it.activities, it.activeProfile)
       }
-      .shareIn(viewModelScope + Dispatchers.IO, SharingStarted.Lazily, replay = 1)
+      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
 
   private fun getWidgetListViewItems(
     widgets: List<WidgetData>,

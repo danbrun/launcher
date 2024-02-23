@@ -20,7 +20,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserComponent
 import link.danb.launcher.components.UserShortcut
@@ -66,7 +66,7 @@ class ShortcutManager @Inject constructor(@ApplicationContext private val contex
           context.unregisterReceiver(broadcastReceiver)
         }
       }
-      .shareIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
 
   private fun getPinnedShortcuts(): List<UserShortcut> =
     launcherApps.profiles

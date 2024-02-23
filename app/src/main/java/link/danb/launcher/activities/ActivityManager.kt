@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.database.ActivityData
@@ -55,7 +55,7 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
         launcherApps.registerCallback(callback)
         awaitClose { launcherApps.unregisterCallback(callback) }
       }
-      .shareIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), listOf())
 
   val data: Flow<List<ActivityData>> =
     combine(activities, launcherDatabase.activityData().get()) { activities, data ->
@@ -66,7 +66,7 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
 
         activities.map { component -> dataMap.getValue(component) }
       }
-      .shareIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
 
   fun launchActivity(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
     launcherApps.startMainActivity(
