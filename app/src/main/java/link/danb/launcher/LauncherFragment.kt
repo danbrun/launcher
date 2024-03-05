@@ -10,7 +10,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.util.Consumer
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -18,14 +21,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.materialswitch.MaterialSwitch
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
@@ -39,7 +38,6 @@ import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
-import link.danb.launcher.profiles.WorkProfileInstalled
 import link.danb.launcher.profiles.WorkProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
@@ -49,6 +47,7 @@ import link.danb.launcher.ui.DynamicGridLayoutManager
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
+import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetEditorViewItem
@@ -67,7 +66,6 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
-  @Inject lateinit var launcherMenuProvider: LauncherMenuProvider
   @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
@@ -117,7 +115,7 @@ class LauncherFragment : Fragment() {
     container: ViewGroup?,
     savedInstanceState: Bundle?,
   ): View {
-    val view = inflater.inflate(R.layout.launcher_fragment, container, false) as CoordinatorLayout
+    val view = inflater.inflate(R.layout.launcher_fragment, container, false) as ConstraintLayout
 
     recyclerView = view.findViewById(R.id.app_list)
     recyclerView.apply {
@@ -140,44 +138,69 @@ class LauncherFragment : Fragment() {
       view.addView(gestureIconView)
     }
 
-    val workProfileGroup = view.findViewById<View>(R.id.work_profile_group)
-    val workProfileToggle = view.findViewById<MaterialSwitch>(R.id.work_profile_toggle)
-    workProfileToggle.setOnCheckedChangeListener { _, isChecked ->
-      workProfileManager.setWorkProfileEnabled(isChecked)
-    }
+    view.findViewById<ComposeView>(R.id.bottom_bar).apply {
+      setContent {
+        LauncherTheme {
+          val activeProfile by profilesModel.activeProfile.collectAsState()
 
-    view.findViewById<BottomAppBar>(R.id.bottom_app_bar).addMenuProvider(launcherMenuProvider)
+          val bottomBar =
+            BottomBarData(
+              TabBarData(
+                listOf(
+                  TabButtonData(
+                    R.drawable.baseline_person_24,
+                    R.string.show_personal,
+                    isHighlighted = activeProfile.isPersonalProfile,
+                  ) {
+                    profilesModel.toggleActiveProfile(showWorkProfile = false)
+                  },
+                  TabButtonData(
+                    R.drawable.ic_baseline_work_24,
+                    R.string.show_work,
+                    isHighlighted = !activeProfile.isPersonalProfile,
+                  ) {
+                    profilesModel.toggleActiveProfile(showWorkProfile = true)
+                  },
+                  TabButtonData(
+                    R.drawable.baseline_more_horiz_24,
+                    R.string.add_item,
+                    isHighlighted = false,
+                  ) {
+                    MoreActionsDialogFragment()
+                      .showNow(childFragmentManager, MoreActionsDialogFragment.TAG)
+                  },
+                )
+              ),
+              ActionButtonData(R.drawable.ic_baseline_search_24, R.string.search) {
+                startActivity(
+                  Intent().apply {
+                    action = Intent.ACTION_WEB_SEARCH
+                    putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
+                    // This extra is for Firefox to open a new tab.
+                    putExtra("open_to_search", "static_shortcut_new_tab")
+                  },
+                  makeScaleUpAnimation().toBundle(),
+                )
+              },
+            )
 
-    view.findViewById<FloatingActionButton>(R.id.floating_action).setOnClickListener { button ->
-      startActivity(
-        Intent().apply {
-          action = Intent.ACTION_WEB_SEARCH
-          putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
-          // This extra is for Firefox to open a new tab.
-          putExtra("open_to_search", "static_shortcut_new_tab")
-        },
-        button.makeScaleUpAnimation().toBundle(),
-      )
+          BottomBar(bottomBar = bottomBar)
+        }
+      }
+
+      addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+        recyclerView.setPadding(
+          recyclerView.paddingLeft,
+          recyclerView.paddingTop,
+          recyclerView.paddingRight,
+          height,
+        )
+      }
     }
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        launch { launcherViewModel.viewItems.collectLatest { recyclerAdapter.submitList(it) } }
-
-        launch {
-          combine(profilesModel.activeProfile, workProfileManager.status, ::Pair).collectLatest {
-            workProfileGroup.visibility =
-              if (it.first.isPersonalProfile) {
-                View.GONE
-              } else {
-                View.VISIBLE
-              }
-
-            val workProfileStatus = it.second
-            workProfileToggle.isChecked =
-              workProfileStatus is WorkProfileInstalled && workProfileStatus.isEnabled
-          }
-        }
+        launcherViewModel.viewItems.collectLatest { recyclerAdapter.submitList(it) }
       }
     }
 
