@@ -10,6 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
@@ -47,6 +48,11 @@ constructor(
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
+  val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
+  val searchQuery: MutableStateFlow<String?> = MutableStateFlow(null)
+
+  private val userState = combine(isInEditMode, searchQuery, ::UserState)
+
   @OptIn(FlowPreview::class)
   val viewItems: Flow<List<ViewItem>> =
     combine(
@@ -54,14 +60,25 @@ constructor(
         shortcutManager.shortcuts,
         widgetManager.data,
         profilesModel.activeProfile,
-        widgetManager.isInEditMode,
+        userState,
         ::CombinedData,
       )
       .debounce(100)
       .map {
-        getWidgetListViewItems(it.widgets, it.activeProfile, it.isInEditMode) +
-          getPinnedListViewItems(it.activities, it.shortcuts, it.activeProfile) +
-          getAppListViewItems(it.activities, it.activeProfile)
+        val searchQuery = it.userState.searchQuery?.lowercase()
+        if (searchQuery == null) {
+          getWidgetListViewItems(it.widgets, it.activeProfile, it.userState.isInEditMode) +
+            getPinnedListViewItems(it.activities, it.shortcuts, it.activeProfile) +
+            getAppListViewItems(it.activities, it.activeProfile, null)
+        } else {
+          getAppListViewItems(it.activities, it.activeProfile, searchQuery).filter { item ->
+            if (item is TileViewItem) {
+              item.name.toString().lowercase().contains(searchQuery)
+            } else {
+              false
+            }
+          }
+        }
       }
       .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
 
@@ -108,11 +125,14 @@ constructor(
   private suspend fun getAppListViewItems(
     activities: List<ActivityData>,
     activeProfile: UserHandle,
+    searchQuery: String?,
   ): List<ViewItem> = buildList {
     val (alphabetical, miscellaneous) =
       activities
         .asFlow()
-        .filter { !it.isHidden && it.userActivity.userHandle == activeProfile }
+        .filter {
+          searchQuery != null || (!it.isHidden && it.userActivity.userHandle == activeProfile)
+        }
         .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
         .toList()
         .partition { it.name.first().isLetter() }
@@ -135,6 +155,8 @@ constructor(
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
     val activeProfile: UserHandle,
-    val isInEditMode: Boolean,
+    val userState: UserState,
   )
+
+  private data class UserState(val isInEditMode: Boolean, val searchQuery: String?)
 }

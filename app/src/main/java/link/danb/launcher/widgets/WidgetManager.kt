@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
@@ -36,10 +35,8 @@ constructor(
   launcherDatabase: LauncherDatabase,
 ) {
 
-  val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
-
   val widgets: Flow<List<Int>> =
-    callbackFlow<List<Int>> {
+    callbackFlow {
         trySend(appWidgetHost.appWidgetIds.toList())
 
         val broadcastReceiver =

@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.ComposeView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.util.Consumer
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -75,7 +76,7 @@ class LauncherFragment : Fragment() {
     ViewBinderAdapter(
       GroupHeaderViewBinder(),
       TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-      WidgetViewBinder(appWidgetViewProvider) { widgetManager.isInEditMode.value = true },
+      WidgetViewBinder(appWidgetViewProvider) { launcherViewModel.isInEditMode.value = true },
       WidgetEditorViewBinder(
         appWidgetViewProvider,
         widgetSizeUtil,
@@ -88,7 +89,7 @@ class LauncherFragment : Fragment() {
           widgetsViewModel.setHeight(widgetData.widgetId, height)
         },
         { widgetsViewModel.moveDown(it.widgetId) },
-        { widgetManager.isInEditMode.value = false },
+        { launcherViewModel.isInEditMode.value = false },
       ),
     )
   }
@@ -138,9 +139,17 @@ class LauncherFragment : Fragment() {
       setContent {
         LauncherTheme {
           BottomBar(
+            searchBar = {
+              SearchBar(launcherViewModel) { recyclerView.children.firstOrNull()?.performClick() }
+            },
             tabButtonGroups = {
-              ProfileTabs(profilesModel, workProfileManager, childFragmentManager)
-            }
+              ProfileTabs(
+                profilesModel,
+                workProfileManager,
+                launcherViewModel,
+                childFragmentManager,
+              )
+            },
           ) {
             SearchFab()
           }

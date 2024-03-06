@@ -29,7 +29,8 @@
             android:launchMode="singleTask"
             android:resumeWhilePausing="true"
             android:stateNotNeeded="true"
-            android:taskAffinity="">
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.intent.action.SHOW_WORK_APPS" />
