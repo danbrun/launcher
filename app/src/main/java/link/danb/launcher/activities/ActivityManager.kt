@@ -29,26 +29,29 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
 
   val activities: Flow<List<UserActivity>> =
     callbackFlow {
-        val components =
+        var components =
           launcherApps.profiles
             .flatMap { launcherApps.getActivityList(null, it) }
             .filter { it.componentName.packageName != context.packageName }
             .map { UserActivity(it.componentName, it.user) }
-            .toMutableList()
         trySend(components)
 
         val callback = LauncherAppsCallback { packageNames, userHandle ->
           synchronized(this) {
-            components.removeIf {
-              it.componentName.packageName in packageNames && it.userHandle == userHandle
+            components = buildList {
+              addAll(
+                components.filter {
+                  it.componentName.packageName !in packageNames || it.userHandle != userHandle
+                }
+              )
+              addAll(
+                packageNames
+                  .flatMap { launcherApps.getActivityList(it, userHandle) }
+                  .filter { it.componentName.packageName != context.packageName }
+                  .map { UserActivity(it.componentName, it.user) }
+              )
             }
-            components.addAll(
-              packageNames
-                .flatMap { launcherApps.getActivityList(it, userHandle) }
-                .filter { it.componentName.packageName != context.packageName }
-                .map { UserActivity(it.componentName, it.user) }
-            )
-            trySend(components.toList())
+            trySend(components)
           }
         }
 
