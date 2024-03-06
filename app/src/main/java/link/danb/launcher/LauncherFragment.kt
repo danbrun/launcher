@@ -1,6 +1,5 @@
 package link.danb.launcher
 
-import android.app.SearchManager
 import android.appwidget.AppWidgetHost
 import android.content.Intent
 import android.os.Build
@@ -10,8 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.util.Consumer
@@ -32,7 +29,6 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
-import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
@@ -141,50 +137,13 @@ class LauncherFragment : Fragment() {
     view.findViewById<ComposeView>(R.id.bottom_bar).apply {
       setContent {
         LauncherTheme {
-          val activeProfile by profilesModel.activeProfile.collectAsState()
-
-          val bottomBar =
-            BottomBarData(
-              TabBarData(
-                listOf(
-                  TabButtonData(
-                    R.drawable.baseline_person_24,
-                    R.string.show_personal,
-                    isHighlighted = activeProfile.isPersonalProfile,
-                  ) {
-                    profilesModel.toggleActiveProfile(showWorkProfile = false)
-                  },
-                  TabButtonData(
-                    R.drawable.ic_baseline_work_24,
-                    R.string.show_work,
-                    isHighlighted = !activeProfile.isPersonalProfile,
-                  ) {
-                    profilesModel.toggleActiveProfile(showWorkProfile = true)
-                  },
-                  TabButtonData(
-                    R.drawable.baseline_more_horiz_24,
-                    R.string.add_item,
-                    isHighlighted = false,
-                  ) {
-                    MoreActionsDialogFragment()
-                      .showNow(childFragmentManager, MoreActionsDialogFragment.TAG)
-                  },
-                )
-              ),
-              ActionButtonData(R.drawable.ic_baseline_search_24, R.string.search) {
-                startActivity(
-                  Intent().apply {
-                    action = Intent.ACTION_WEB_SEARCH
-                    putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
-                    // This extra is for Firefox to open a new tab.
-                    putExtra("open_to_search", "static_shortcut_new_tab")
-                  },
-                  makeScaleUpAnimation().toBundle(),
-                )
-              },
-            )
-
-          BottomBar(bottomBar = bottomBar)
+          BottomBar(
+            tabButtonGroups = {
+              ProfileTabs(profilesModel, workProfileManager, childFragmentManager)
+            }
+          ) {
+            SearchFab()
+          }
         }
       }
 
