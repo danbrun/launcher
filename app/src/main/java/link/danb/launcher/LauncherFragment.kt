@@ -39,6 +39,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
@@ -210,8 +211,14 @@ class LauncherFragment : Fragment() {
 
       ShowSearchTabButton(searchQuery) { launcherViewModel.searchQuery.value = "" }
 
+      val hasHiddenApps by
+        activityManager.data
+          .map { data -> data.any { it.isHidden && it.userActivity.userHandle == activeProfile } }
+          .collectAsState(initial = false)
+
       MoreActionsTabButton {
-        MoreActionsDialogFragment().showNow(childFragmentManager, MoreActionsDialogFragment.TAG)
+        MoreActionsDialogFragment.newInstance(activeProfile, hasHiddenApps)
+          .showNow(childFragmentManager, MoreActionsDialogFragment.TAG)
       }
     }
   }
