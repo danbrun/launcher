@@ -65,7 +65,7 @@ constructor(
       )
       .debounce(100)
       .map {
-        val searchQuery = it.userState.searchQuery?.lowercase()
+        val searchQuery = it.userState.searchQuery?.lowercase()?.trim()
         if (searchQuery == null) {
           getWidgetListViewItems(it.widgets, it.activeProfile, it.userState.isInEditMode) +
             getPinnedListViewItems(it.activities, it.shortcuts, it.activeProfile) +

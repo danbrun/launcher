@@ -54,7 +54,13 @@ fun SearchBar(launcherViewModel: LauncherViewModel, onEnter: () -> Unit) {
         value = searchQuery ?: "",
         onValueChange = { launcherViewModel.searchQuery.value = it },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-        keyboardActions = KeyboardActions(onGo = { onEnter() }),
+        keyboardActions =
+          KeyboardActions(
+            onGo = {
+              onEnter()
+              launcherViewModel.searchQuery.value = null
+            }
+          ),
         modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
       )
     }
