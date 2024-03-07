@@ -231,7 +231,7 @@ class LauncherFragment : Fragment() {
       is UserShortcut -> {
         MaterialAlertDialogBuilder(requireContext())
           .setTitle(R.string.unpin_shortcut)
-          .setPositiveButton(R.string.unpin) { _, _ ->
+          .setPositiveButton(android.R.string.ok) { _, _ ->
             Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
             shortcutManager.pinShortcut(tileViewData, isPinned = false)
           }

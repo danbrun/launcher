@@ -138,7 +138,7 @@ fun ShowSearchTabButton(launcherViewModel: LauncherViewModel) {
 fun MoreActionsTabButton(fragmentManager: FragmentManager) {
   TabButton(
     icon = painterResource(id = R.drawable.baseline_more_horiz_24),
-    name = stringResource(id = R.string.add_item),
+    name = stringResource(id = R.string.more_actions),
     isChecked = false,
   ) {
     MoreActionsDialogFragment().showNow(fragmentManager, MoreActionsDialogFragment.TAG)

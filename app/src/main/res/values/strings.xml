@@ -21,14 +21,11 @@
 
     <!-- Actions -->
     <string name="search">Search</string>
-    <string name="pin_shortcut">Shortcut</string>
-    <string name="pin_widget">Widget</string>
+    <string name="pin_shortcut">Pin shortcut</string>
+    <string name="pin_widget">Pin widget</string>
     <string name="show_personal">Show personal apps</string>
     <string name="show_work">Show work apps</string>
     <string name="show_hidden">Show hidden apps</string>
-    <string name="turn_on">Turn on</string>
-    <string name="turn_off">Turn off</string>
-    <string name="add_item">Add item</string>
     <string name="unpin_shortcut">Unpin shortcut?</string>
-    <string name="unpin">Unpin</string>
+    <string name="more_actions">More actions</string>
 </resources>

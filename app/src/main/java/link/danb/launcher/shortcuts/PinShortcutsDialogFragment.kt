@@ -94,7 +94,7 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
     val header =
       DialogHeaderViewItem(
         requireContext().getString(R.string.shortcuts),
-        R.drawable.baseline_push_pin_24,
+        R.drawable.baseline_shortcut_24,
       )
 
     adapter.submitList(listOf(header, LoadingSpinnerViewItem))
