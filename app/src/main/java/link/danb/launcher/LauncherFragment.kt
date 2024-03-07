@@ -1,5 +1,6 @@
 package link.danb.launcher
 
+import android.app.SearchManager
 import android.appwidget.AppWidgetHost
 import android.content.Intent
 import android.os.Build
@@ -7,10 +8,25 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.ComposeView
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
@@ -31,27 +47,24 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
-import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfilesModel
+import link.danb.launcher.profiles.WorkProfileInstalled
 import link.danb.launcher.profiles.WorkProfileManager
+import link.danb.launcher.profiles.WorkProfileNotInstalled
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TransparentTileViewBinder
 import link.danb.launcher.tiles.TransparentTileViewHolder
-import link.danb.launcher.ui.DynamicGridLayoutManager
 import link.danb.launcher.ui.GroupHeaderViewBinder
-import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetEditorViewBinder
-import link.danb.launcher.widgets.WidgetEditorViewItem
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
-import link.danb.launcher.widgets.WidgetViewItem
 import link.danb.launcher.widgets.WidgetsViewModel
 
 @AndroidEntryPoint
@@ -112,56 +125,28 @@ class LauncherFragment : Fragment() {
     container: ViewGroup?,
     savedInstanceState: Bundle?,
   ): View {
-    val view = inflater.inflate(R.layout.launcher_fragment, container, false) as ConstraintLayout
-
-    recyclerView = view.findViewById(R.id.app_list)
-    recyclerView.apply {
-      this.adapter = recyclerAdapter
-      layoutManager =
-        DynamicGridLayoutManager(context, R.dimen.min_column_width).apply {
-          setSpanSizeProvider { position, spanCount ->
-            when (recyclerAdapter.currentList[position]) {
-              is WidgetViewItem,
-              is WidgetEditorViewItem,
-              is GroupHeaderViewItem -> spanCount
-              else -> 1
-            }
-          }
-        }
-    }
+    val view = inflater.inflate(R.layout.launcher_fragment, container, false) as FrameLayout
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       gestureIconView = GestureIconView(view.context)
       view.addView(gestureIconView)
     }
 
-    view.findViewById<ComposeView>(R.id.bottom_bar).apply {
-      setContent {
-        LauncherTheme {
-          BottomBar(
-            searchBar = {
-              SearchBar(launcherViewModel) { recyclerView.children.firstOrNull()?.performClick() }
-            },
-            tabButtonGroups = {
-              ProfileTabs(
-                profilesModel,
-                workProfileManager,
-                launcherViewModel,
-                childFragmentManager,
-              )
-            },
-          ) {
-            SearchFab()
-          }
-        }
-      }
-
-      addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-        recyclerView.setPadding(
-          recyclerView.paddingLeft,
-          recyclerView.paddingTop,
-          recyclerView.paddingRight,
-          height,
+    view.findViewById<ComposeView>(R.id.compose_view).setContent {
+      LauncherTheme {
+        LauncherLayout(
+          launcherList = { windowInsets ->
+            LauncherList(windowInsets = windowInsets, recyclerAdapter = recyclerAdapter) {
+              recyclerView = it
+            }
+          },
+          bottomBar = {
+            BottomBar(
+              searchBar = { SearchBar() },
+              tabButtonGroups = { ProfileTabs() },
+              floatingActionButton = { SearchFab { onFabClick() } },
+            )
+          },
         )
       }
     }
@@ -173,6 +158,62 @@ class LauncherFragment : Fragment() {
     }
 
     return view
+  }
+
+  @Composable
+  fun SearchBar() {
+    val searchQuery by launcherViewModel.searchQuery.collectAsState()
+
+    if (searchQuery != null) {
+      val focusRequester = FocusRequester()
+
+      Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        TextField(
+          value = searchQuery ?: "",
+          onValueChange = { launcherViewModel.searchQuery.value = it },
+          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+          keyboardActions =
+            KeyboardActions(
+              onGo = {
+                recyclerView.children.firstOrNull()?.performClick()
+                launcherViewModel.searchQuery.value = null
+              }
+            ),
+          modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+        )
+      }
+
+      LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    }
+  }
+
+  @Composable
+  fun ProfileTabs() {
+    val hasWorkProfile by
+      workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
+
+    TabButtonGroup {
+      val activeProfile by profilesModel.activeProfile.collectAsState()
+      val searchQuery by launcherViewModel.searchQuery.collectAsState()
+
+      ShowPersonalTabButton(activeProfile, searchQuery) {
+        profilesModel.toggleActiveProfile(showWorkProfile = false)
+        launcherViewModel.searchQuery.value = null
+      }
+
+      if (hasWorkProfile is WorkProfileInstalled) {
+        ShowWorkTabButton(activeProfile, searchQuery) {
+          profilesModel.toggleActiveProfile(showWorkProfile = true)
+          launcherViewModel.searchQuery.value = null
+        }
+      }
+
+      ShowSearchTabButton(searchQuery) { launcherViewModel.searchQuery.value = "" }
+
+      MoreActionsTabButton {
+        MoreActionsDialogFragment().showNow(childFragmentManager, MoreActionsDialogFragment.TAG)
+      }
+    }
   }
 
   override fun onDestroy() {
@@ -240,5 +281,17 @@ class LauncherFragment : Fragment() {
       }
       else -> throw NotImplementedError()
     }
+  }
+
+  private fun onFabClick() {
+    startActivity(
+      Intent().apply {
+        action = Intent.ACTION_WEB_SEARCH
+        putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
+        // This extra is for Firefox to open a new tab.
+        putExtra("open_to_search", "static_shortcut_new_tab")
+      },
+      Bundle(),
+    )
   }
 }
