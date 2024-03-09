@@ -47,6 +47,7 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
@@ -197,19 +198,26 @@ class LauncherFragment : Fragment() {
       val activeProfile by profilesModel.activeProfile.collectAsState()
       val searchQuery by launcherViewModel.searchQuery.collectAsState()
 
-      ShowPersonalTabButton(activeProfile, searchQuery) {
-        profilesModel.toggleActiveProfile(showWorkProfile = false)
-        launcherViewModel.searchQuery.value = null
-      }
-
       if (hasWorkProfile is WorkProfileInstalled) {
-        ShowWorkTabButton(activeProfile, searchQuery) {
+        ShowPersonalTabButton(isChecked = activeProfile.isPersonalProfile && searchQuery == null) {
+          profilesModel.toggleActiveProfile(showWorkProfile = false)
+          launcherViewModel.searchQuery.value = null
+        }
+
+        ShowWorkTabButton(isChecked = !activeProfile.isPersonalProfile && searchQuery == null) {
           profilesModel.toggleActiveProfile(showWorkProfile = true)
+          launcherViewModel.searchQuery.value = null
+        }
+      } else {
+        ShowAllAppsButton(isChecked = searchQuery == null) {
+          profilesModel.toggleActiveProfile(showWorkProfile = false)
           launcherViewModel.searchQuery.value = null
         }
       }
 
-      ShowSearchTabButton(searchQuery) { launcherViewModel.searchQuery.value = "" }
+      ShowSearchTabButton(isChecked = searchQuery != null) {
+        launcherViewModel.searchQuery.value = ""
+      }
 
       val hasHiddenApps by
         activityManager.data

@@ -1,39 +1,47 @@
 package link.danb.launcher
 
-import android.os.UserHandle
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import link.danb.launcher.extensions.isPersonalProfile
 
 @Composable
-fun ShowPersonalTabButton(activeProfile: UserHandle, searchQuery: String?, onClick: () -> Unit) {
+fun ShowPersonalTabButton(isChecked: Boolean, onClick: () -> Unit) {
   TabButton(
     icon = painterResource(id = R.drawable.baseline_person_24),
     name = stringResource(id = R.string.show_personal),
-    isChecked = activeProfile.isPersonalProfile && searchQuery == null,
+    isChecked = isChecked,
     onClick = onClick,
   )
 }
 
 @Composable
-fun ShowWorkTabButton(activeProfile: UserHandle, searchQuery: String?, onClick: () -> Unit) {
+fun ShowWorkTabButton(isChecked: Boolean, onClick: () -> Unit) {
   TabButton(
     icon = painterResource(id = R.drawable.ic_baseline_work_24),
     name = stringResource(id = R.string.show_work),
-    isChecked = !activeProfile.isPersonalProfile && searchQuery == null,
+    isChecked = isChecked,
     onClick = onClick,
   )
 }
 
 @Composable
-fun ShowSearchTabButton(searchQuery: String?, onClick: () -> Unit) {
+fun ShowAllAppsButton(isChecked: Boolean, onClick: () -> Unit) {
+  TabButton(
+    icon = painterResource(id = R.drawable.baseline_apps_24),
+    name = stringResource(id = R.string.show_home),
+    isChecked = isChecked,
+    onClick = onClick,
+  )
+}
+
+@Composable
+fun ShowSearchTabButton(isChecked: Boolean, onClick: () -> Unit) {
   TabButton(
     icon = painterResource(id = R.drawable.ic_baseline_search_24),
     name = stringResource(id = R.string.search),
-    isChecked = searchQuery != null,
+    isChecked = isChecked,
     onClick = onClick,
   )
 }

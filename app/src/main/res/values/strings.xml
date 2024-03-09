@@ -23,6 +23,7 @@
     <string name="search">Search</string>
     <string name="pin_shortcut">Pin shortcut</string>
     <string name="pin_widget">Pin widget</string>
+    <string name="show_home">Home</string>
     <string name="show_personal">Show personal apps</string>
     <string name="show_work">Show work apps</string>
     <string name="show_hidden">Show hidden apps</string>
