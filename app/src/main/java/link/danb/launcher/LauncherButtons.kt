@@ -2,6 +2,7 @@ package link.danb.launcher
 
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,7 +59,7 @@ fun MoreActionsTabButton(onClick: () -> Unit) {
 
 @Composable
 fun SearchFab(onClick: () -> Unit) {
-  FloatingActionButton(onClick = onClick) {
+  FloatingActionButton(onClick = onClick, containerColor = MaterialTheme.colorScheme.primary) {
     Icon(
       painter = painterResource(id = R.drawable.travel_explore_24),
       contentDescription = stringResource(id = R.string.search),
