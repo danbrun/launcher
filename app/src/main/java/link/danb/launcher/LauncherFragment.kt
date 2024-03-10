@@ -12,20 +12,31 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
@@ -145,7 +156,10 @@ class LauncherFragment : Fragment() {
           },
           bottomBar = {
             BottomBar(
-              searchBar = { SearchBar() },
+              topContent = {
+                SearchBar()
+                Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { WorkProfileToggle() }
+              },
               tabButtonGroups = { ProfileTabs() },
               floatingActionButton = { SearchFab { onFabClick() } },
             )
@@ -170,7 +184,7 @@ class LauncherFragment : Fragment() {
     AnimatedVisibility(visible = searchQuery != null) {
       val focusRequester = FocusRequester()
 
-      Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+      Row(modifier = Modifier.fillMaxWidth()) {
         TextField(
           value = searchQuery ?: "",
           onValueChange = { launcherViewModel.searchQuery.value = it },
@@ -187,6 +201,33 @@ class LauncherFragment : Fragment() {
       }
 
       LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    }
+  }
+
+  @Composable
+  fun WorkProfileToggle() {
+    val searchQuery by launcherViewModel.searchQuery.collectAsState()
+    val activeProfile by profilesModel.activeProfile.collectAsState()
+    val workProfileStatus by
+      workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
+
+    AnimatedVisibility(visible = searchQuery == null && !activeProfile.isPersonalProfile) {
+      Card(shape = RoundedCornerShape(28.dp), modifier = Modifier.height(56.dp)) {
+        Row(modifier = Modifier.fillMaxHeight().padding(horizontal = 14.dp)) {
+          Text(
+            text = stringResource(id = R.string.work_profile),
+            modifier = Modifier.align(Alignment.CenterVertically),
+          )
+
+          Spacer(modifier = Modifier.width(16.dp))
+
+          Switch(
+            checked = workProfileStatus.let { it is WorkProfileInstalled && it.isEnabled },
+            onCheckedChange = { workProfileManager.setWorkProfileEnabled(it) },
+            modifier = Modifier.align(Alignment.CenterVertically),
+          )
+        }
+      }
     }
   }
 
