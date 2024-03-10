@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -166,7 +167,7 @@ class LauncherFragment : Fragment() {
   fun SearchBar() {
     val searchQuery by launcherViewModel.searchQuery.collectAsState()
 
-    if (searchQuery != null) {
+    AnimatedVisibility(visible = searchQuery != null) {
       val focusRequester = FocusRequester()
 
       Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
