@@ -20,6 +20,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.R
@@ -30,8 +31,12 @@ import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
+import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
+import link.danb.launcher.profiles.WorkProfileInstalled
+import link.danb.launcher.profiles.WorkProfileManager
+import link.danb.launcher.profiles.WorkProfileStatus
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.CardTileViewHolder
@@ -59,6 +64,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
+  @Inject lateinit var workProfileManager: WorkProfileManager
 
   private val userActivity: UserActivity by lazy {
     arguments?.getParcelableCompat(EXTRA_USER_COMPONENT)!!
@@ -121,14 +127,19 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        activityData.collect { adapter.submitList(getViewItems(it)) }
+        combine(activityData, workProfileManager.status, ::Pair).collect {
+          adapter.submitList(getViewItems(it.first, it.second))
+        }
       }
     }
 
     return recyclerView
   }
 
-  private suspend fun getViewItems(activityData: ActivityData): List<ViewItem> = buildList {
+  private suspend fun getViewItems(
+    activityData: ActivityData,
+    workProfileStatus: WorkProfileStatus,
+  ): List<ViewItem> = buildList {
     add(
       ActivityHeaderViewItem(
         activityData,
@@ -137,39 +148,44 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
       )
     )
 
-    val shortcuts =
-      shortcutManager
-        .getShortcuts(activityData.userActivity)
-        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
-        .sortedBy { it.name.toString() }
+    if (
+      activityData.userActivity.userHandle.isPersonalProfile ||
+        (workProfileStatus is WorkProfileInstalled && workProfileStatus.isEnabled)
+    ) {
+      val shortcuts =
+        shortcutManager
+          .getShortcuts(activityData.userActivity)
+          .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+          .sortedBy { it.name.toString() }
 
-    if (shortcuts.isNotEmpty()) {
-      add(DialogSubtitleViewItem(requireContext().getString(R.string.shortcuts)))
-      addAll(shortcuts)
-    }
+      if (shortcuts.isNotEmpty()) {
+        add(DialogSubtitleViewItem(requireContext().getString(R.string.shortcuts)))
+        addAll(shortcuts)
+      }
 
-    val configurableShortcuts =
-      shortcutManager
-        .getShortcutCreators(activityData.userActivity)
-        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
-        .sortedBy { it.name.toString() }
+      val configurableShortcuts =
+        shortcutManager
+          .getShortcutCreators(activityData.userActivity)
+          .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+          .sortedBy { it.name.toString() }
 
-    if (configurableShortcuts.isNotEmpty()) {
-      add(DialogSubtitleViewItem(requireContext().getString(R.string.configurable_shortcuts)))
-      addAll(configurableShortcuts)
-    }
+      if (configurableShortcuts.isNotEmpty()) {
+        add(DialogSubtitleViewItem(requireContext().getString(R.string.configurable_shortcuts)))
+        addAll(configurableShortcuts)
+      }
 
-    val widgets =
-      appWidgetManager
-        .getInstalledProvidersForPackage(
-          activityData.userActivity.componentName.packageName,
-          activityData.userActivity.userHandle,
-        )
-        .map { WidgetPreviewViewItem(it, activityData.userActivity.userHandle) }
+      val widgets =
+        appWidgetManager
+          .getInstalledProvidersForPackage(
+            activityData.userActivity.componentName.packageName,
+            activityData.userActivity.userHandle,
+          )
+          .map { WidgetPreviewViewItem(it, activityData.userActivity.userHandle) }
 
-    if (widgets.isNotEmpty()) {
-      add(DialogSubtitleViewItem(requireContext().getString(R.string.widgets)))
-      addAll(widgets)
+      if (widgets.isNotEmpty()) {
+        add(DialogSubtitleViewItem(requireContext().getString(R.string.widgets)))
+        addAll(widgets)
+      }
     }
   }
 
