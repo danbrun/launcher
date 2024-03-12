@@ -12,31 +12,30 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
@@ -156,11 +155,8 @@ class LauncherFragment : Fragment() {
           },
           bottomBar = {
             BottomBar(
-              topContent = {
-                SearchBar()
-                Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { WorkProfileToggle() }
-              },
-              tabButtonGroups = { ProfileTabs() },
+              searchBar = { SearchBar() },
+              tabButtonGroup = { ProfileTabs() },
               floatingActionButton = { SearchFab { onFabClick() } },
             )
           },
@@ -181,24 +177,26 @@ class LauncherFragment : Fragment() {
   fun SearchBar() {
     val searchQuery by launcherViewModel.searchQuery.collectAsState()
 
-    AnimatedVisibility(visible = searchQuery != null) {
+    AnimatedVisibility(
+      visible = searchQuery != null,
+      enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+      exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+    ) {
       val focusRequester = FocusRequester()
 
-      Row(modifier = Modifier.fillMaxWidth()) {
-        TextField(
-          value = searchQuery ?: "",
-          onValueChange = { launcherViewModel.searchQuery.value = it },
-          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-          keyboardActions =
-            KeyboardActions(
-              onGo = {
-                recyclerView.children.firstOrNull()?.performClick()
-                launcherViewModel.searchQuery.value = null
-              }
-            ),
-          modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-        )
-      }
+      TextField(
+        value = searchQuery ?: "",
+        onValueChange = { launcherViewModel.searchQuery.value = it },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+        keyboardActions =
+          KeyboardActions(
+            onGo = {
+              recyclerView.children.firstOrNull()?.performClick()
+              launcherViewModel.searchQuery.value = null
+            }
+          ),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).focusRequester(focusRequester),
+      )
 
       LaunchedEffect(Unit) { focusRequester.requestFocus() }
     }
@@ -211,36 +209,44 @@ class LauncherFragment : Fragment() {
     val workProfileStatus by
       workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
 
-    AnimatedVisibility(visible = searchQuery == null && !activeProfile.isPersonalProfile) {
-      Card(shape = RoundedCornerShape(28.dp), modifier = Modifier.height(56.dp)) {
-        Row(modifier = Modifier.fillMaxHeight().padding(horizontal = 14.dp)) {
-          Text(
-            text = stringResource(id = R.string.work_profile),
-            modifier = Modifier.align(Alignment.CenterVertically),
+    AnimatedVisibility(
+      visible = searchQuery == null && !activeProfile.isPersonalProfile,
+      enter = fadeIn() + expandHorizontally(),
+      exit = fadeOut() + shrinkHorizontally(),
+    ) {
+      val isChecked = workProfileStatus.let { it is WorkProfileInstalled && it.isEnabled }
+      Switch(
+        checked = isChecked,
+        onCheckedChange = { workProfileManager.setWorkProfileEnabled(it) },
+        thumbContent = {
+          Icon(
+            painter =
+              painterResource(
+                if (isChecked) {
+                  R.drawable.ic_baseline_work_24
+                } else {
+                  R.drawable.ic_baseline_work_off_24
+                }
+              ),
+            contentDescription = null,
+            modifier = Modifier.size(SwitchDefaults.IconSize),
           )
-
-          Spacer(modifier = Modifier.width(16.dp))
-
-          Switch(
-            checked = workProfileStatus.let { it is WorkProfileInstalled && it.isEnabled },
-            onCheckedChange = { workProfileManager.setWorkProfileEnabled(it) },
-            modifier = Modifier.align(Alignment.CenterVertically),
-          )
-        }
-      }
+        },
+        modifier = Modifier.padding(horizontal = 8.dp),
+      )
     }
   }
 
   @Composable
   fun ProfileTabs() {
-    val hasWorkProfile by
+    val workProfileStatus by
       workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
 
     TabButtonGroup {
       val activeProfile by profilesModel.activeProfile.collectAsState()
       val searchQuery by launcherViewModel.searchQuery.collectAsState()
 
-      if (hasWorkProfile is WorkProfileInstalled) {
+      if (workProfileStatus is WorkProfileInstalled) {
         ShowPersonalTabButton(isChecked = activeProfile.isPersonalProfile && searchQuery == null) {
           profilesModel.toggleActiveProfile(showWorkProfile = false)
           launcherViewModel.searchQuery.value = null
@@ -250,6 +256,8 @@ class LauncherFragment : Fragment() {
           profilesModel.toggleActiveProfile(showWorkProfile = true)
           launcherViewModel.searchQuery.value = null
         }
+
+        WorkProfileToggle()
       } else {
         ShowAllAppsButton(isChecked = searchQuery == null) {
           profilesModel.toggleActiveProfile(showWorkProfile = false)

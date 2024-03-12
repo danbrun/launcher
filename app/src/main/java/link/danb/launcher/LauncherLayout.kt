@@ -2,9 +2,7 @@ package link.danb.launcher
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.add
@@ -110,17 +108,15 @@ fun LauncherList(
 
 @Composable
 fun BottomBar(
-  topContent: @Composable ColumnScope.() -> Unit,
-  tabButtonGroups: @Composable RowScope.() -> Unit,
+  searchBar: @Composable () -> Unit,
+  tabButtonGroup: @Composable () -> Unit,
   floatingActionButton: @Composable () -> Unit,
 ) {
   Column(modifier = Modifier.padding(8.dp)) {
-    topContent()
-
-    Spacer(modifier = Modifier.height(8.dp))
+    searchBar()
 
     Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-      tabButtonGroups()
+      tabButtonGroup()
 
       Spacer(modifier = Modifier.width(8.dp))
 
