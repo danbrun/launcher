@@ -49,6 +49,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -97,6 +98,8 @@ class LauncherFragment : Fragment() {
 
   private lateinit var recyclerView: RecyclerView
   private lateinit var gestureIconView: GestureIconView
+
+  private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   private val recyclerAdapter: ViewBinderAdapter by lazy {
     ViewBinderAdapter(
@@ -147,6 +150,8 @@ class LauncherFragment : Fragment() {
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       LauncherTheme {
+        MoreActionsDialog()
+
         LauncherLayout(
           launcherList = { windowInsets ->
             LauncherList(windowInsets = windowInsets, recyclerAdapter = recyclerAdapter) {
@@ -269,15 +274,26 @@ class LauncherFragment : Fragment() {
         launcherViewModel.searchQuery.value = ""
       }
 
-      val hasHiddenApps by
-        activityManager.data
-          .map { data -> data.any { it.isHidden && it.userActivity.userHandle == activeProfile } }
-          .collectAsState(initial = false)
+      MoreActionsTabButton { showMoreActionsDialog.value = true }
+    }
+  }
 
-      MoreActionsTabButton {
-        MoreActionsDialogFragment.newInstance(activeProfile, hasHiddenApps)
-          .showNow(childFragmentManager, MoreActionsDialogFragment.TAG)
-      }
+  @Composable
+  fun MoreActionsDialog() {
+    val isShowing by showMoreActionsDialog.collectAsState()
+    val activeProfile by profilesModel.activeProfile.collectAsState()
+    val hasHiddenApps by
+      activityManager.data
+        .map { data -> data.any { it.isHidden && it.userActivity.userHandle == activeProfile } }
+        .collectAsState(initial = false)
+
+    MoreActionsDialog(
+      isShowing = isShowing,
+      userHandle = activeProfile,
+      hasHiddenApps = hasHiddenApps,
+      fragmentManager = childFragmentManager,
+    ) {
+      showMoreActionsDialog.value = false
     }
   }
 
