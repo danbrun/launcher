@@ -13,11 +13,13 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentManager
+import kotlinx.coroutines.launch
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
@@ -32,6 +34,11 @@ fun MoreActionsDialog(
   onDismiss: () -> Unit,
 ) {
   val sheetState = rememberModalBottomSheetState()
+  val coroutineScope = rememberCoroutineScope()
+
+  val dismiss: () -> Unit = {
+    coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
+  }
 
   if (isShowing) {
     ModalBottomSheet(
@@ -39,12 +46,12 @@ fun MoreActionsDialog(
       sheetState = sheetState,
       windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
     ) {
-      PinShortcutItem(fragmentManager, userHandle, onDismiss)
+      PinShortcutItem(fragmentManager, userHandle, dismiss)
 
-      PinWidgetItem(fragmentManager, userHandle, onDismiss)
+      PinWidgetItem(fragmentManager, userHandle, dismiss)
 
       if (hasHiddenApps) {
-        HiddenAppsItem(fragmentManager, userHandle, onDismiss)
+        HiddenAppsItem(fragmentManager, userHandle, dismiss)
       }
 
       Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
@@ -56,7 +63,7 @@ fun MoreActionsDialog(
 fun PinShortcutItem(
   fragmentManager: FragmentManager,
   userHandle: UserHandle,
-  onDismiss: () -> Unit,
+  dismiss: () -> Unit,
 ) {
   ListItem(
     headlineContent = { Text(text = stringResource(R.string.pin_shortcut)) },
@@ -67,13 +74,13 @@ fun PinShortcutItem(
       Modifier.clickable {
         PinShortcutsDialogFragment.newInstance(userHandle)
           .showNow(fragmentManager, PinShortcutsDialogFragment.TAG)
-        onDismiss()
+        dismiss()
       },
   )
 }
 
 @Composable
-fun PinWidgetItem(fragmentManager: FragmentManager, userHandle: UserHandle, onDismiss: () -> Unit) {
+fun PinWidgetItem(fragmentManager: FragmentManager, userHandle: UserHandle, dismiss: () -> Unit) {
   ListItem(
     headlineContent = { Text(text = stringResource(R.string.pin_widget)) },
     leadingContent = {
@@ -83,7 +90,7 @@ fun PinWidgetItem(fragmentManager: FragmentManager, userHandle: UserHandle, onDi
       Modifier.clickable {
         PinWidgetsDialogFragment.newInstance(userHandle)
           .showNow(fragmentManager, PinShortcutsDialogFragment.TAG)
-        onDismiss()
+        dismiss()
       },
   )
 }
@@ -92,7 +99,7 @@ fun PinWidgetItem(fragmentManager: FragmentManager, userHandle: UserHandle, onDi
 fun HiddenAppsItem(
   fragmentManager: FragmentManager,
   userHandle: UserHandle,
-  onDismiss: () -> Unit,
+  dismiss: () -> Unit,
 ) {
   ListItem(
     headlineContent = { Text(text = stringResource(R.string.show_hidden)) },
@@ -106,7 +113,7 @@ fun HiddenAppsItem(
       Modifier.clickable {
         HiddenActivitiesDialogFragment.newInstance(userHandle)
           .showNow(fragmentManager, HiddenActivitiesDialogFragment.TAG)
-        onDismiss()
+        dismiss()
       },
   )
 }
