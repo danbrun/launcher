@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.app.SearchManager
-import android.appwidget.AppWidgetHost
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -39,7 +38,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
-import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -53,6 +51,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import link.danb.launcher.ProfileFilter.Companion.workFilter
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcut
@@ -63,10 +62,10 @@ import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
-import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.profiles.WorkProfileInstalled
 import link.danb.launcher.profiles.WorkProfileManager
 import link.danb.launcher.profiles.WorkProfileNotInstalled
+import link.danb.launcher.profiles.WorkProfileStatus
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TransparentTileViewBinder
@@ -88,9 +87,7 @@ class LauncherFragment : Fragment() {
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
-  @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
-  @Inject lateinit var profilesModel: ProfilesModel
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
@@ -105,7 +102,12 @@ class LauncherFragment : Fragment() {
     ViewBinderAdapter(
       GroupHeaderViewBinder(),
       TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-      WidgetViewBinder(appWidgetViewProvider) { launcherViewModel.isInEditMode.value = true },
+      WidgetViewBinder(appWidgetViewProvider) {
+        val filter = launcherViewModel.filter.value
+        if (filter is ProfileFilter) {
+          launcherViewModel.filter.value = filter.copy(isInEditMode = true)
+        }
+      },
       WidgetEditorViewBinder(
         appWidgetViewProvider,
         widgetSizeUtil,
@@ -118,7 +120,12 @@ class LauncherFragment : Fragment() {
           widgetsViewModel.setHeight(widgetData.widgetId, height)
         },
         { widgetsViewModel.moveDown(it.widgetId) },
-        { launcherViewModel.isInEditMode.value = false },
+        {
+          val filter = launcherViewModel.filter.value
+          if (filter is ProfileFilter) {
+            launcherViewModel.filter.value = filter.copy(isInEditMode = false)
+          }
+        },
       ),
     )
   }
@@ -150,7 +157,11 @@ class LauncherFragment : Fragment() {
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       LauncherTheme {
-        MoreActionsDialog()
+        val filter by launcherViewModel.filter.collectAsState()
+        val workProfileStatus by
+          workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
+
+        MoreActionsDialog(filter)
 
         LauncherLayout(
           launcherList = { windowInsets ->
@@ -160,8 +171,8 @@ class LauncherFragment : Fragment() {
           },
           bottomBar = {
             BottomBar(
-              searchBar = { SearchBar() },
-              tabButtonGroup = { ProfileTabs() },
+              searchBar = { SearchBar(filter) },
+              tabButtonGroup = { ProfileTabs(filter, workProfileStatus) },
               floatingActionButton = { SearchFab { onFabClick() } },
             )
           },
@@ -179,25 +190,33 @@ class LauncherFragment : Fragment() {
   }
 
   @Composable
-  fun SearchBar() {
-    val searchQuery by launcherViewModel.searchQuery.collectAsState()
-
+  fun SearchBar(filter: Filter) {
     AnimatedVisibility(
-      visible = searchQuery != null,
+      visible = filter is SearchFilter,
       enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
       exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
     ) {
       val focusRequester = FocusRequester()
 
       TextField(
-        value = searchQuery ?: "",
-        onValueChange = { launcherViewModel.searchQuery.value = it },
+        value =
+          filter.let {
+            if (it is SearchFilter) {
+              it.query
+            } else {
+              ""
+            }
+          },
+        onValueChange = { launcherViewModel.filter.value = SearchFilter(it) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions =
           KeyboardActions(
             onGo = {
-              recyclerView.children.firstOrNull()?.performClick()
-              launcherViewModel.searchQuery.value = null
+              val index = recyclerAdapter.currentList.indexOfFirst { it is TileViewItem }
+              if (index > 0) {
+                recyclerView.findViewHolderForAdapterPosition(index)?.itemView?.performClick()
+              }
+              launcherViewModel.filter.value = ProfileFilter.personalFilter
             }
           ),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).focusRequester(focusRequester),
@@ -208,14 +227,9 @@ class LauncherFragment : Fragment() {
   }
 
   @Composable
-  fun WorkProfileToggle() {
-    val searchQuery by launcherViewModel.searchQuery.collectAsState()
-    val activeProfile by profilesModel.activeProfile.collectAsState()
-    val workProfileStatus by
-      workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
-
+  fun WorkProfileToggle(filter: Filter, workProfileStatus: WorkProfileStatus) {
     AnimatedVisibility(
-      visible = searchQuery == null && !activeProfile.isPersonalProfile,
+      visible = filter.let { it is ProfileFilter && !it.profile.isPersonalProfile },
       enter = fadeIn() + expandHorizontally(),
       exit = fadeOut() + shrinkHorizontally(),
     ) {
@@ -243,57 +257,60 @@ class LauncherFragment : Fragment() {
   }
 
   @Composable
-  fun ProfileTabs() {
-    val workProfileStatus by
-      workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
-
+  fun ProfileTabs(filter: Filter, workProfileStatus: WorkProfileStatus) {
     TabButtonGroup {
-      val activeProfile by profilesModel.activeProfile.collectAsState()
-      val searchQuery by launcherViewModel.searchQuery.collectAsState()
-
       if (workProfileStatus is WorkProfileInstalled) {
-        ShowPersonalTabButton(isChecked = activeProfile.isPersonalProfile && searchQuery == null) {
-          profilesModel.toggleActiveProfile(showWorkProfile = false)
-          launcherViewModel.searchQuery.value = null
+        ShowPersonalTabButton(
+          isChecked = filter.let { it is ProfileFilter && it.profile.isPersonalProfile }
+        ) {
+          launcherViewModel.filter.value = ProfileFilter.personalFilter
         }
 
-        ShowWorkTabButton(isChecked = !activeProfile.isPersonalProfile && searchQuery == null) {
-          profilesModel.toggleActiveProfile(showWorkProfile = true)
-          launcherViewModel.searchQuery.value = null
+        ShowWorkTabButton(
+          isChecked = filter.let { it is ProfileFilter && !it.profile.isPersonalProfile }
+        ) {
+          launcherViewModel.filter.value = workProfileStatus.workFilter
         }
 
-        WorkProfileToggle()
+        WorkProfileToggle(filter, workProfileStatus)
       } else {
-        ShowAllAppsButton(isChecked = searchQuery == null) {
-          profilesModel.toggleActiveProfile(showWorkProfile = false)
-          launcherViewModel.searchQuery.value = null
+        ShowAllAppsButton(isChecked = filter is ProfileFilter) {
+          launcherViewModel.filter.value = ProfileFilter.personalFilter
         }
       }
 
-      ShowSearchTabButton(isChecked = searchQuery != null) {
-        launcherViewModel.searchQuery.value = ""
+      ShowSearchTabButton(isChecked = filter is SearchFilter) {
+        launcherViewModel.filter.value = SearchFilter("")
       }
 
-      MoreActionsTabButton { showMoreActionsDialog.value = true }
+      AnimatedVisibility(
+        visible = filter is ProfileFilter,
+        enter = fadeIn() + expandHorizontally(),
+        exit = fadeOut() + shrinkHorizontally(),
+      ) {
+        MoreActionsTabButton { showMoreActionsDialog.value = true }
+      }
     }
   }
 
   @Composable
-  fun MoreActionsDialog() {
-    val isShowing by showMoreActionsDialog.collectAsState()
-    val activeProfile by profilesModel.activeProfile.collectAsState()
-    val hasHiddenApps by
-      activityManager.data
-        .map { data -> data.any { it.isHidden && it.userActivity.userHandle == activeProfile } }
-        .collectAsState(initial = false)
+  fun MoreActionsDialog(filter: Filter) {
+    if (filter is ProfileFilter) {
+      val isShowing by showMoreActionsDialog.collectAsState()
 
-    MoreActionsDialog(
-      isShowing = isShowing,
-      userHandle = activeProfile,
-      hasHiddenApps = hasHiddenApps,
-      fragmentManager = childFragmentManager,
-    ) {
-      showMoreActionsDialog.value = false
+      val hasHiddenApps by
+        activityManager.data
+          .map { data -> data.any { it.isHidden && it.userActivity.userHandle == filter.profile } }
+          .collectAsState(initial = false)
+
+      MoreActionsDialog(
+        isShowing = isShowing,
+        userHandle = filter.profile,
+        hasHiddenApps = hasHiddenApps,
+        fragmentManager = childFragmentManager,
+      ) {
+        showMoreActionsDialog.value = false
+      }
     }
   }
 

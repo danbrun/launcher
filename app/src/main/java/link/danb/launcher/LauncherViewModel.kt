@@ -2,7 +2,6 @@ package link.danb.launcher
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
-import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +24,6 @@ import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
-import link.danb.launcher.profiles.ProfilesModel
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
@@ -42,16 +40,12 @@ constructor(
   activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
-  profilesModel: ProfilesModel,
   shortcutManager: ShortcutManager,
   private val tileViewItemFactory: TileViewItemFactory,
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
-  val isInEditMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
-  val searchQuery: MutableStateFlow<String?> = MutableStateFlow(null)
-
-  private val userState = combine(isInEditMode, searchQuery, ::UserState)
+  val filter: MutableStateFlow<Filter> = MutableStateFlow(ProfileFilter.personalFilter)
 
   @OptIn(FlowPreview::class)
   val viewItems: Flow<List<ViewItem>> =
@@ -59,81 +53,79 @@ constructor(
         activityManager.data,
         shortcutManager.shortcuts,
         widgetManager.data,
-        profilesModel.activeProfile,
-        userState,
+        filter,
         ::CombinedData,
       )
       .debounce(100)
       .map {
-        val searchQuery = it.userState.searchQuery?.lowercase()?.trim()
-        if (searchQuery == null) {
-          getWidgetListViewItems(it.widgets, it.activeProfile, it.userState.isInEditMode) +
-            getPinnedListViewItems(it.activities, it.shortcuts, it.activeProfile) +
-            getAppListViewItems(it.activities, it.activeProfile, null)
-        } else {
-          getAppListViewItems(it.activities, it.activeProfile, searchQuery).filter { item ->
-            if (item is TileViewItem) {
-              item.name.toString().lowercase().contains(searchQuery)
-            } else {
-              false
+        getWidgetListViewItems(it.widgets, it.filter) +
+          getPinnedListViewItems(it.activities, it.shortcuts, it.filter) +
+          getAppListViewItems(it.activities, it.filter)
+      }
+      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
+
+  private fun getWidgetListViewItems(widgets: List<WidgetData>, filter: Filter): List<ViewItem> =
+    buildList {
+      if (filter is ProfileFilter) {
+        for (widget in widgets) {
+          if (appWidgetManager.getAppWidgetInfo(widget.widgetId).profile == filter.profile) {
+            add(WidgetViewItem(widget))
+            if (filter.isInEditMode) {
+              add(WidgetEditorViewItem(widget, appWidgetManager.getAppWidgetInfo(widget.widgetId)))
             }
           }
         }
       }
-      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
-
-  private fun getWidgetListViewItems(
-    widgets: List<WidgetData>,
-    activeProfile: UserHandle,
-    isInEditMode: Boolean,
-  ): List<ViewItem> = buildList {
-    for (widget in widgets) {
-      if (appWidgetManager.getAppWidgetInfo(widget.widgetId).profile == activeProfile) {
-        add(WidgetViewItem(widget))
-        if (isInEditMode) {
-          add(WidgetEditorViewItem(widget, appWidgetManager.getAppWidgetInfo(widget.widgetId)))
-        }
-      }
     }
-  }
 
   private suspend fun getPinnedListViewItems(
     activities: List<ActivityData>,
     shortcuts: List<UserShortcut>,
-    activeProfile: UserHandle,
+    filter: Filter,
   ): List<ViewItem> = buildList {
-    val pinnedItems =
-      merge(
-          activities
-            .asFlow()
-            .filter { it.isPinned && it.userActivity.userHandle == activeProfile }
-            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
-          shortcuts
-            .asFlow()
-            .filter { it.userHandle == activeProfile }
-            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
-        )
-        .toList()
-        .sortedBy { it.name.toString().lowercase() }
+    if (filter is ProfileFilter) {
+      val pinnedItems =
+        merge(
+            activities
+              .asFlow()
+              .filter { it.isPinned && it.userActivity.userHandle == filter.profile }
+              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+            shortcuts
+              .asFlow()
+              .filter { it.userHandle == filter.profile }
+              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+          )
+          .toList()
+          .sortedBy { it.name.toString().lowercase() }
 
-    if (pinnedItems.isNotEmpty()) {
-      add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
-      addAll(pinnedItems)
+      if (pinnedItems.isNotEmpty()) {
+        add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
+        addAll(pinnedItems)
+      }
     }
   }
 
   private suspend fun getAppListViewItems(
     activities: List<ActivityData>,
-    activeProfile: UserHandle,
-    searchQuery: String?,
+    filter: Filter,
   ): List<ViewItem> = buildList {
     val (alphabetical, miscellaneous) =
       activities
         .asFlow()
         .filter {
-          searchQuery != null || (!it.isHidden && it.userActivity.userHandle == activeProfile)
+          when (filter) {
+            is ProfileFilter -> !it.isHidden && it.userActivity.userHandle == filter.profile
+            is SearchFilter -> true
+          }
         }
         .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+        .filter {
+          when (filter) {
+            is ProfileFilter -> true
+            is SearchFilter ->
+              it.name.toString().lowercase().contains(filter.query.lowercase().trim())
+          }
+        }
         .toList()
         .partition { it.name.first().isLetter() }
 
@@ -154,9 +146,6 @@ constructor(
     val activities: List<ActivityData>,
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
-    val activeProfile: UserHandle,
-    val userState: UserState,
+    val filter: Filter,
   )
-
-  private data class UserState(val isInEditMode: Boolean, val searchQuery: String?)
 }
