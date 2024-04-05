@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TextField
@@ -33,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
@@ -163,18 +165,19 @@ class LauncherFragment : Fragment() {
 
         MoreActionsDialog(filter)
 
-        LauncherLayout(
-          launcherList = { windowInsets ->
-            LauncherList(windowInsets = windowInsets, recyclerAdapter = recyclerAdapter) {
-              recyclerView = it
-            }
-          },
+        Scaffold(
           bottomBar = {
             BottomBar(
               searchBar = { SearchBar(filter) },
               tabButtonGroup = { ProfileTabs(filter, workProfileStatus) },
               floatingActionButton = { SearchFab { onFabClick() } },
             )
+          },
+          containerColor = Color.Transparent,
+          content = { paddingValues ->
+            LauncherList(paddingValues = paddingValues, recyclerAdapter = recyclerAdapter) {
+              recyclerView = it
+            }
           },
         )
       }
