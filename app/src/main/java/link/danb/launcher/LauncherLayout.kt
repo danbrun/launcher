@@ -1,26 +1,15 @@
 package link.danb.launcher
 
 import android.graphics.Rect
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
@@ -75,31 +64,6 @@ fun LauncherList(
     update = { it.setPadding(padding.left, padding.top, padding.right, padding.bottom) },
     modifier = Modifier.fillMaxSize(),
   )
-}
-
-@Composable
-fun BottomBar(
-  searchBar: @Composable () -> Unit,
-  tabButtonGroup: @Composable () -> Unit,
-  floatingActionButton: @Composable () -> Unit,
-) {
-  Column(
-    modifier =
-      Modifier.fillMaxWidth()
-        .consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-        .safeDrawingPadding()
-        .padding(8.dp)
-  ) {
-    searchBar()
-
-    Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-      tabButtonGroup()
-
-      Spacer(modifier = Modifier.width(8.dp))
-
-      floatingActionButton()
-    }
-  }
 }
 
 @Composable

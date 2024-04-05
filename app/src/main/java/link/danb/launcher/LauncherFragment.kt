@@ -15,12 +15,19 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -168,11 +175,26 @@ class LauncherFragment : Fragment() {
 
         Scaffold(
           bottomBar = {
-            BottomBar(
-              searchBar = { SearchBar(filter) },
-              tabButtonGroup = { ProfileTabs(filter, workProfileStatus) },
-              floatingActionButton = { SearchFab { onFabClick() } },
-            )
+            Row(
+              modifier =
+                Modifier.fillMaxWidth()
+                  .consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                  .safeDrawingPadding()
+                  .padding(8.dp),
+              horizontalArrangement = Arrangement.Center,
+            ) {
+              FilterSelectionTabGroup(filter, workProfileStatus)
+
+              SearchBar(filter = filter)
+
+              Spacer(modifier = Modifier.width(8.dp))
+
+              ProfileOptionsTabGroup(filter, workProfileStatus)
+
+              Spacer(modifier = Modifier.width(8.dp))
+
+              SearchFab { onFabClick() }
+            }
           },
           containerColor = Color.Transparent,
           content = { paddingValues ->
@@ -197,8 +219,8 @@ class LauncherFragment : Fragment() {
   fun SearchBar(filter: Filter) {
     AnimatedVisibility(
       visible = filter is SearchFilter,
-      enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-      exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+      enter = fadeIn() + expandHorizontally(),
+      exit = fadeOut() + shrinkHorizontally(),
     ) {
       val focusRequester = FocusRequester()
 
@@ -223,7 +245,7 @@ class LauncherFragment : Fragment() {
               launcherViewModel.filter.value = ProfileFilter.personalFilter
             }
           ),
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).focusRequester(focusRequester),
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp).focusRequester(focusRequester),
       )
 
       LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -261,7 +283,7 @@ class LauncherFragment : Fragment() {
   }
 
   @Composable
-  fun ProfileTabs(filter: Filter, workProfileStatus: WorkProfileStatus) {
+  fun FilterSelectionTabGroup(filter: Filter, workProfileStatus: WorkProfileStatus) {
     TabButtonGroup {
       if (workProfileStatus is WorkProfileInstalled) {
         ShowPersonalTabButton(
@@ -285,19 +307,14 @@ class LauncherFragment : Fragment() {
         launcherViewModel.filter.value = SearchFilter("")
       }
     }
+  }
 
-    AnimatedVisibility(
-      visible = filter is ProfileFilter,
-      enter = fadeIn() + expandHorizontally(),
-      exit = fadeOut() + shrinkHorizontally(),
-    ) {
-      Box(Modifier.padding(start = 8.dp)) {
-        TabButtonGroup {
-          WorkProfileToggle(filter, workProfileStatus)
+  @Composable
+  fun ProfileOptionsTabGroup(filter: Filter, workProfileStatus: WorkProfileStatus) {
+    TabButtonGroup {
+      WorkProfileToggle(filter, workProfileStatus)
 
-          MoreActionsTabButton { showMoreActionsDialog.value = true }
-        }
-      }
+      MoreActionsTabButton { showMoreActionsDialog.value = true }
     }
   }
 
