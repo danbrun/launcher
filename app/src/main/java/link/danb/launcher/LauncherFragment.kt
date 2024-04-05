@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -274,8 +275,6 @@ class LauncherFragment : Fragment() {
         ) {
           launcherViewModel.filter.value = workProfileStatus.workFilter
         }
-
-        WorkProfileToggle(filter, workProfileStatus)
       } else {
         ShowAllAppsButton(isChecked = filter is ProfileFilter) {
           launcherViewModel.filter.value = ProfileFilter.personalFilter
@@ -285,13 +284,19 @@ class LauncherFragment : Fragment() {
       ShowSearchTabButton(isChecked = filter is SearchFilter) {
         launcherViewModel.filter.value = SearchFilter("")
       }
+    }
 
-      AnimatedVisibility(
-        visible = filter is ProfileFilter,
-        enter = fadeIn() + expandHorizontally(),
-        exit = fadeOut() + shrinkHorizontally(),
-      ) {
-        MoreActionsTabButton { showMoreActionsDialog.value = true }
+    AnimatedVisibility(
+      visible = filter is ProfileFilter,
+      enter = fadeIn() + expandHorizontally(),
+      exit = fadeOut() + shrinkHorizontally(),
+    ) {
+      Box(Modifier.padding(start = 8.dp)) {
+        TabButtonGroup {
+          WorkProfileToggle(filter, workProfileStatus)
+
+          MoreActionsTabButton { showMoreActionsDialog.value = true }
+        }
       }
     }
   }
