@@ -4,6 +4,7 @@ import android.app.SearchManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -61,7 +62,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import link.danb.launcher.ProfileFilter.Companion.workFilter
 import link.danb.launcher.activities.ActivityDetailsDialogFragment
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.components.UserShortcut
@@ -112,12 +112,7 @@ class LauncherFragment : Fragment() {
     ViewBinderAdapter(
       GroupHeaderViewBinder(),
       TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-      WidgetViewBinder(appWidgetViewProvider) {
-        val filter = launcherViewModel.filter.value
-        if (filter is ProfileFilter) {
-          launcherViewModel.filter.value = filter.copy(isInEditMode = true)
-        }
-      },
+      WidgetViewBinder(appWidgetViewProvider) { launcherViewModel.toggleEditMode() },
       WidgetEditorViewBinder(
         appWidgetViewProvider,
         widgetSizeUtil,
@@ -130,12 +125,7 @@ class LauncherFragment : Fragment() {
           widgetsViewModel.setHeight(widgetData.widgetId, height)
         },
         { widgetsViewModel.moveDown(it.widgetId) },
-        {
-          val filter = launcherViewModel.filter.value
-          if (filter is ProfileFilter) {
-            launcherViewModel.filter.value = filter.copy(isInEditMode = false)
-          }
-        },
+        { launcherViewModel.toggleEditMode() },
       ),
     )
   }
@@ -233,7 +223,7 @@ class LauncherFragment : Fragment() {
               ""
             }
           },
-        onValueChange = { launcherViewModel.filter.value = SearchFilter(it) },
+        onValueChange = { launcherViewModel.setSearchFilter(it) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions =
           KeyboardActions(
@@ -242,7 +232,7 @@ class LauncherFragment : Fragment() {
               if (index > 0) {
                 recyclerView.findViewHolderForAdapterPosition(index)?.itemView?.performClick()
               }
-              launcherViewModel.filter.value = ProfileFilter.personalFilter
+              launcherViewModel.setProfileFilter(Process.myUserHandle())
             }
           ),
         modifier = Modifier.fillMaxWidth().padding(start = 8.dp).focusRequester(focusRequester),
@@ -289,22 +279,22 @@ class LauncherFragment : Fragment() {
         ShowPersonalTabButton(
           isChecked = filter.let { it is ProfileFilter && it.profile.isPersonalProfile }
         ) {
-          launcherViewModel.filter.value = ProfileFilter.personalFilter
+          launcherViewModel.setProfileFilter(Process.myUserHandle())
         }
 
         ShowWorkTabButton(
           isChecked = filter.let { it is ProfileFilter && !it.profile.isPersonalProfile }
         ) {
-          launcherViewModel.filter.value = workProfileStatus.workFilter
+          launcherViewModel.setProfileFilter(workProfileStatus.userHandle)
         }
       } else {
         ShowAllAppsButton(isChecked = filter is ProfileFilter) {
-          launcherViewModel.filter.value = ProfileFilter.personalFilter
+          launcherViewModel.setProfileFilter(Process.myUserHandle())
         }
       }
 
       ShowSearchTabButton(isChecked = filter is SearchFilter) {
-        launcherViewModel.filter.value = SearchFilter("")
+        launcherViewModel.setSearchFilter("")
       }
     }
   }
@@ -374,6 +364,9 @@ class LauncherFragment : Fragment() {
           view.boundsOnScreen,
           view.makeScaleUpAnimation().toBundle(),
         )
+        if (launcherViewModel.filter.value is SearchFilter) {
+          launcherViewModel.setProfileFilter(Process.myUserHandle())
+        }
       }
       is UserShortcut -> {
         shortcutManager.launchShortcut(

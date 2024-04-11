@@ -2,6 +2,8 @@ package link.danb.launcher
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
+import android.os.Process
+import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,7 +13,9 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
@@ -45,7 +49,9 @@ constructor(
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
-  val filter: MutableStateFlow<Filter> = MutableStateFlow(ProfileFilter.personalFilter)
+  private val _filter = MutableStateFlow<Filter>(ProfileFilter(Process.myUserHandle()))
+
+  val filter: StateFlow<Filter> = _filter.asStateFlow()
 
   @OptIn(FlowPreview::class)
   val viewItems: Flow<List<ViewItem>> =
@@ -63,6 +69,21 @@ constructor(
           getAppListViewItems(it.activities, it.filter)
       }
       .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
+
+  fun toggleEditMode() {
+    val filter = filter.value
+    if (filter is ProfileFilter) {
+      _filter.value = filter.copy(isInEditMode = !filter.isInEditMode)
+    }
+  }
+
+  fun setSearchFilter(query: String) {
+    _filter.value = SearchFilter(query)
+  }
+
+  fun setProfileFilter(userHandle: UserHandle) {
+    _filter.value = ProfileFilter(userHandle)
+  }
 
   private fun getWidgetListViewItems(widgets: List<WidgetData>, filter: Filter): List<ViewItem> =
     buildList {
