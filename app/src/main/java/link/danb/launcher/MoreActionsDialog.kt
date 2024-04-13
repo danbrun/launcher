@@ -23,9 +23,9 @@ fun MoreActionsDialog(
   userHandle: UserHandle,
   hasHiddenApps: Boolean,
   fragmentManager: FragmentManager,
-  onHidden: () -> Unit,
+  onDismissRequest: () -> Unit,
 ) {
-  BottomSheet(isShowing = isShowing, onHidden = { onHidden() }) { hide ->
+  BottomSheet(isShowing = isShowing, onDismissRequest = onDismissRequest) { hide ->
     PinShortcutItem(fragmentManager, userHandle) { hide() }
 
     PinWidgetItem(fragmentManager, userHandle) { hide() }

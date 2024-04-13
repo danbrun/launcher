@@ -323,9 +323,8 @@ class LauncherFragment : Fragment() {
         userHandle = filter.profile,
         hasHiddenApps = hasHiddenApps,
         fragmentManager = childFragmentManager,
-      ) {
-        showMoreActionsDialog.value = false
-      }
+        onDismissRequest = { showMoreActionsDialog.value = false },
+      )
     }
   }
 

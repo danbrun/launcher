@@ -16,22 +16,22 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 fun BottomSheet(
   isShowing: Boolean,
-  onHidden: () -> Unit,
-  content: @Composable ColumnScope.(hide: () -> Unit) -> Unit,
+  onDismissRequest: () -> Unit,
+  content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
 ) {
   val sheetState = rememberModalBottomSheetState()
   val coroutineScope = rememberCoroutineScope()
-  val hide = remember {
-    { coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { onHidden() } }
+  val dismiss = remember {
+    { coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() } }
   }
 
   if (isShowing) {
     ModalBottomSheet(
-      onDismissRequest = onHidden,
+      onDismissRequest = onDismissRequest,
       sheetState = sheetState,
       windowInsets = BottomSheetDefaults.windowInsets.only(WindowInsetsSides.Top),
     ) {
-      content(hide)
+      content(dismiss)
     }
   }
 }
