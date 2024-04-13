@@ -161,8 +161,6 @@ class LauncherFragment : Fragment() {
         val workProfileStatus by
           workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
 
-        MoreActionsDialog(filter)
-
         Scaffold(
           bottomBar = {
             Row(
@@ -191,6 +189,8 @@ class LauncherFragment : Fragment() {
             LauncherList(paddingValues = paddingValues, recyclerAdapter = recyclerAdapter) {
               recyclerView = it
             }
+
+            MoreActionsDialog(filter)
           },
         )
       }

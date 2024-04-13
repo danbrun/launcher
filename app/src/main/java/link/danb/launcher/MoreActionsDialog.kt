@@ -3,68 +3,43 @@ package link.danb.launcher
 import android.os.UserHandle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentManager
-import kotlinx.coroutines.launch
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
+import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.widgets.PinWidgetsDialogFragment
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun MoreActionsDialog(
   isShowing: Boolean,
   userHandle: UserHandle,
   hasHiddenApps: Boolean,
   fragmentManager: FragmentManager,
-  onDismiss: () -> Unit,
+  onHidden: () -> Unit,
 ) {
-  val sheetState = rememberModalBottomSheetState()
-  val coroutineScope = rememberCoroutineScope()
+  BottomSheet(isShowing = isShowing, onHidden = { onHidden() }) { hide ->
+    PinShortcutItem(fragmentManager, userHandle) { hide() }
 
-  val dismiss: () -> Unit = {
-    coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
-  }
+    PinWidgetItem(fragmentManager, userHandle) { hide() }
 
-  if (isShowing) {
-    ModalBottomSheet(
-      onDismissRequest = { onDismiss() },
-      sheetState = sheetState,
-      windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
-    ) {
-      PinShortcutItem(fragmentManager, userHandle, dismiss)
-
-      PinWidgetItem(fragmentManager, userHandle, dismiss)
-
-      if (hasHiddenApps) {
-        HiddenAppsItem(fragmentManager, userHandle, dismiss)
-      }
-
-      Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
+    if (hasHiddenApps) {
+      HiddenAppsItem(fragmentManager, userHandle) { hide() }
     }
+
+    Spacer(modifier = Modifier.safeDrawingPadding())
   }
 }
 
 @Composable
-fun PinShortcutItem(
-  fragmentManager: FragmentManager,
-  userHandle: UserHandle,
-  dismiss: () -> Unit,
-) {
+fun PinShortcutItem(fragmentManager: FragmentManager, userHandle: UserHandle, dismiss: () -> Unit) {
   ListItem(
     headlineContent = { Text(text = stringResource(R.string.pin_shortcut)) },
     leadingContent = {
@@ -96,11 +71,7 @@ fun PinWidgetItem(fragmentManager: FragmentManager, userHandle: UserHandle, dism
 }
 
 @Composable
-fun HiddenAppsItem(
-  fragmentManager: FragmentManager,
-  userHandle: UserHandle,
-  dismiss: () -> Unit,
-) {
+fun HiddenAppsItem(fragmentManager: FragmentManager, userHandle: UserHandle, dismiss: () -> Unit) {
   ListItem(
     headlineContent = { Text(text = stringResource(R.string.show_hidden)) },
     leadingContent = {
