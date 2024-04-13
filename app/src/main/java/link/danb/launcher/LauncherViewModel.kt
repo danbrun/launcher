@@ -3,7 +3,6 @@ package link.danb.launcher
 import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.os.Process
-import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -77,12 +76,8 @@ constructor(
     }
   }
 
-  fun setSearchFilter(query: String) {
-    _filter.value = SearchFilter(query)
-  }
-
-  fun setProfileFilter(userHandle: UserHandle) {
-    _filter.value = ProfileFilter(userHandle)
+  fun setFilter(filter: Filter) {
+    _filter.value = filter
   }
 
   private fun getWidgetListViewItems(widgets: List<WidgetData>, filter: Filter): List<ViewItem> =
