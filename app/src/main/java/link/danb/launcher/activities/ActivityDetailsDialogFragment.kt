@@ -31,12 +31,11 @@ import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
-import link.danb.launcher.extensions.isPersonalProfile
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.extensions.setSpanSizeProvider
-import link.danb.launcher.profiles.WorkProfileInstalled
-import link.danb.launcher.profiles.WorkProfileManager
-import link.danb.launcher.profiles.WorkProfileStatus
+import link.danb.launcher.profiles.PersonalAndWorkProfiles
+import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.profiles.Profiles
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.CardTileViewHolder
@@ -64,7 +63,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
   @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var tileViewItemFactory: TileViewItemFactory
-  @Inject lateinit var workProfileManager: WorkProfileManager
+  @Inject lateinit var profileManager: ProfileManager
 
   private val userActivity: UserActivity by lazy {
     arguments?.getParcelableCompat(EXTRA_USER_COMPONENT)!!
@@ -127,7 +126,7 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        combine(activityData, workProfileManager.status, ::Pair).collect {
+        combine(activityData, profileManager.profiles, ::Pair).collect {
           adapter.submitList(getViewItems(it.first, it.second))
         }
       }
@@ -136,58 +135,56 @@ class ActivityDetailsDialogFragment : BottomSheetDialogFragment() {
     return recyclerView
   }
 
-  private suspend fun getViewItems(
-    activityData: ActivityData,
-    workProfileStatus: WorkProfileStatus,
-  ): List<ViewItem> = buildList {
-    add(
-      ActivityHeaderViewItem(
-        activityData,
-        launcherResourceProvider.getIcon(activityData.userActivity).await(),
-        launcherResourceProvider.getLabel(activityData.userActivity),
+  private suspend fun getViewItems(activityData: ActivityData, profiles: Profiles): List<ViewItem> =
+    buildList {
+      add(
+        ActivityHeaderViewItem(
+          activityData,
+          launcherResourceProvider.getIcon(activityData.userActivity).await(),
+          launcherResourceProvider.getLabel(activityData.userActivity),
+        )
       )
-    )
 
-    if (
-      activityData.userActivity.userHandle.isPersonalProfile ||
-        (workProfileStatus is WorkProfileInstalled && workProfileStatus.isEnabled)
-    ) {
-      val shortcuts =
-        shortcutManager
-          .getShortcuts(activityData.userActivity)
-          .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
-          .sortedBy { it.name.toString() }
+      if (
+        activityData.userActivity.userHandle == profiles.personal ||
+          (profiles is PersonalAndWorkProfiles && profiles.isWorkEnabled)
+      ) {
+        val shortcuts =
+          shortcutManager
+            .getShortcuts(activityData.userActivity)
+            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+            .sortedBy { it.name.toString() }
 
-      if (shortcuts.isNotEmpty()) {
-        add(DialogSubtitleViewItem(requireContext().getString(R.string.shortcuts)))
-        addAll(shortcuts)
-      }
+        if (shortcuts.isNotEmpty()) {
+          add(DialogSubtitleViewItem(requireContext().getString(R.string.shortcuts)))
+          addAll(shortcuts)
+        }
 
-      val configurableShortcuts =
-        shortcutManager
-          .getShortcutCreators(activityData.userActivity)
-          .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
-          .sortedBy { it.name.toString() }
+        val configurableShortcuts =
+          shortcutManager
+            .getShortcutCreators(activityData.userActivity)
+            .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+            .sortedBy { it.name.toString() }
 
-      if (configurableShortcuts.isNotEmpty()) {
-        add(DialogSubtitleViewItem(requireContext().getString(R.string.configurable_shortcuts)))
-        addAll(configurableShortcuts)
-      }
+        if (configurableShortcuts.isNotEmpty()) {
+          add(DialogSubtitleViewItem(requireContext().getString(R.string.configurable_shortcuts)))
+          addAll(configurableShortcuts)
+        }
 
-      val widgets =
-        appWidgetManager
-          .getInstalledProvidersForPackage(
-            activityData.userActivity.componentName.packageName,
-            activityData.userActivity.userHandle,
-          )
-          .map { WidgetPreviewViewItem(it, activityData.userActivity.userHandle) }
+        val widgets =
+          appWidgetManager
+            .getInstalledProvidersForPackage(
+              activityData.userActivity.componentName.packageName,
+              activityData.userActivity.userHandle,
+            )
+            .map { WidgetPreviewViewItem(it, activityData.userActivity.userHandle) }
 
-      if (widgets.isNotEmpty()) {
-        add(DialogSubtitleViewItem(requireContext().getString(R.string.widgets)))
-        addAll(widgets)
+        if (widgets.isNotEmpty()) {
+          add(DialogSubtitleViewItem(requireContext().getString(R.string.widgets)))
+          addAll(widgets)
+        }
       }
     }
-  }
 
   private fun onUninstallButtonClick(view: View, viewItem: ActivityHeaderViewItem) {
     val packageName = viewItem.data.userActivity.componentName.packageName

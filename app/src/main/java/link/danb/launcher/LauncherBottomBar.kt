@@ -1,6 +1,5 @@
 package link.danb.launcher
 
-import android.os.Process
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -33,19 +32,18 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import link.danb.launcher.extensions.isPersonalProfile
-import link.danb.launcher.profiles.WorkProfileInstalled
-import link.danb.launcher.profiles.WorkProfileManager
-import link.danb.launcher.profiles.WorkProfileStatus
+import link.danb.launcher.profiles.PersonalAndWorkProfiles
+import link.danb.launcher.profiles.PersonalProfile
+import link.danb.launcher.profiles.Profiles
 
 @Composable
 fun LauncherBottomBar(
   filter: Filter,
-  workProfileStatus: WorkProfileStatus,
-  workProfileManager: WorkProfileManager,
+  profiles: Profiles,
   onChangeFilter: (Filter) -> Unit,
   onSearchChange: (String) -> Unit,
   onSearchGo: () -> Unit,
+  onWorkProfileToggled: (Boolean) -> Unit,
   onMoreActionsClick: () -> Unit,
   onSearchFabClick: () -> Unit,
 ) {
@@ -57,14 +55,14 @@ fun LauncherBottomBar(
         .padding(8.dp),
     horizontalArrangement = Arrangement.Center,
   ) {
-    FilterSelectionTabGroup(filter, workProfileStatus, onChangeFilter)
+    FilterSelectionTabGroup(filter, profiles, onChangeFilter)
 
     SearchBar(filter, onSearchChange, onSearchGo)
 
     Spacer(modifier = Modifier.width(8.dp))
 
     TabButtonGroup {
-      WorkProfileToggle(filter, workProfileStatus, workProfileManager)
+      WorkProfileToggle(filter, profiles, onWorkProfileToggled)
 
       MoreActionsTabButton(onMoreActionsClick)
     }
@@ -76,27 +74,25 @@ fun LauncherBottomBar(
 }
 
 @Composable
-fun FilterSelectionTabGroup(
-  filter: Filter,
-  workProfileStatus: WorkProfileStatus,
-  onChangeFilter: (Filter) -> Unit,
-) {
+fun FilterSelectionTabGroup(filter: Filter, profiles: Profiles, onChangeFilter: (Filter) -> Unit) {
   TabButtonGroup {
-    if (workProfileStatus is WorkProfileInstalled) {
-      ShowPersonalTabButton(
-        isChecked = filter.let { it is ProfileFilter && it.profile.isPersonalProfile }
-      ) {
-        onChangeFilter(ProfileFilter(Process.myUserHandle()))
+    when (profiles) {
+      is PersonalProfile -> {
+        ShowAllAppsButton(isChecked = filter is ProfileFilter) {
+          onChangeFilter(ProfileFilter(profiles.personal))
+        }
       }
-
-      ShowWorkTabButton(
-        isChecked = filter.let { it is ProfileFilter && !it.profile.isPersonalProfile }
-      ) {
-        onChangeFilter(ProfileFilter(workProfileStatus.userHandle))
-      }
-    } else {
-      ShowAllAppsButton(isChecked = filter is ProfileFilter) {
-        onChangeFilter(ProfileFilter(Process.myUserHandle()))
+      is PersonalAndWorkProfiles -> {
+        ShowPersonalTabButton(
+          isChecked = filter is ProfileFilter && filter.profile == profiles.personal
+        ) {
+          onChangeFilter(ProfileFilter(profiles.personal))
+        }
+        ShowWorkTabButton(
+          isChecked = filter is ProfileFilter && filter.profile == profiles.workProfile
+        ) {
+          onChangeFilter(ProfileFilter(profiles.workProfile))
+        }
       }
     }
 
@@ -114,14 +110,7 @@ fun SearchBar(filter: Filter, onValueChange: (String) -> Unit, onGo: () -> Unit)
     val focusRequester = FocusRequester()
 
     TextField(
-      value =
-        filter.let {
-          if (it is SearchFilter) {
-            it.query
-          } else {
-            ""
-          }
-        },
+      value = if (filter is SearchFilter) filter.query else "",
       onValueChange = onValueChange,
       keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
       keyboardActions = KeyboardActions(onGo = { onGo() }),
@@ -133,20 +122,19 @@ fun SearchBar(filter: Filter, onValueChange: (String) -> Unit, onGo: () -> Unit)
 }
 
 @Composable
-fun WorkProfileToggle(
-  filter: Filter,
-  workProfileStatus: WorkProfileStatus,
-  workProfileManager: WorkProfileManager,
-) {
+fun WorkProfileToggle(filter: Filter, profiles: Profiles, onWorkProfileToggled: (Boolean) -> Unit) {
   AnimatedVisibility(
-    visible = filter.let { it is ProfileFilter && !it.profile.isPersonalProfile },
+    visible =
+      filter is ProfileFilter &&
+        profiles is PersonalAndWorkProfiles &&
+        filter.profile == profiles.workProfile,
     enter = fadeIn() + expandHorizontally(),
     exit = fadeOut() + shrinkHorizontally(),
   ) {
-    val isChecked = workProfileStatus.let { it is WorkProfileInstalled && it.isEnabled }
+    val isChecked = profiles is PersonalAndWorkProfiles && profiles.isWorkEnabled
     Switch(
       checked = isChecked,
-      onCheckedChange = { workProfileManager.setWorkProfileEnabled(it) },
+      onCheckedChange = onWorkProfileToggled,
       thumbContent = {
         Icon(
           painter =

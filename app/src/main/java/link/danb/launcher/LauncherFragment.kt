@@ -40,8 +40,7 @@ import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
-import link.danb.launcher.profiles.WorkProfileManager
-import link.danb.launcher.profiles.WorkProfileNotInstalled
+import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TransparentTileViewBinder
@@ -67,7 +66,7 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
-  @Inject lateinit var workProfileManager: WorkProfileManager
+  @Inject lateinit var profileManager: ProfileManager
 
   private lateinit var recyclerView: RecyclerView
   private lateinit var gestureIconView: GestureIconView
@@ -124,17 +123,16 @@ class LauncherFragment : Fragment() {
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       LauncherTheme {
         val filter by launcherViewModel.filter.collectAsState()
-        val workProfileStatus by
-          workProfileManager.status.collectAsState(initial = WorkProfileNotInstalled)
+        val workProfileStatus by profileManager.profiles.collectAsState()
 
         Scaffold(
           bottomBar = {
             LauncherBottomBar(
               filter,
               workProfileStatus,
-              workProfileManager,
               onChangeFilter = { launcherViewModel.setFilter(it) },
               onSearchGo = { launchFirstItem() },
+              onWorkProfileToggled = { profileManager.setWorkProfileEnabled(it) },
               onMoreActionsClick = { showMoreActionsDialog.value = true },
               onSearchChange = { launcherViewModel.setFilter(SearchFilter(it)) },
               onSearchFabClick = { onFabClick() },
