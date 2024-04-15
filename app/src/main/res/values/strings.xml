@@ -29,4 +29,10 @@
     <string name="show_hidden">Show hidden apps</string>
     <string name="unpin_shortcut">Unpin shortcut?</string>
     <string name="more_actions">More actions</string>
+    <string name="hide_app">Hide app</string>
+    <string name="show_app">Show app</string>
+    <string name="pin_app">Pin app</string>
+    <string name="unpin_app">Unpin app</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="enable_work_profile">Enable your work profile to view shortcuts and widgets.</string>
 </resources>

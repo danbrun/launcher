@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
+import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -123,8 +124,8 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
   private fun onTileLongClick(data: Any) {
     when (data) {
       is ActivityData -> {
-        ActivityDetailsDialogFragment.newInstance(data)
-          .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
+        setFragmentResult(TAG, bundleOf(EXTRA_SHOW_DETAILS_FOR to data.userActivity))
+        dismiss()
       }
       else -> throw NotImplementedError()
     }
@@ -132,6 +133,7 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
   companion object {
     const val TAG = "hidden_apps_dialog"
+    const val EXTRA_SHOW_DETAILS_FOR = "extra_show_details_for"
 
     private const val EXTRA_USER_HANDLE = "extra_user_handle"
 

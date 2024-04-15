@@ -1,7 +1,12 @@
 package link.danb.launcher
 
+import android.app.ActivityOptions
 import android.app.SearchManager
+import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
+import android.graphics.Rect
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -10,6 +15,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -17,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.os.BundleCompat
 import androidx.core.util.Consumer
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -31,9 +40,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import link.danb.launcher.activities.ActivityDetailsDialogFragment
+import link.danb.launcher.activities.ActivitiesViewModel
+import link.danb.launcher.activities.details.ActivityDetailsDialog
+import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.activities.ActivityManager
+import link.danb.launcher.activities.HiddenActivitiesDialogFragment
+import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
@@ -48,6 +62,7 @@ import link.danb.launcher.tiles.TransparentTileViewHolder
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.theme.LauncherTheme
+import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetManager
@@ -58,10 +73,13 @@ import link.danb.launcher.widgets.WidgetsViewModel
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
+  private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
+  private val activityDetailsViewModel: ActivityDetailsViewModel by activityViewModels()
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
+  @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
@@ -100,11 +118,34 @@ class LauncherFragment : Fragment() {
     GestureContract.fromIntent(intent)?.let { maybeAnimateGestureContract(it) }
   }
 
+  private val shortcutActivityLauncher =
+    registerForActivityResult(
+      ActivityResultContracts.StartIntentSenderForResult(),
+      ::onPinShortcutActivityResult,
+    )
+
+  private val bindWidgetActivityLauncher =
+    registerForActivityResult(AppWidgetSetupActivityResultContract()) {}
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       requireActivity().addOnNewIntentListener(onNewIntentListener)
+    }
+
+    childFragmentManager.setFragmentResultListener(HiddenActivitiesDialogFragment.TAG, this) {
+      _,
+      data ->
+      val showDetailsFor =
+        BundleCompat.getParcelable(
+          data,
+          HiddenActivitiesDialogFragment.EXTRA_SHOW_DETAILS_FOR,
+          UserActivity::class.java,
+        )
+      if (showDetailsFor != null) {
+        activityDetailsViewModel.showActivityDetails(showDetailsFor)
+      }
     }
   }
 
@@ -124,6 +165,7 @@ class LauncherFragment : Fragment() {
       LauncherTheme {
         val filter by launcherViewModel.filter.collectAsState()
         val workProfileStatus by profileManager.profiles.collectAsState()
+        val activityDetailsData by activityDetailsViewModel.activityDetails.collectAsState(null)
 
         Scaffold(
           bottomBar = {
@@ -143,9 +185,24 @@ class LauncherFragment : Fragment() {
             LauncherList(paddingValues = paddingValues, recyclerAdapter = recyclerAdapter) {
               recyclerView = it
             }
-
-            MoreActionsDialog(filter)
           },
+        )
+
+        MoreActionsDialog(filter)
+
+        ActivityDetailsDialog(
+          activityDetailsData,
+          appWidgetHost,
+          onDismissRequest = { activityDetailsViewModel.hideActivityDetails() },
+          onToggledPinned = { toggleAppPinned(it) },
+          onToggleHidden = { toggleAppHidden(it) },
+          onUninstall = { uninstallApp(it.userActivity) },
+          onSettings = { openAppSettings(it.userActivity) },
+          onShortcutClick = { view, item -> launchShortcut(view, item) },
+          onShortcutLongClick = { _, item -> pinShortcut(item) },
+          onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
+          onShortcutCreatorLongClick = { _, _ -> },
+          onWidgetPreviewClick = { bindWidget(it) },
         )
       }
     }
@@ -232,8 +289,7 @@ class LauncherFragment : Fragment() {
   private fun onTileLongClick(tileViewData: Any) {
     when (tileViewData) {
       is ActivityData -> {
-        ActivityDetailsDialogFragment.newInstance(tileViewData)
-          .show(parentFragmentManager, ActivityDetailsDialogFragment.TAG)
+        activityDetailsViewModel.showActivityDetails(tileViewData.userActivity)
       }
       is UserShortcut -> {
         MaterialAlertDialogBuilder(requireContext())
@@ -266,6 +322,61 @@ class LauncherFragment : Fragment() {
         putExtra("open_to_search", "static_shortcut_new_tab")
       },
       Bundle(),
+    )
+  }
+
+  private fun uninstallApp(userActivity: UserActivity) {
+    startActivity(
+      Intent(Intent.ACTION_DELETE)
+        .setData(Uri.parse("package:${userActivity.componentName.packageName}"))
+        .putExtra(Intent.EXTRA_USER, userActivity.userHandle)
+    )
+  }
+
+  private fun openAppSettings(userActivity: UserActivity) {
+    activityManager.launchAppDetails(userActivity, Rect(), ActivityOptions.makeBasic().toBundle())
+  }
+
+  private fun toggleAppPinned(activityData: ActivityData) {
+    activitiesViewModel.setMetadata(activityData.copy(isPinned = !activityData.isPinned))
+  }
+
+  private fun toggleAppHidden(activityData: ActivityData) {
+    activitiesViewModel.setMetadata(activityData.copy(isHidden = !activityData.isHidden))
+  }
+
+  private fun launchShortcut(view: View, userShortcut: UserShortcut) {
+    shortcutManager.launchShortcut(
+      userShortcut,
+      view.boundsOnScreen,
+      view.makeScaleUpAnimation().toBundle(),
+    )
+  }
+
+  private fun pinShortcut(userShortcut: UserShortcut) {
+    shortcutManager.pinShortcut(userShortcut, isPinned = true)
+    Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+  }
+
+  private fun launchShortcutCreator(userShortcutCreator: UserShortcutCreator) {
+    shortcutActivityLauncher.launch(
+      IntentSenderRequest.Builder(shortcutManager.getShortcutCreatorIntent(userShortcutCreator))
+        .build()
+    )
+  }
+
+  private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
+    val data = activityResult.data ?: return
+    shortcutManager.acceptPinRequest(data)
+    Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+  }
+
+  private fun bindWidget(providerInfo: AppWidgetProviderInfo) {
+    bindWidgetActivityLauncher.launch(
+      AppWidgetSetupActivityResultContract.AppWidgetSetupInput(
+        providerInfo.provider,
+        providerInfo.profile,
+      )
     )
   }
 }
