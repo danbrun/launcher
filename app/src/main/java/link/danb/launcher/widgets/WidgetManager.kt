@@ -2,6 +2,7 @@ package link.danb.launcher.widgets
 
 import android.app.Activity
 import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -32,17 +33,18 @@ class WidgetManager
 constructor(
   @ApplicationContext private val context: Context,
   private val appWidgetHost: AppWidgetHost,
+  private val appWidgetManager: AppWidgetManager,
   launcherDatabase: LauncherDatabase,
 ) {
 
   val widgets: Flow<List<Int>> =
     callbackFlow {
-        trySend(appWidgetHost.appWidgetIds.toList())
+        trySend(getValidAppWidgetIds())
 
         val broadcastReceiver =
           object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-              trySend(appWidgetHost.appWidgetIds.toList())
+              trySend(getValidAppWidgetIds())
             }
           }
 
@@ -91,6 +93,17 @@ constructor(
 
   fun notifyChange() {
     context.sendBroadcast(Intent(ACTION_WIDGETS_CHANGED).setPackage(context.packageName))
+  }
+
+  private fun getValidAppWidgetIds(): List<Int> {
+    val (validIds, invalidIds) =
+      appWidgetHost.appWidgetIds.toList().partition {
+        appWidgetManager.getAppWidgetInfo(it) != null
+      }
+    for (invalidId in invalidIds) {
+      appWidgetHost.deleteAppWidgetId(invalidId)
+    }
+    return validIds
   }
 
   companion object {
