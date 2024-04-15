@@ -1,37 +1,24 @@
 package link.danb.launcher.activities.details
 
-import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetProviderInfo
-import android.content.res.Resources
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.view.View
-import android.widget.ImageView
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -43,20 +30,18 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import link.danb.launcher.R
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.ui.BottomSheet
+import link.danb.launcher.ui.IconTile
+import link.danb.launcher.ui.WidgetPreview
 
 @Composable
 fun ActivityDetailsDialog(
   activityDetailsData: ActivityDetailsViewModel.ActivityDetails?,
-  appWidgetHost: AppWidgetHost,
   onDismissRequest: () -> Unit,
   onToggledPinned: (ActivityData) -> Unit,
   onToggleHidden: (ActivityData) -> Unit,
@@ -125,7 +110,7 @@ fun ActivityDetailsDialog(
 
           items(activityDetailsData.shortcutsAndWidgets.shortcuts, key = { it.userShortcut }) { item
             ->
-            Tile(
+            IconTile(
               icon = item.icon,
               name = item.name,
               onClick = { view ->
@@ -146,7 +131,7 @@ fun ActivityDetailsDialog(
             activityDetailsData.shortcutsAndWidgets.configurableShortcuts,
             key = { it.userShortcutCreator },
           ) { item ->
-            Tile(
+            IconTile(
               icon = item.icon,
               name = item.name,
               onClick = { view ->
@@ -168,7 +153,7 @@ fun ActivityDetailsDialog(
             key = { it.providerInfo },
             span = { GridItemSpan(maxLineSpan) },
           ) { item ->
-            WidgetPreview(item, appWidgetHost) { onWidgetPreviewClick(item.providerInfo) }
+            WidgetPreview(item) { onWidgetPreviewClick(item.providerInfo) }
           }
         }
       }
@@ -265,83 +250,4 @@ private fun OpenActivitySettingsListItem(onClick: () -> Unit) {
 @Composable
 private fun SectionHeader(text: String) {
   ListItem(headlineContent = { Text(text, style = MaterialTheme.typography.titleMedium) })
-}
-
-@Composable
-@OptIn(ExperimentalFoundationApi::class)
-private fun Tile(
-  icon: Drawable,
-  name: String,
-  onClick: (View) -> Unit,
-  onLongClick: (View) -> Unit,
-) {
-  var imageView: ImageView? by remember { mutableStateOf(null) }
-  Card(
-    Modifier.padding(4.dp)
-      .combinedClickable(
-        onClick = { onClick(checkNotNull(imageView)) },
-        onLongClick = { onLongClick(checkNotNull(imageView)) },
-      )
-  ) {
-    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-      AndroidView(
-        factory = { ImageView(it).apply { imageView = this } },
-        update = { it.setImageDrawable(icon) },
-        onReset = { it.setImageDrawable(null) },
-        modifier = Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-      )
-      Text(
-        name,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(start = 8.dp),
-      )
-    }
-  }
-}
-
-@Composable
-@OptIn(ExperimentalFoundationApi::class)
-fun WidgetPreview(
-  item: ActivityDetailsViewModel.WidgetPreviewViewData,
-  appWidgetHost: AppWidgetHost,
-  onClick: () -> Unit,
-) {
-  Card(Modifier.padding(4.dp).combinedClickable(onClick = onClick)) {
-    if (
-      item.previewLayout != null &&
-        item.previewLayout != Resources.ID_NULL &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    ) {
-      AndroidView(
-        factory = {
-          appWidgetHost.createView(
-            it,
-            Resources.ID_NULL,
-            item.providerInfo.clone().apply { initialLayout = previewLayout },
-          )
-        },
-        update = {
-          it.setAppWidget(
-            Resources.ID_NULL,
-            item.providerInfo.clone().apply { initialLayout = previewLayout },
-          )
-        },
-      )
-    } else {
-      Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-        AndroidView(
-          factory = { ImageView(it) },
-          update = { it.setImageDrawable(item.previewImage) },
-          onReset = { it.setImageDrawable(null) },
-        )
-      }
-    }
-
-    Text(item.label, Modifier.fillMaxWidth().padding(8.dp), textAlign = TextAlign.Center)
-
-    if (item.description != null) {
-      Text(item.description, Modifier.fillMaxWidth().padding(8.dp), textAlign = TextAlign.Center)
-    }
-  }
 }

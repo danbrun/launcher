@@ -2,7 +2,6 @@ package link.danb.launcher
 
 import android.app.ActivityOptions
 import android.app.SearchManager
-import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
 import android.graphics.Rect
@@ -41,10 +40,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivitiesViewModel
-import link.danb.launcher.activities.details.ActivityDetailsDialog
-import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.HiddenActivitiesDialogFragment
+import link.danb.launcher.activities.details.ActivityDetailsDialog
+import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
@@ -79,7 +78,6 @@ class LauncherFragment : Fragment() {
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
-  @Inject lateinit var appWidgetHost: AppWidgetHost
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
@@ -192,7 +190,6 @@ class LauncherFragment : Fragment() {
 
         ActivityDetailsDialog(
           activityDetailsData,
-          appWidgetHost,
           onDismissRequest = { activityDetailsViewModel.hideActivityDetails() },
           onToggledPinned = { toggleAppPinned(it) },
           onToggleHidden = { toggleAppHidden(it) },

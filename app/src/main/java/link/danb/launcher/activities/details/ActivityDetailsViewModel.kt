@@ -2,16 +2,16 @@ package link.danb.launcher.activities.details
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProviderInfo
 import android.graphics.drawable.Drawable
 import android.os.Build
-import androidx.annotation.IdRes
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combineTransform
+import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
@@ -23,6 +23,7 @@ import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TileViewItemFactory
+import link.danb.launcher.ui.WidgetPreviewData
 
 @HiltViewModel
 class ActivityDetailsViewModel
@@ -65,11 +66,11 @@ constructor(
           emit(
             data.copy(
               shortcutsAndWidgets =
-              ShortcutsAndWidgets.Loaded(
-                getShortcuts(userActivity),
-                getShortcutCreators(userActivity),
-                getWidgets(userActivity),
-              )
+                ShortcutsAndWidgets.Loaded(
+                  getShortcuts(userActivity),
+                  getShortcutCreators(userActivity),
+                  getWidgets(userActivity),
+                )
             )
           )
         }
@@ -100,20 +101,17 @@ constructor(
       .map { ShortcutCreatorViewData(it.data as UserShortcutCreator, it.icon, it.name.toString()) }
       .sortedBy { it.name }
 
-  private fun getWidgets(userActivity: UserActivity) =
+  private suspend fun getWidgets(userActivity: UserActivity) =
     appWidgetManager
       .getInstalledProvidersForPackage(
         userActivity.componentName.packageName,
         userActivity.userHandle,
       )
       .map {
-        WidgetPreviewViewData(
+        WidgetPreviewData(
           it,
-          it.loadPreviewImage(application, 0) ?: it.loadIcon(application, 0),
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            it.previewLayout
-          } else {
-            null
+          withContext(Dispatchers.IO) {
+            it.loadPreviewImage(application, 0) ?: it.loadIcon(application, 0)
           },
           it.loadLabel(application.packageManager),
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -139,7 +137,7 @@ constructor(
     data class Loaded(
       val shortcuts: List<ShortcutViewData>,
       val configurableShortcuts: List<ShortcutCreatorViewData>,
-      val widgets: List<WidgetPreviewViewData>,
+      val widgets: List<WidgetPreviewData>,
     ) : ShortcutsAndWidgets
   }
 
@@ -149,13 +147,5 @@ constructor(
     val userShortcutCreator: UserShortcutCreator,
     val icon: Drawable,
     val name: String,
-  )
-
-  data class WidgetPreviewViewData(
-    val providerInfo: AppWidgetProviderInfo,
-    val previewImage: Drawable,
-    @IdRes val previewLayout: Int?,
-    val label: String,
-    val description: String?,
   )
 }
