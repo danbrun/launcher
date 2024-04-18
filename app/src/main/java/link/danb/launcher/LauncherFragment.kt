@@ -19,7 +19,6 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
@@ -37,7 +36,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityManager
@@ -54,6 +52,7 @@ import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.shortcuts.PinShortcutsDialogFragment
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.tiles.TransparentTileViewBinder
@@ -63,6 +62,7 @@ import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.PinWidgetsDialogFragment
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
@@ -161,15 +161,14 @@ class LauncherFragment : Fragment() {
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       LauncherTheme {
-        val filter by launcherViewModel.filter.collectAsState()
-        val workProfileStatus by profileManager.profiles.collectAsState()
+        val bottomBarState by launcherViewModel.bottomBarState.collectAsState()
         val activityDetailsData by activityDetailsViewModel.activityDetails.collectAsState(null)
+        val isShowing by showMoreActionsDialog.collectAsState()
 
         Scaffold(
           bottomBar = {
             LauncherBottomBar(
-              filter,
-              workProfileStatus,
+              bottomBarState,
               onChangeFilter = { launcherViewModel.setFilter(it) },
               onSearchGo = { launchFirstItem() },
               onWorkProfileToggled = { profileManager.setWorkProfileEnabled(it) },
@@ -186,7 +185,27 @@ class LauncherFragment : Fragment() {
           },
         )
 
-        MoreActionsDialog(filter)
+        MoreActionsDialog(
+          isShowing = isShowing,
+          actions = bottomBarState.actions,
+          onActionClick = { action, user ->
+            when (action) {
+              BottomBarAction.Type.PIN_SHORTCUT -> {
+                PinShortcutsDialogFragment.newInstance(user)
+                  .showNow(childFragmentManager, PinShortcutsDialogFragment.TAG)
+              }
+              BottomBarAction.Type.PIN_WIDGET -> {
+                PinWidgetsDialogFragment.newInstance(user)
+                  .showNow(childFragmentManager, PinShortcutsDialogFragment.TAG)
+              }
+              BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
+                HiddenActivitiesDialogFragment.newInstance(user)
+                  .showNow(childFragmentManager, HiddenActivitiesDialogFragment.TAG)
+              }
+            }
+          },
+          onDismissRequest = { showMoreActionsDialog.value = false },
+        )
 
         ActivityDetailsDialog(
           activityDetailsData,
@@ -211,26 +230,6 @@ class LauncherFragment : Fragment() {
     }
 
     return view
-  }
-
-  @Composable
-  fun MoreActionsDialog(filter: Filter) {
-    if (filter is ProfileFilter) {
-      val isShowing by showMoreActionsDialog.collectAsState()
-
-      val hasHiddenApps by
-        activityManager.data
-          .map { data -> data.any { it.isHidden && it.userActivity.userHandle == filter.profile } }
-          .collectAsState(initial = false)
-
-      MoreActionsDialog(
-        isShowing = isShowing,
-        userHandle = filter.profile,
-        hasHiddenApps = hasHiddenApps,
-        fragmentManager = childFragmentManager,
-        onDismissRequest = { showMoreActionsDialog.value = false },
-      )
-    }
   }
 
   override fun onDestroy() {

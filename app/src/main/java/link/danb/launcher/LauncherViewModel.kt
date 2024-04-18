@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,6 +29,7 @@ import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
+import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
 import link.danb.launcher.ui.GroupHeaderViewItem
@@ -44,6 +46,7 @@ constructor(
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
+  profileManager: ProfileManager,
   shortcutManager: ShortcutManager,
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
@@ -68,6 +71,16 @@ constructor(
           getAppListViewItems(it.activities, it.filter)
       }
       .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
+
+  val bottomBarState: StateFlow<BottomBarState> =
+    combine(activityManager.data, filter, profileManager.profiles) { activities, filter, profiles ->
+        BottomBarStateProducer.getBottomBarState(filter, profiles, activities)
+      }
+      .stateIn(
+        MainScope(),
+        SharingStarted.WhileSubscribed(),
+        BottomBarState(emptyList(), emptyList(), null, null),
+      )
 
   fun toggleEditMode() {
     val filter = filter.value

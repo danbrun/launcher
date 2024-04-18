@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TextField
@@ -30,16 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import link.danb.launcher.profiles.PersonalAndWorkProfiles
-import link.danb.launcher.profiles.PersonalProfile
-import link.danb.launcher.profiles.Profiles
 
 @Composable
 fun LauncherBottomBar(
-  filter: Filter,
-  profiles: Profiles,
+  bottomBarState: BottomBarState,
   onChangeFilter: (Filter) -> Unit,
   onSearchChange: (String) -> Unit,
   onSearchGo: () -> Unit,
@@ -55,16 +54,32 @@ fun LauncherBottomBar(
         .padding(8.dp),
     horizontalArrangement = Arrangement.Center,
   ) {
-    FilterSelectionTabGroup(filter, profiles, onChangeFilter)
+    TabButtonGroup {
+      for (filter in bottomBarState.filters) {
+        TabButton(
+          painterResource(filter.icon),
+          stringResource(filter.name),
+          isChecked = filter.isChecked,
+        ) {
+          onChangeFilter(filter.filter)
+        }
+      }
+    }
 
-    SearchBar(filter, onSearchChange, onSearchGo)
+    SearchBar(bottomBarState.searchQuery, onSearchChange, onSearchGo)
 
     Spacer(modifier = Modifier.width(8.dp))
 
-    TabButtonGroup {
-      WorkProfileToggle(filter, profiles, onWorkProfileToggled)
+    BottomBarAnimatedVisibility(
+      visible = bottomBarState.workProfileToggle != null || bottomBarState.actions.isNotEmpty()
+    ) {
+      TabButtonGroup {
+        WorkProfileToggle(bottomBarState.workProfileToggle, onWorkProfileToggled)
 
-      MoreActionsTabButton(onMoreActionsClick)
+        BottomBarAnimatedVisibility(visible = bottomBarState.actions.isNotEmpty()) {
+          MoreActionsTabButton(onMoreActionsClick)
+        }
+      }
     }
 
     Spacer(modifier = Modifier.width(8.dp))
@@ -74,43 +89,12 @@ fun LauncherBottomBar(
 }
 
 @Composable
-fun FilterSelectionTabGroup(filter: Filter, profiles: Profiles, onChangeFilter: (Filter) -> Unit) {
-  TabButtonGroup {
-    when (profiles) {
-      is PersonalProfile -> {
-        ShowAllAppsButton(isChecked = filter is ProfileFilter) {
-          onChangeFilter(ProfileFilter(profiles.personal))
-        }
-      }
-      is PersonalAndWorkProfiles -> {
-        ShowPersonalTabButton(
-          isChecked = filter is ProfileFilter && filter.profile == profiles.personal
-        ) {
-          onChangeFilter(ProfileFilter(profiles.personal))
-        }
-        ShowWorkTabButton(
-          isChecked = filter is ProfileFilter && filter.profile == profiles.workProfile
-        ) {
-          onChangeFilter(ProfileFilter(profiles.workProfile))
-        }
-      }
-    }
-
-    ShowSearchTabButton(isChecked = filter is SearchFilter) { onChangeFilter(SearchFilter("")) }
-  }
-}
-
-@Composable
-fun SearchBar(filter: Filter, onValueChange: (String) -> Unit, onGo: () -> Unit) {
-  AnimatedVisibility(
-    visible = filter is SearchFilter,
-    enter = fadeIn() + expandHorizontally(),
-    exit = fadeOut() + shrinkHorizontally(),
-  ) {
+private fun SearchBar(searchQuery: String?, onValueChange: (String) -> Unit, onGo: () -> Unit) {
+  BottomBarAnimatedVisibility(visible = searchQuery != null) {
     val focusRequester = FocusRequester()
 
     TextField(
-      value = if (filter is SearchFilter) filter.query else "",
+      value = searchQuery ?: "",
       onValueChange = onValueChange,
       keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
       keyboardActions = KeyboardActions(onGo = { onGo() }),
@@ -122,24 +106,19 @@ fun SearchBar(filter: Filter, onValueChange: (String) -> Unit, onGo: () -> Unit)
 }
 
 @Composable
-fun WorkProfileToggle(filter: Filter, profiles: Profiles, onWorkProfileToggled: (Boolean) -> Unit) {
-  AnimatedVisibility(
-    visible =
-      filter is ProfileFilter &&
-        profiles is PersonalAndWorkProfiles &&
-        filter.profile == profiles.workProfile,
-    enter = fadeIn() + expandHorizontally(),
-    exit = fadeOut() + shrinkHorizontally(),
-  ) {
-    val isChecked = profiles is PersonalAndWorkProfiles && profiles.isWorkEnabled
+private fun WorkProfileToggle(
+  workProfileToggle: Boolean?,
+  onWorkProfileToggled: (Boolean) -> Unit,
+) {
+  BottomBarAnimatedVisibility(visible = workProfileToggle != null) {
     Switch(
-      checked = isChecked,
+      checked = workProfileToggle == true,
       onCheckedChange = onWorkProfileToggled,
       thumbContent = {
         Icon(
           painter =
             painterResource(
-              if (isChecked) {
+              if (workProfileToggle == true) {
                 R.drawable.ic_baseline_work_24
               } else {
                 R.drawable.ic_baseline_work_off_24
@@ -151,5 +130,36 @@ fun WorkProfileToggle(filter: Filter, profiles: Profiles, onWorkProfileToggled: 
       },
       modifier = Modifier.padding(horizontal = 8.dp),
     )
+  }
+}
+
+@Composable
+private fun MoreActionsTabButton(onClick: () -> Unit) {
+  TabButton(
+    icon = painterResource(id = R.drawable.baseline_more_horiz_24),
+    name = stringResource(id = R.string.more_actions),
+    isChecked = false,
+    onClick = onClick,
+  )
+}
+
+@Composable
+private fun SearchFab(onClick: () -> Unit) {
+  FloatingActionButton(onClick = onClick, containerColor = MaterialTheme.colorScheme.primary) {
+    Icon(
+      painter = painterResource(id = R.drawable.travel_explore_24),
+      contentDescription = stringResource(id = R.string.search),
+    )
+  }
+}
+
+@Composable
+private fun BottomBarAnimatedVisibility(visible: Boolean, content: @Composable () -> Unit) {
+  AnimatedVisibility(
+    visible = visible,
+    enter = fadeIn() + expandHorizontally(),
+    exit = fadeOut() + shrinkHorizontally(),
+  ) {
+    content()
   }
 }
