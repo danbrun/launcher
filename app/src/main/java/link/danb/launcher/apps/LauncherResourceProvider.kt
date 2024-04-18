@@ -12,8 +12,10 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserApplication
 import link.danb.launcher.components.UserComponent
@@ -33,7 +35,7 @@ constructor(@ApplicationContext private val context: Context) {
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
   private val density: Int by lazy { context.resources.displayMetrics.densityDpi }
   private val icons: MutableMap<UserComponent, Deferred<Drawable>> = mutableMapOf()
-  private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+  private val coroutineScope: CoroutineScope = MainScope() + Dispatchers.IO
 
   init {
     launcherApps.registerCallback(
@@ -59,13 +61,14 @@ constructor(@ApplicationContext private val context: Context) {
       }
     }
 
-  fun getIcon(userComponent: UserComponent): Deferred<Drawable> =
+  suspend fun getIcon(userComponent: UserComponent) =
+    withContext(Dispatchers.IO) {
+      userComponent.getSourceIcon().toLauncherIcon().getBadged(userComponent.userHandle)
+    }
+
+  fun getIconWithCache(userComponent: UserComponent): Deferred<Drawable> =
     synchronized(this) {
-      icons.getOrPut(userComponent) {
-        coroutineScope.async {
-          userComponent.getSourceIcon().toLauncherIcon().getBadged(userComponent.userHandle)
-        }
-      }
+      icons.getOrPut(userComponent) { coroutineScope.async { getIcon(userComponent) } }
     }
 
   private fun UserComponent.getSourceIcon(): Drawable =

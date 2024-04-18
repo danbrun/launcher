@@ -24,12 +24,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
+import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.ViewItem
 import link.danb.launcher.widgets.WidgetEditorViewItem
@@ -43,8 +43,8 @@ constructor(
   activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
+  private val launcherResourceProvider: LauncherResourceProvider,
   shortcutManager: ShortcutManager,
-  private val tileViewItemFactory: TileViewItemFactory,
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
@@ -105,11 +105,18 @@ constructor(
             activities
               .asFlow()
               .filter { it.isPinned && it.userActivity.userHandle == filter.profile }
-              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+              .map { getActivityTileItem(it) },
             shortcuts
               .asFlow()
               .filter { it.userHandle == filter.profile }
-              .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) },
+              .map {
+                TileViewItem(
+                  TileViewItem.Style.TRANSPARENT,
+                  it,
+                  launcherResourceProvider.getLabel(it),
+                  launcherResourceProvider.getIconWithCache(it).await(),
+                )
+              },
           )
           .toList()
           .sortedBy { it.name.toString().lowercase() }
@@ -134,7 +141,7 @@ constructor(
             is SearchFilter -> true
           }
         }
-        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.TRANSPARENT) }
+        .map { getActivityTileItem(it) }
         .filter {
           when (filter) {
             is ProfileFilter -> true
@@ -157,6 +164,16 @@ constructor(
       addAll(activityItems.sortedBy { it.name.toString().lowercase() })
     }
   }
+
+  private suspend fun getActivityTileItem(activityData: ActivityData) =
+    TileViewItem(
+      TileViewItem.Style.TRANSPARENT,
+      activityData,
+      launcherResourceProvider.getLabel(activityData.userActivity),
+      launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
+    ) { other ->
+      this is ActivityData && other is ActivityData && userActivity == other.userActivity
+    }
 
   private data class CombinedData(
     val activities: List<ActivityData>,

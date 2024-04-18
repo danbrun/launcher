@@ -15,14 +15,13 @@ import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserApplication
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.profiles.PersonalAndWorkProfiles
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.WidgetPreviewData
 
 @HiltViewModel
@@ -35,7 +34,6 @@ constructor(
   private val launcherResourceProvider: LauncherResourceProvider,
   profileManager: ProfileManager,
   private val shortcutManager: ShortcutManager,
-  private val tileViewItemFactory: TileViewItemFactory,
 ) : AndroidViewModel(application) {
 
   private val _details: MutableStateFlow<UserActivity?> = MutableStateFlow(null)
@@ -54,7 +52,7 @@ constructor(
         val data =
           ActivityDetails(
             activityData,
-            launcherResourceProvider.getIcon(userActivity).await(),
+            launcherResourceProvider.getIconWithCache(userActivity).await(),
             launcherResourceProvider.getLabel(userActivity),
             shortcutsAndWidgets =
               if (isProfileEnabled) ShortcutsAndWidgets.Loading
@@ -90,15 +88,25 @@ constructor(
   private suspend fun getShortcuts(userActivity: UserActivity) =
     shortcutManager
       .getShortcuts(userActivity)
-      .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
-      .map { ShortcutViewData(it.data as UserShortcut, it.icon, it.name.toString()) }
+      .map {
+        ShortcutViewData(
+          it,
+          launcherResourceProvider.getIcon(it),
+          launcherResourceProvider.getLabel(it),
+        )
+      }
       .sortedBy { it.name }
 
   private suspend fun getShortcutCreators(userActivity: UserActivity) =
     shortcutManager
       .getShortcutCreators(userActivity)
-      .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
-      .map { ShortcutCreatorViewData(it.data as UserShortcutCreator, it.icon, it.name.toString()) }
+      .map {
+        ShortcutCreatorViewData(
+          it,
+          launcherResourceProvider.getIcon(it),
+          launcherResourceProvider.getLabel(it),
+        )
+      }
       .sortedBy { it.name }
 
   private suspend fun getWidgets(userActivity: UserActivity) =
@@ -110,9 +118,10 @@ constructor(
       .map {
         WidgetPreviewData(
           it,
-          withContext(Dispatchers.IO) {
-            it.loadPreviewImage(application, 0) ?: it.loadIcon(application, 0)
-          },
+          withContext(Dispatchers.IO) { it.loadPreviewImage(application, 0) }
+            ?: launcherResourceProvider.getIcon(
+              UserApplication(it.provider.packageName, it.profile)
+            ),
           it.loadLabel(application.packageManager),
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             it.loadDescription(application)?.toString()

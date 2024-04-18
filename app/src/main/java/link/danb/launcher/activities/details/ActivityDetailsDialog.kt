@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -84,7 +85,7 @@ fun ActivityDetailsDialog(
       when (activityDetailsData.shortcutsAndWidgets) {
         is ActivityDetailsViewModel.ShortcutsAndWidgets.Loading -> {
           item(span = { GridItemSpan(maxLineSpan) }) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
               CircularProgressIndicator(Modifier.size(64.dp))
             }
           }

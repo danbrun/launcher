@@ -81,7 +81,7 @@ private constructor(
       WidgetHeaderViewItem(
         userApplication,
         launcherResourceProvider.getLabel(userApplication),
-        launcherResourceProvider.getIcon(userApplication).await(),
+        launcherResourceProvider.getIcon(userApplication),
         isExpanded,
       )
   }

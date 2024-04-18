@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
+import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.getParcelableCompat
@@ -30,7 +31,6 @@ import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.CardTileViewHolder
 import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.DynamicGridLayoutManager
@@ -43,7 +43,7 @@ import link.danb.launcher.ui.ViewItem
 class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
 
   @Inject lateinit var activityManager: ActivityManager
-  @Inject lateinit var tileViewItemFactory: TileViewItemFactory
+  @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
 
   private val userHandle: UserHandle by lazy {
     checkNotNull(requireArguments().getParcelableCompat(EXTRA_USER_HANDLE))
@@ -102,7 +102,16 @@ class HiddenActivitiesDialogFragment : BottomSheetDialogFragment() {
       activities
         .asFlow()
         .filter { it.isHidden && it.userActivity.userHandle == userHandle }
-        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+        .map {
+          TileViewItem(
+            TileViewItem.Style.CARD,
+            it,
+            launcherResourceProvider.getLabel(it.userActivity),
+            launcherResourceProvider.getIcon(it.userActivity),
+          ) { other ->
+            this is ActivityData && other is ActivityData && userActivity == other.userActivity
+          }
+        }
         .toList()
         .sortedBy { it.name.toString().lowercase() }
     }

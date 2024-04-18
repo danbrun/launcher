@@ -29,13 +29,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.activities.ActivityManager
+import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.getParcelableCompat
 import link.danb.launcher.extensions.setSpanSizeProvider
 import link.danb.launcher.tiles.CardTileViewBinder
 import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.tiles.TileViewItemFactory
 import link.danb.launcher.ui.DialogHeaderViewBinder
 import link.danb.launcher.ui.DialogHeaderViewItem
 import link.danb.launcher.ui.DynamicGridLayoutManager
@@ -48,7 +48,7 @@ import link.danb.launcher.ui.ViewItem
 class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
 
   @Inject lateinit var activityManager: ActivityManager
-  @Inject lateinit var tileViewItemFactory: TileViewItemFactory
+  @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
   @Inject lateinit var shortcutManager: ShortcutManager
 
   private val shortcutActivityLauncher: ActivityResultLauncher<IntentSenderRequest> =
@@ -114,7 +114,14 @@ class PinShortcutsDialogFragment : BottomSheetDialogFragment() {
         .asFlow()
         .filter { it.userActivity.userHandle == userHandle }
         .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
-        .map { tileViewItemFactory.getTileViewItem(it, TileViewItem.Style.CARD) }
+        .map {
+          TileViewItem(
+            TileViewItem.Style.CARD,
+            it,
+            launcherResourceProvider.getLabel(it),
+            launcherResourceProvider.getIcon(it),
+          )
+        }
         .toList()
         .sortedBy { it.name.toString().lowercase() }
     }
