@@ -10,6 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
@@ -38,42 +39,45 @@ constructor(
 
   private val _details: MutableStateFlow<UserActivity?> = MutableStateFlow(null)
 
-  val activityDetails: Flow<ActivityDetails?> =
-    combineTransform(_details, activityManager.data, profileManager.profiles) {
-      userActivity,
-      activityDataList,
-      profiles ->
-      val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
-      if (userActivity != null && activityData != null) {
-        val isProfileEnabled =
-          activityData.userActivity.userHandle == profiles.personal ||
+  private val shortcutsAndWidgets: Flow<ShortcutsAndWidgets?> =
+    combineTransform(_details, profileManager.profiles) { activity, profiles ->
+      if (activity != null) {
+        if (
+          activity.userHandle == profiles.personal ||
             (profiles is PersonalAndWorkProfiles && profiles.isWorkEnabled)
+        ) {
+          emit(ShortcutsAndWidgets.Loading)
 
-        val data =
-          ActivityDetails(
-            activityData,
-            launcherResourceProvider.getIconWithCache(userActivity).await(),
-            launcherResourceProvider.getLabel(userActivity),
-            shortcutsAndWidgets =
-              if (isProfileEnabled) ShortcutsAndWidgets.Loading
-              else ShortcutsAndWidgets.ProfileDisabled,
-          )
-        emit(data)
-
-        if (isProfileEnabled) {
           emit(
-            data.copy(
-              shortcutsAndWidgets =
-                ShortcutsAndWidgets.Loaded(
-                  getShortcuts(userActivity),
-                  getShortcutCreators(userActivity),
-                  getWidgets(userActivity),
-                )
+            ShortcutsAndWidgets.Loaded(
+              getShortcuts(activity),
+              getShortcutCreators(activity),
+              getWidgets(activity),
             )
           )
+        } else {
+          emit(ShortcutsAndWidgets.ProfileDisabled)
         }
       } else {
         emit(null)
+      }
+    }
+
+  val activityDetails: Flow<ActivityDetails?> =
+    combine(_details, activityManager.data, shortcutsAndWidgets) {
+      activity,
+      activityDataList,
+      shortcutsAndWidgets ->
+      val activityData = activityDataList.firstOrNull { it.userActivity == activity }
+      if (activity != null && activityData != null && shortcutsAndWidgets != null) {
+        ActivityDetails(
+          activityData,
+          launcherResourceProvider.getIconWithCache(activity).await(),
+          launcherResourceProvider.getLabel(activity),
+          shortcutsAndWidgets,
+        )
+      } else {
+        null
       }
     }
 
