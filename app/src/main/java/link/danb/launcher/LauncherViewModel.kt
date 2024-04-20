@@ -79,7 +79,7 @@ constructor(
       .stateIn(
         MainScope(),
         SharingStarted.WhileSubscribed(),
-        BottomBarState(emptyList(), emptyList(), null, null),
+        BottomBarState(emptyList(), emptyList(), null, false),
       )
 
   fun toggleEditMode() {

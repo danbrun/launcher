@@ -28,6 +28,10 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -66,7 +70,7 @@ fun LauncherBottomBar(
       }
     }
 
-    SearchBar(bottomBarState.searchQuery, onSearchChange, onSearchGo)
+    SearchBar(bottomBarState.isSearching, onSearchChange, onSearchGo)
 
     Spacer(modifier = Modifier.width(8.dp))
 
@@ -89,13 +93,17 @@ fun LauncherBottomBar(
 }
 
 @Composable
-private fun SearchBar(searchQuery: String?, onValueChange: (String) -> Unit, onGo: () -> Unit) {
-  BottomBarAnimatedVisibility(visible = searchQuery != null) {
+private fun SearchBar(isVisible: Boolean, onValueChange: (String) -> Unit, onGo: () -> Unit) {
+  BottomBarAnimatedVisibility(visible = isVisible) {
     val focusRequester = FocusRequester()
+    var query: String by remember { mutableStateOf("") }
 
     TextField(
-      value = searchQuery ?: "",
-      onValueChange = onValueChange,
+      value = query,
+      onValueChange = {
+        query = it
+        onValueChange(query)
+      },
       keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
       keyboardActions = KeyboardActions(onGo = { onGo() }),
       modifier = Modifier.fillMaxWidth().padding(start = 8.dp).focusRequester(focusRequester),

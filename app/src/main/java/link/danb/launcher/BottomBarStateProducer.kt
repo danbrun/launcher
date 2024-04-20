@@ -10,7 +10,7 @@ data class BottomBarState(
   val filters: List<BottomBarFilter>,
   val actions: List<BottomBarAction>,
   val workProfileToggle: Boolean?,
-  val searchQuery: String?,
+  val isSearching: Boolean,
 )
 
 data class BottomBarFilter(
@@ -49,7 +49,7 @@ object BottomBarStateProducer {
               profiles.isWorkEnabled
             else null
         },
-      searchQuery = if (filter is SearchFilter) filter.query else null,
+      isSearching = filter is SearchFilter,
     )
 
   private fun getBottomBarFilters(filter: Filter, profiles: Profiles) = buildList {
