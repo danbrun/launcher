@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -17,9 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -58,8 +60,26 @@ fun LauncherBottomBar(
         .padding(8.dp),
     horizontalArrangement = Arrangement.Center,
   ) {
+    FiltersTabGroup(bottomBarState.filters, onChangeFilter)
+
+    SearchBar(visible = bottomBarState.isSearching, onSearchChange, onSearchGo)
+
+    MoreActionsTabGroup(
+      bottomBarState.workProfileToggle,
+      bottomBarState.actions,
+      onWorkProfileToggled,
+      onMoreActionsClick,
+    )
+
+    SearchFab(visible = !bottomBarState.isSearching, onSearchFabClick)
+  }
+}
+
+@Composable
+private fun FiltersTabGroup(filters: List<BottomBarFilter>, onChangeFilter: (Filter) -> Unit) {
+  ExpandingAnimatedVisibility(visible = filters.isNotEmpty()) {
     TabButtonGroup {
-      for (filter in bottomBarState.filters) {
+      for (filter in filters) {
         TabButton(
           painterResource(filter.icon),
           stringResource(filter.name),
@@ -69,32 +89,12 @@ fun LauncherBottomBar(
         }
       }
     }
-
-    SearchBar(bottomBarState.isSearching, onSearchChange, onSearchGo)
-
-    Spacer(modifier = Modifier.width(8.dp))
-
-    BottomBarAnimatedVisibility(
-      visible = bottomBarState.workProfileToggle != null || bottomBarState.actions.isNotEmpty()
-    ) {
-      TabButtonGroup {
-        WorkProfileToggle(bottomBarState.workProfileToggle, onWorkProfileToggled)
-
-        BottomBarAnimatedVisibility(visible = bottomBarState.actions.isNotEmpty()) {
-          MoreActionsTabButton(onMoreActionsClick)
-        }
-      }
-    }
-
-    Spacer(modifier = Modifier.width(8.dp))
-
-    SearchFab(onSearchFabClick)
   }
 }
 
 @Composable
-private fun SearchBar(isVisible: Boolean, onValueChange: (String) -> Unit, onGo: () -> Unit) {
-  BottomBarAnimatedVisibility(visible = isVisible) {
+private fun SearchBar(visible: Boolean, onValueChange: (String) -> Unit, onGo: () -> Unit) {
+  ExpandingAnimatedVisibility(visible) {
     val focusRequester = FocusRequester()
     var query: String by remember { mutableStateOf("") }
 
@@ -106,10 +106,42 @@ private fun SearchBar(isVisible: Boolean, onValueChange: (String) -> Unit, onGo:
       },
       keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
       keyboardActions = KeyboardActions(onGo = { onGo() }),
-      modifier = Modifier.fillMaxWidth().padding(start = 8.dp).focusRequester(focusRequester),
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).focusRequester(focusRequester),
     )
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+  }
+}
+
+@Composable
+private fun MoreActionsTabGroup(
+  workProfileToggle: Boolean?,
+  actions: List<BottomBarAction>,
+  onWorkProfileToggled: (Boolean) -> Unit,
+  onMoreActionsClick: () -> Unit,
+) {
+  ExpandingAnimatedVisibility(visible = workProfileToggle != null || actions.isNotEmpty()) {
+    TabButtonGroup {
+      WorkProfileToggle(workProfileToggle, onWorkProfileToggled)
+
+      MoreActionsTabButton(visible = actions.isNotEmpty(), onMoreActionsClick)
+    }
+  }
+}
+
+@Composable
+private fun SearchFab(visible: Boolean, onClick: () -> Unit) {
+  ExpandingAnimatedVisibility(visible) {
+    FloatingActionButton(
+      onClick = onClick,
+      modifier = Modifier.padding(horizontal = 4.dp),
+      containerColor = MaterialTheme.colorScheme.primary,
+    ) {
+      Icon(
+        painter = painterResource(id = R.drawable.travel_explore_24),
+        contentDescription = stringResource(id = R.string.search),
+      )
+    }
   }
 }
 
@@ -118,7 +150,7 @@ private fun WorkProfileToggle(
   workProfileToggle: Boolean?,
   onWorkProfileToggled: (Boolean) -> Unit,
 ) {
-  BottomBarAnimatedVisibility(visible = workProfileToggle != null) {
+  ExpandingAnimatedVisibility(visible = workProfileToggle != null) {
     Switch(
       checked = workProfileToggle == true,
       onCheckedChange = onWorkProfileToggled,
@@ -142,32 +174,38 @@ private fun WorkProfileToggle(
 }
 
 @Composable
-private fun MoreActionsTabButton(onClick: () -> Unit) {
-  TabButton(
-    icon = painterResource(id = R.drawable.baseline_more_horiz_24),
-    name = stringResource(id = R.string.more_actions),
-    isChecked = false,
-    onClick = onClick,
-  )
-}
-
-@Composable
-private fun SearchFab(onClick: () -> Unit) {
-  FloatingActionButton(onClick = onClick, containerColor = MaterialTheme.colorScheme.primary) {
-    Icon(
-      painter = painterResource(id = R.drawable.travel_explore_24),
-      contentDescription = stringResource(id = R.string.search),
+private fun MoreActionsTabButton(visible: Boolean, onClick: () -> Unit) {
+  ExpandingAnimatedVisibility(visible) {
+    TabButton(
+      icon = painterResource(id = R.drawable.baseline_more_horiz_24),
+      name = stringResource(id = R.string.more_actions),
+      isChecked = false,
+      onClick = onClick,
     )
   }
 }
 
 @Composable
-private fun BottomBarAnimatedVisibility(visible: Boolean, content: @Composable () -> Unit) {
+private fun ExpandingAnimatedVisibility(visible: Boolean, content: @Composable () -> Unit) {
   AnimatedVisibility(
     visible = visible,
     enter = fadeIn() + expandHorizontally(),
     exit = fadeOut() + shrinkHorizontally(),
   ) {
     content()
+  }
+}
+
+@Composable
+fun TabButtonGroup(iconButtons: @Composable () -> Unit) {
+  Card(Modifier.padding(horizontal = 4.dp), RoundedCornerShape(28.dp)) {
+    Row(modifier = Modifier.padding(4.dp)) { iconButtons() }
+  }
+}
+
+@Composable
+fun TabButton(icon: Painter, name: String, isChecked: Boolean, onClick: () -> Unit) {
+  FilledIconToggleButton(checked = isChecked, onCheckedChange = { _ -> onClick() }) {
+    Icon(painter = icon, contentDescription = name)
   }
 }

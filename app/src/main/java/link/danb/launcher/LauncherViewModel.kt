@@ -9,7 +9,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -77,9 +76,9 @@ constructor(
         BottomBarStateProducer.getBottomBarState(filter, profiles, activities)
       }
       .stateIn(
-        MainScope(),
+        viewModelScope,
         SharingStarted.WhileSubscribed(),
-        BottomBarState(emptyList(), emptyList(), null, false),
+        BottomBarState(emptyList(), emptyList(), workProfileToggle = null, isSearching = false),
       )
 
   fun toggleEditMode() {

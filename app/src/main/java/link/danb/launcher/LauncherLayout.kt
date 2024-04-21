@@ -2,19 +2,11 @@ package link.danb.launcher
 
 import android.graphics.Rect
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilledIconToggleButton
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.recyclerview.widget.RecyclerView
 import link.danb.launcher.extensions.setSpanSizeProvider
@@ -64,18 +56,4 @@ fun LauncherList(
     update = { it.setPadding(padding.left, padding.top, padding.right, padding.bottom) },
     modifier = Modifier.fillMaxSize(),
   )
-}
-
-@Composable
-fun TabButtonGroup(iconButtons: @Composable () -> Unit) {
-  Card(shape = RoundedCornerShape(28.dp)) {
-    Row(modifier = Modifier.padding(4.dp)) { iconButtons() }
-  }
-}
-
-@Composable
-fun TabButton(icon: Painter, name: String, isChecked: Boolean, onClick: () -> Unit) {
-  FilledIconToggleButton(checked = isChecked, onCheckedChange = { _ -> onClick() }) {
-    Icon(painter = icon, contentDescription = name)
-  }
 }
