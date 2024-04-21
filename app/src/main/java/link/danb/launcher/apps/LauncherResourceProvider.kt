@@ -2,10 +2,15 @@ package link.danb.launcher.apps
 
 import android.content.Context
 import android.content.pm.LauncherApps
+import android.graphics.Color
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.PaintDrawable
 import android.os.UserHandle
 import androidx.core.content.getSystemService
+import androidx.core.graphics.drawable.toBitmap
+import androidx.palette.graphics.Palette
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +30,6 @@ import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.resolveApplication
 import link.danb.launcher.extensions.resolveShortcut
 import link.danb.launcher.icons.AdaptiveLauncherIconDrawable
-import link.danb.launcher.icons.LegacyLauncherIconDrawable
 
 @Singleton
 class LauncherResourceProvider
@@ -61,17 +65,18 @@ constructor(@ApplicationContext private val context: Context) {
       }
     }
 
-  suspend fun getIcon(userComponent: UserComponent) =
-    withContext(Dispatchers.IO) {
-      userComponent.getSourceIcon().toLauncherIcon().getBadged(userComponent.userHandle)
-    }
+  suspend fun getSourceIcon(userComponent: UserComponent): AdaptiveIconDrawable =
+    withContext(Dispatchers.IO) { userComponent.getSourceIconInternal().toAdaptiveIconDrawable() }
+
+  suspend fun getIcon(userComponent: UserComponent): Drawable =
+    AdaptiveLauncherIconDrawable(getSourceIcon(userComponent)).getBadged(userComponent.userHandle)
 
   fun getIconWithCache(userComponent: UserComponent): Deferred<Drawable> =
     synchronized(this) {
       icons.getOrPut(userComponent) { coroutineScope.async { getIcon(userComponent) } }
     }
 
-  private fun UserComponent.getSourceIcon(): Drawable =
+  private fun UserComponent.getSourceIconInternal(): Drawable =
     when (this) {
       is UserApplication -> {
         launcherApps.resolveApplication(this).loadUnbadgedIcon(context.packageManager)
@@ -81,19 +86,24 @@ constructor(@ApplicationContext private val context: Context) {
       }
       is UserShortcut -> {
         launcherApps.getShortcutIconDrawable(launcherApps.resolveShortcut(this), density)
-          ?: UserApplication(packageName, userHandle).getSourceIcon()
+          ?: UserApplication(packageName, userHandle).getSourceIconInternal()
       }
       is UserShortcutCreator -> {
-        UserActivity(componentName, userHandle).getSourceIcon()
+        UserActivity(componentName, userHandle).getSourceIconInternal()
       }
     }
 
-  private suspend fun Drawable.toLauncherIcon(): Drawable =
-    if (this is AdaptiveIconDrawable) {
-      AdaptiveLauncherIconDrawable(this)
-    } else {
-      LegacyLauncherIconDrawable.create(this)
+  private suspend fun Drawable.toAdaptiveIconDrawable(): AdaptiveIconDrawable {
+    if (this is AdaptiveIconDrawable && foreground != null && background != null) {
+      return this
     }
+
+    val palette = withContext(Dispatchers.IO) { Palette.from(toBitmap()).generate() }
+    val background = PaintDrawable(palette.getMutedColor(Color.WHITE))
+    val foreground = InsetDrawable(this, AdaptiveIconDrawable.getExtraInsetFraction())
+
+    return AdaptiveIconDrawable(background, foreground)
+  }
 
   private fun Drawable.getBadged(user: UserHandle) =
     context.packageManager.getUserBadgedIcon(this, user)
