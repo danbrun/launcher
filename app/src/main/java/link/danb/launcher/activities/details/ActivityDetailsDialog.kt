@@ -1,6 +1,7 @@
 package link.danb.launcher.activities.details
 
 import android.appwidget.AppWidgetProviderInfo
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -22,12 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,6 +32,7 @@ import link.danb.launcher.R
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
+import link.danb.launcher.icons.LauncherIcon
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.IconTile
 import link.danb.launcher.ui.WidgetPreview
@@ -60,7 +57,11 @@ fun ActivityDetailsDialog(
       val activityData = checkNotNull(activityDetailsData).activityData
 
       item(span = { GridItemSpan(maxLineSpan) }) {
-        ActivityHeader(activityDetailsData.icon, activityDetailsData.name)
+        ActivityHeader(
+          activityDetailsData.icon,
+          activityDetailsData.badge,
+          activityDetailsData.name,
+        )
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
@@ -111,15 +112,18 @@ fun ActivityDetailsDialog(
 
           items(activityDetailsData.shortcutsAndWidgets.shortcuts, key = { it.userShortcut }) { item
             ->
-            IconTile(
-              icon = item.icon,
-              name = item.name,
-              onClick = { view ->
-                onShortcutClick(view, item.userShortcut)
-                dismiss()
-              },
-              onLongClick = { view -> onShortcutLongClick(view, item.userShortcut) },
-            )
+            Card(Modifier.padding(4.dp)) {
+              IconTile(
+                icon = item.icon,
+                badge = item.badge,
+                name = item.name,
+                onClick = { view ->
+                  onShortcutClick(view, item.userShortcut)
+                  dismiss()
+                },
+                onLongClick = { view -> onShortcutLongClick(view, item.userShortcut) },
+              )
+            }
           }
 
           if (activityDetailsData.shortcutsAndWidgets.configurableShortcuts.isNotEmpty()) {
@@ -132,15 +136,18 @@ fun ActivityDetailsDialog(
             activityDetailsData.shortcutsAndWidgets.configurableShortcuts,
             key = { it.userShortcutCreator },
           ) { item ->
-            IconTile(
-              icon = item.icon,
-              name = item.name,
-              onClick = { view ->
-                onShortcutCreatorClick(view, item.userShortcutCreator)
-                dismiss()
-              },
-              onLongClick = { view -> onShortcutCreatorLongClick(view, item.userShortcutCreator) },
-            )
+            Card(Modifier.padding(4.dp)) {
+              IconTile(
+                icon = item.icon,
+                badge = item.badge,
+                name = item.name,
+                onClick = { view ->
+                  onShortcutCreatorClick(view, item.userShortcutCreator)
+                  dismiss()
+                },
+                onLongClick = { view -> onShortcutCreatorLongClick(view, item.userShortcutCreator) },
+              )
+            }
           }
 
           if (activityDetailsData.shortcutsAndWidgets.widgets.isNotEmpty()) {
@@ -165,21 +172,11 @@ fun ActivityDetailsDialog(
 }
 
 @Composable
-private fun ActivityHeader(icon: Drawable, name: String) {
+private fun ActivityHeader(icon: AdaptiveIconDrawable, badge: Drawable, name: String) {
   ListItem(
     headlineContent = { Text(name, style = MaterialTheme.typography.headlineMedium) },
     leadingContent = {
-      Box(
-        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)).drawWithContent {
-          drawIntoCanvas {
-            // This transform is to avoid changing the bounds which causes other uses of the
-            // icon to change size.
-            withTransform({ scale(size.width / icon.bounds.width(), Offset.Zero) }) {
-              icon.draw(it.nativeCanvas)
-            }
-          }
-        }
-      )
+      LauncherIcon(icon, badge, Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
     },
   )
 }

@@ -2,8 +2,10 @@ package link.danb.launcher.apps
 
 import android.content.Context
 import android.content.pm.LauncherApps
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.PaintDrawable
@@ -21,6 +23,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
+import link.danb.launcher.R
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserApplication
 import link.danb.launcher.components.UserComponent
@@ -39,6 +42,7 @@ constructor(@ApplicationContext private val context: Context) {
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
   private val density: Int by lazy { context.resources.displayMetrics.densityDpi }
   private val icons: MutableMap<UserComponent, Deferred<Drawable>> = mutableMapOf()
+  private val badges: MutableMap<UserHandle, Drawable> = mutableMapOf()
   private val coroutineScope: CoroutineScope = MainScope() + Dispatchers.IO
 
   init {
@@ -65,15 +69,24 @@ constructor(@ApplicationContext private val context: Context) {
       }
     }
 
-  suspend fun getSourceIcon(userComponent: UserComponent): AdaptiveIconDrawable =
-    withContext(Dispatchers.IO) { userComponent.getSourceIconInternal().toAdaptiveIconDrawable() }
-
   suspend fun getIcon(userComponent: UserComponent): Drawable =
     AdaptiveLauncherIconDrawable(getSourceIcon(userComponent)).getBadged(userComponent.userHandle)
 
   fun getIconWithCache(userComponent: UserComponent): Deferred<Drawable> =
     synchronized(this) {
       icons.getOrPut(userComponent) { coroutineScope.async { getIcon(userComponent) } }
+    }
+
+  suspend fun getSourceIcon(userComponent: UserComponent): AdaptiveIconDrawable =
+    withContext(Dispatchers.IO) { userComponent.getSourceIconInternal().toAdaptiveIconDrawable() }
+
+  fun getBadge(userHandle: UserHandle): Drawable =
+    badges.getOrPut(userHandle) {
+      val size = context.resources.getDimensionPixelOffset(R.dimen.launcher_icon_size)
+      context.packageManager.getUserBadgedIcon(
+        BitmapDrawable(context.resources, Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)),
+        userHandle,
+      )
     }
 
   private fun UserComponent.getSourceIconInternal(): Drawable =

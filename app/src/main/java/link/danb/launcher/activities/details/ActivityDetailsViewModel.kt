@@ -2,6 +2,7 @@ package link.danb.launcher.activities.details
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
@@ -72,7 +73,8 @@ constructor(
       if (activity != null && activityData != null && shortcutsAndWidgets != null) {
         ActivityDetails(
           activityData,
-          launcherResourceProvider.getIconWithCache(activity).await(),
+          launcherResourceProvider.getSourceIcon(activity),
+          launcherResourceProvider.getBadge(activity.userHandle),
           launcherResourceProvider.getLabel(activity),
           shortcutsAndWidgets,
         )
@@ -95,7 +97,8 @@ constructor(
       .map {
         ShortcutViewData(
           it,
-          launcherResourceProvider.getIcon(it),
+          launcherResourceProvider.getSourceIcon(it),
+          launcherResourceProvider.getBadge(it.userHandle),
           launcherResourceProvider.getLabel(it),
         )
       }
@@ -107,7 +110,8 @@ constructor(
       .map {
         ShortcutCreatorViewData(
           it,
-          launcherResourceProvider.getIcon(it),
+          launcherResourceProvider.getSourceIcon(it),
+          launcherResourceProvider.getBadge(it.userHandle),
           launcherResourceProvider.getLabel(it),
         )
       }
@@ -137,7 +141,8 @@ constructor(
 
   data class ActivityDetails(
     val activityData: ActivityData,
-    val icon: Drawable,
+    val icon: AdaptiveIconDrawable,
+    val badge: Drawable,
     val name: String,
     val shortcutsAndWidgets: ShortcutsAndWidgets,
   )
@@ -154,11 +159,17 @@ constructor(
     ) : ShortcutsAndWidgets
   }
 
-  data class ShortcutViewData(val userShortcut: UserShortcut, val icon: Drawable, val name: String)
+  data class ShortcutViewData(
+    val userShortcut: UserShortcut,
+    val icon: AdaptiveIconDrawable,
+    val badge: Drawable,
+    val name: String,
+  )
 
   data class ShortcutCreatorViewData(
     val userShortcutCreator: UserShortcutCreator,
-    val icon: Drawable,
+    val icon: AdaptiveIconDrawable,
+    val badge: Drawable,
     val name: String,
   )
 }
