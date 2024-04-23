@@ -1,7 +1,6 @@
 package link.danb.launcher.activities.details
 
 import android.appwidget.AppWidgetProviderInfo
-import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -44,10 +44,10 @@ fun ActivityDetailsDialog(
   onToggleHidden: (ActivityData) -> Unit,
   onUninstall: (ActivityData) -> Unit,
   onSettings: (ActivityData) -> Unit,
-  onShortcutClick: (View, UserShortcut) -> Unit,
-  onShortcutLongClick: (View, UserShortcut) -> Unit,
-  onShortcutCreatorClick: (View, UserShortcutCreator) -> Unit,
-  onShortcutCreatorLongClick: (View, UserShortcutCreator) -> Unit,
+  onShortcutClick: (Offset, UserShortcut) -> Unit,
+  onShortcutLongClick: (Offset, UserShortcut) -> Unit,
+  onShortcutCreatorClick: (Offset, UserShortcutCreator) -> Unit,
+  onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
   onWidgetPreviewClick: (AppWidgetProviderInfo) -> Unit,
 ) {
   BottomSheet(isShowing = activityDetailsData != null, onDismissRequest = onDismissRequest) {

@@ -2,8 +2,6 @@ package link.danb.launcher.ui
 
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
-import android.view.View
-import android.widget.FrameLayout
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -23,11 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import link.danb.launcher.R
 import link.danb.launcher.icons.LauncherIcon
 
@@ -35,16 +35,16 @@ data class IconTileViewData(val icon: AdaptiveIconDrawable, val badge: Drawable,
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun IconTile(data: IconTileViewData, onClick: (View) -> Unit, onLongClick: (View) -> Unit) {
-  var view: View? by remember { mutableStateOf(null) }
+fun IconTile(data: IconTileViewData, onClick: (Offset) -> Unit, onLongClick: (Offset) -> Unit) {
   var isPressed by remember { mutableStateOf(false) }
+  var offset by remember { mutableStateOf(Offset.Zero) }
   val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
 
   Row(
     modifier =
       Modifier.combinedClickable(
-          onClick = { onClick(checkNotNull(view)) },
-          onLongClick = { onLongClick(checkNotNull(view)) },
+          onClick = { onClick(offset) },
+          onLongClick = { onLongClick(offset) },
         )
         .pointerInput(isPressed) {
           awaitPointerEventScope {
@@ -66,22 +66,11 @@ fun IconTile(data: IconTileViewData, onClick: (View) -> Unit, onLongClick: (View
     LauncherIcon(
       data.icon,
       data.badge,
-      Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+      Modifier.size(dimensionResource(R.dimen.launcher_icon_size)).onGloballyPositioned {
+        offset = it.positionInRoot()
+      },
       insetMultiplier,
-    ) {
-      AndroidView(
-        factory = { FrameLayout(it).apply { view = this } },
-        modifier = Modifier.fillMaxSize(),
-        onReset = { view = it },
-        onRelease = { view = null },
-        update = {
-          // Ensure view var is updated when icon changes
-          data.icon
-
-          view = it
-        },
-      )
-    }
+    )
 
     Text(
       data.name,

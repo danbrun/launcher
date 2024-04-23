@@ -21,9 +21,11 @@ import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.util.Consumer
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -88,6 +90,7 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var profileManager: ProfileManager
 
   private lateinit var recyclerView: RecyclerView
+  private lateinit var iconLaunchView: FrameLayout
   private lateinit var gestureIconView: GestureIconView
 
   private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -142,6 +145,8 @@ class LauncherFragment : Fragment() {
     savedInstanceState: Bundle?,
   ): View {
     val view = inflater.inflate(R.layout.launcher_fragment, container, false) as FrameLayout
+
+    iconLaunchView = view.findViewById(R.id.icon_launch_view)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       gestureIconView = GestureIconView(view.context)
@@ -206,7 +211,7 @@ class LauncherFragment : Fragment() {
         HiddenAppsDialog(
           isShowing = hiddenApps != null,
           viewData = hiddenApps,
-          onClick = { view, item -> launchActivity(view, item) },
+          onClick = { offset, item -> launchActivity(offset, item) },
           onLongClick = { _, item -> activityDetailsViewModel.showActivityDetails(item) },
           onDismissRequest = { hiddenAppsViewModel.hideHiddenApps() },
         )
@@ -218,7 +223,7 @@ class LauncherFragment : Fragment() {
           onToggleHidden = { toggleAppHidden(it) },
           onUninstall = { uninstallApp(it.userActivity) },
           onSettings = { openAppSettings(it.userActivity) },
-          onShortcutClick = { view, item -> launchShortcut(view, item) },
+          onShortcutClick = { offset, item -> launchShortcut(offset, item) },
           onShortcutLongClick = { _, item -> pinShortcut(item) },
           onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
           onShortcutCreatorLongClick = { _, _ -> },
@@ -345,20 +350,33 @@ class LauncherFragment : Fragment() {
     activitiesViewModel.setMetadata(activityData.copy(isHidden = !activityData.isHidden))
   }
 
-  private fun launchActivity(view: View, userActivity: UserActivity) {
-    activityManager.launchActivity(
-      userActivity,
-      view.boundsOnScreen,
-      view.makeScaleUpAnimation().toBundle(),
-    )
+  private fun launchWithIconView(offset: Offset, onView: View.() -> Unit) {
+    iconLaunchView.updateLayoutParams<FrameLayout.LayoutParams> {
+      leftMargin = offset.x.toInt()
+      topMargin = offset.y.toInt()
+    }
+
+    iconLaunchView.post { iconLaunchView.onView() }
   }
 
-  private fun launchShortcut(view: View, userShortcut: UserShortcut) {
-    shortcutManager.launchShortcut(
-      userShortcut,
-      view.boundsOnScreen,
-      view.makeScaleUpAnimation().toBundle(),
-    )
+  private fun launchActivity(offset: Offset, userActivity: UserActivity) {
+    launchWithIconView(offset) {
+      activityManager.launchActivity(
+        userActivity,
+        boundsOnScreen,
+        makeScaleUpAnimation().toBundle(),
+      )
+    }
+  }
+
+  private fun launchShortcut(offset: Offset, userShortcut: UserShortcut) {
+    launchWithIconView(offset) {
+      shortcutManager.launchShortcut(
+        userShortcut,
+        boundsOnScreen,
+        makeScaleUpAnimation().toBundle(),
+      )
+    }
   }
 
   private fun pinShortcut(userShortcut: UserShortcut) {

@@ -1,6 +1,5 @@
 package link.danb.launcher.activities.hidden
 
-import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,8 +33,8 @@ import link.danb.launcher.ui.IconTile
 fun HiddenAppsDialog(
   isShowing: Boolean,
   viewData: HiddenAppsViewModel.HiddenAppsViewData?,
-  onClick: (view: View, item: UserActivity) -> Unit,
-  onLongClick: (view: View, item: UserActivity) -> Unit,
+  onClick: (Offset, UserActivity) -> Unit,
+  onLongClick: (Offset, UserActivity) -> Unit,
   onDismissRequest: () -> Unit,
 ) {
   BottomSheet(isShowing, onDismissRequest) { dismiss ->
