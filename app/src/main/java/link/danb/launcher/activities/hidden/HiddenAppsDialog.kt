@@ -68,15 +68,13 @@ fun HiddenAppsDialog(
           items(items = hiddenApps.apps) { app ->
             Card(Modifier.padding(4.dp)) {
               IconTile(
-                app.icon,
-                app.badge,
-                app.name,
+                app.iconTileViewData,
                 onClick = {
-                  onClick(it, app.activityData.userActivity)
+                  onClick(it, app.userActivity)
                   dismiss()
                 },
                 onLongClick = {
-                  onLongClick(it, app.activityData.userActivity)
+                  onLongClick(it, app.userActivity)
                   dismiss()
                 },
               )

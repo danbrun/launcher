@@ -1,8 +1,6 @@
 package link.danb.launcher.activities.details
 
 import android.appwidget.AppWidgetProviderInfo
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -35,6 +33,7 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.icons.LauncherIcon
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.IconTile
+import link.danb.launcher.ui.IconTileViewData
 import link.danb.launcher.ui.WidgetPreview
 
 @Composable
@@ -57,11 +56,7 @@ fun ActivityDetailsDialog(
       val activityData = checkNotNull(activityDetailsData).activityData
 
       item(span = { GridItemSpan(maxLineSpan) }) {
-        ActivityHeader(
-          activityDetailsData.icon,
-          activityDetailsData.badge,
-          activityDetailsData.name,
-        )
+        ActivityHeader(activityDetailsData.iconTileViewData)
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
@@ -114,9 +109,7 @@ fun ActivityDetailsDialog(
             ->
             Card(Modifier.padding(4.dp)) {
               IconTile(
-                icon = item.icon,
-                badge = item.badge,
-                name = item.name,
+                item.iconTileViewData,
                 onClick = { view ->
                   onShortcutClick(view, item.userShortcut)
                   dismiss()
@@ -138,9 +131,7 @@ fun ActivityDetailsDialog(
           ) { item ->
             Card(Modifier.padding(4.dp)) {
               IconTile(
-                icon = item.icon,
-                badge = item.badge,
-                name = item.name,
+                item.iconTileViewData,
                 onClick = { view ->
                   onShortcutCreatorClick(view, item.userShortcutCreator)
                   dismiss()
@@ -172,11 +163,15 @@ fun ActivityDetailsDialog(
 }
 
 @Composable
-private fun ActivityHeader(icon: AdaptiveIconDrawable, badge: Drawable, name: String) {
+private fun ActivityHeader(data: IconTileViewData) {
   ListItem(
-    headlineContent = { Text(name, style = MaterialTheme.typography.headlineMedium) },
+    headlineContent = { Text(data.name, style = MaterialTheme.typography.headlineMedium) },
     leadingContent = {
-      LauncherIcon(icon, badge, Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
+      LauncherIcon(
+        data.icon,
+        data.badge,
+        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+      )
     },
   )
 }

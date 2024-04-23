@@ -1,8 +1,6 @@
 package link.danb.launcher.activities.hidden
 
 import android.app.Application
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +14,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.database.ActivityData
+import link.danb.launcher.components.UserActivity
+import link.danb.launcher.ui.IconTileViewData
 
 @HiltViewModel
 class HiddenAppsViewModel
@@ -41,10 +40,12 @@ constructor(
               .filter { it.isHidden && it.userActivity.userHandle == user }
               .map {
                 ActivityViewData(
-                  it,
-                  launcherResourceProvider.getSourceIcon(it.userActivity),
-                  launcherResourceProvider.getBadge(it.userActivity.userHandle),
-                  launcherResourceProvider.getLabel(it.userActivity),
+                  it.userActivity,
+                  IconTileViewData(
+                    launcherResourceProvider.getSourceIcon(it.userActivity),
+                    launcherResourceProvider.getBadge(it.userActivity.userHandle),
+                    launcherResourceProvider.getLabel(it.userActivity),
+                  ),
                 )
               }
               .toList()
@@ -64,10 +65,8 @@ constructor(
   }
 
   data class ActivityViewData(
-    val activityData: ActivityData,
-    val icon: AdaptiveIconDrawable,
-    val badge: Drawable,
-    val name: String,
+    val userActivity: UserActivity,
+    val iconTileViewData: IconTileViewData,
   )
 
   sealed interface HiddenAppsViewData {

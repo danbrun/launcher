@@ -2,8 +2,6 @@ package link.danb.launcher.activities.details
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +22,7 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.profiles.PersonalAndWorkProfiles
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
+import link.danb.launcher.ui.IconTileViewData
 import link.danb.launcher.ui.WidgetPreviewData
 
 @HiltViewModel
@@ -73,9 +72,11 @@ constructor(
       if (activity != null && activityData != null && shortcutsAndWidgets != null) {
         ActivityDetails(
           activityData,
-          launcherResourceProvider.getSourceIcon(activity),
-          launcherResourceProvider.getBadge(activity.userHandle),
-          launcherResourceProvider.getLabel(activity),
+          IconTileViewData(
+            launcherResourceProvider.getSourceIcon(activity),
+            launcherResourceProvider.getBadge(activity.userHandle),
+            launcherResourceProvider.getLabel(activity),
+          ),
           shortcutsAndWidgets,
         )
       } else {
@@ -97,12 +98,14 @@ constructor(
       .map {
         ShortcutViewData(
           it,
-          launcherResourceProvider.getSourceIcon(it),
-          launcherResourceProvider.getBadge(it.userHandle),
-          launcherResourceProvider.getLabel(it),
+          IconTileViewData(
+            launcherResourceProvider.getSourceIcon(it),
+            launcherResourceProvider.getBadge(it.userHandle),
+            launcherResourceProvider.getLabel(it),
+          ),
         )
       }
-      .sortedBy { it.name }
+      .sortedBy { it.iconTileViewData.name }
 
   private suspend fun getShortcutCreators(userActivity: UserActivity) =
     shortcutManager
@@ -110,12 +113,14 @@ constructor(
       .map {
         ShortcutCreatorViewData(
           it,
-          launcherResourceProvider.getSourceIcon(it),
-          launcherResourceProvider.getBadge(it.userHandle),
-          launcherResourceProvider.getLabel(it),
+          IconTileViewData(
+            launcherResourceProvider.getSourceIcon(it),
+            launcherResourceProvider.getBadge(it.userHandle),
+            launcherResourceProvider.getLabel(it),
+          ),
         )
       }
-      .sortedBy { it.name }
+      .sortedBy { it.iconTileViewData.name }
 
   private suspend fun getWidgets(userActivity: UserActivity) =
     appWidgetManager
@@ -141,9 +146,7 @@ constructor(
 
   data class ActivityDetails(
     val activityData: ActivityData,
-    val icon: AdaptiveIconDrawable,
-    val badge: Drawable,
-    val name: String,
+    val iconTileViewData: IconTileViewData,
     val shortcutsAndWidgets: ShortcutsAndWidgets,
   )
 
@@ -161,15 +164,11 @@ constructor(
 
   data class ShortcutViewData(
     val userShortcut: UserShortcut,
-    val icon: AdaptiveIconDrawable,
-    val badge: Drawable,
-    val name: String,
+    val iconTileViewData: IconTileViewData,
   )
 
   data class ShortcutCreatorViewData(
     val userShortcutCreator: UserShortcutCreator,
-    val icon: AdaptiveIconDrawable,
-    val badge: Drawable,
-    val name: String,
+    val iconTileViewData: IconTileViewData,
   )
 }

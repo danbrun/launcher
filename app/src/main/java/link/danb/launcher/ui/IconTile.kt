@@ -31,15 +31,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import link.danb.launcher.R
 import link.danb.launcher.icons.LauncherIcon
 
+data class IconTileViewData(val icon: AdaptiveIconDrawable, val badge: Drawable, val name: String)
+
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun IconTile(
-  icon: AdaptiveIconDrawable,
-  badge: Drawable,
-  name: String,
-  onClick: (View) -> Unit,
-  onLongClick: (View) -> Unit,
-) {
+fun IconTile(data: IconTileViewData, onClick: (View) -> Unit, onLongClick: (View) -> Unit) {
   var view: View? by remember { mutableStateOf(null) }
   var isPressed by remember { mutableStateOf(false) }
   val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
@@ -68,8 +64,8 @@ fun IconTile(
     verticalAlignment = Alignment.CenterVertically,
   ) {
     LauncherIcon(
-      icon,
-      badge,
+      data.icon,
+      data.badge,
       Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
       insetMultiplier,
     ) {
@@ -80,16 +76,15 @@ fun IconTile(
         onRelease = { view = null },
         update = {
           // Ensure view var is updated when icon changes
-          @Suppress("UNUSED_EXPRESSION")
-          icon
+          data.icon
 
           view = it
-        }
+        },
       )
     }
 
     Text(
-      name,
+      data.name,
       maxLines = 2,
       overflow = TextOverflow.Ellipsis,
       modifier = Modifier.padding(start = 8.dp),
