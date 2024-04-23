@@ -44,7 +44,6 @@ import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsViewModel
-import link.danb.launcher.activities.hidden.PinShortcutsDialog
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
@@ -55,10 +54,11 @@ import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.ShortcutManager
+import link.danb.launcher.tiles.TileViewBinder
 import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.tiles.TransparentTileViewBinder
 import link.danb.launcher.tiles.TransparentTileViewHolder
 import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.ViewBinderAdapter
@@ -98,7 +98,7 @@ class LauncherFragment : Fragment() {
   private val recyclerAdapter: ViewBinderAdapter by lazy {
     ViewBinderAdapter(
       GroupHeaderViewBinder(),
-      TransparentTileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
+      TileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
       WidgetViewBinder(appWidgetViewProvider) { launcherViewModel.toggleEditMode() },
       WidgetEditorViewBinder(
         appWidgetViewProvider,

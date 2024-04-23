@@ -123,7 +123,6 @@ constructor(
               .filter { it.userHandle == filter.profile }
               .map {
                 TileViewItem(
-                  TileViewItem.Style.TRANSPARENT,
                   it,
                   launcherResourceProvider.getLabel(it),
                   launcherResourceProvider.getIconWithCache(it).await(),
@@ -179,7 +178,6 @@ constructor(
 
   private suspend fun getActivityTileItem(activityData: ActivityData) =
     TileViewItem(
-      TileViewItem.Style.TRANSPARENT,
       activityData,
       launcherResourceProvider.getLabel(activityData.userActivity),
       launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),

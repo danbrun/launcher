@@ -5,13 +5,10 @@
     <id name="app_widget_configure_request_id" />
 
     <!-- View binder type IDs -->
-    <id name="activity_header_view_type_id" />
-    <id name="card_tile_view_type_id" />
     <id name="dialog_header_view_type_id" />
-    <id name="dialog_subtitle_view_type_id" />
     <id name="group_header_view_type_id" />
     <id name="loading_spinner_view_type_id" />
-    <id name="transparent_tile_view_type_id" />
+    <id name="tile_view_type_id" />
     <id name="widget_preview_view_type_id" />
     <id name="widget_view_type_id" />
     <id name="widget_header_view_type_id" />

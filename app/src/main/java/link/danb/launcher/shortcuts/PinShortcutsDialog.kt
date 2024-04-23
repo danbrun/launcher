@@ -1,4 +1,4 @@
-package link.danb.launcher.activities.hidden
+package link.danb.launcher.shortcuts
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
 import link.danb.launcher.components.UserShortcutCreator
-import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.IconTile
 

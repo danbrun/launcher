@@ -10,12 +10,12 @@ import link.danb.launcher.extensions.inflate
 import link.danb.launcher.ui.RoundedCornerOutlineProvider
 import link.danb.launcher.ui.ViewBinder
 
-class TransparentTileViewBinder(
+class TileViewBinder(
   private val onClick: ((View, Any) -> Unit)? = null,
   private val onLongClick: ((View, Any) -> Unit)? = null,
 ) : ViewBinder<TransparentTileViewHolder, TileViewItem> {
 
-  override val viewType: Int = R.id.transparent_tile_view_type_id
+  override val viewType: Int = R.id.tile_view_type_id
 
   override fun createViewHolder(parent: ViewGroup): TransparentTileViewHolder =
     TransparentTileViewHolder(parent.inflate(R.layout.transparent_tile_view))

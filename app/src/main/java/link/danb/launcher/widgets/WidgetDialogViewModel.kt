@@ -15,9 +15,9 @@ class WidgetDialogViewModel @Inject constructor() : ViewModel() {
 
   fun toggleExpandedPackageName(packageName: String) {
     if (_expandedPackageNames.value.contains(packageName)) {
-      _expandedPackageNames.value = _expandedPackageNames.value - packageName
+      _expandedPackageNames.value -= packageName
     } else {
-      _expandedPackageNames.value = _expandedPackageNames.value + packageName
+      _expandedPackageNames.value += packageName
     }
   }
 }
