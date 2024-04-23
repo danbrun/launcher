@@ -25,16 +25,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
-import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserShortcutCreator
+import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.IconTile
 
 @Composable
-fun HiddenAppsDialog(
+fun PinShortcutsDialog(
   isShowing: Boolean,
-  viewData: HiddenAppsViewModel.HiddenAppsViewData?,
-  onClick: (view: View, item: UserActivity) -> Unit,
-  onLongClick: (view: View, item: UserActivity) -> Unit,
+  viewData: PinShortcutsViewModel.PinShortcutsViewData?,
+  onClick: (view: View, item: UserShortcutCreator) -> Unit,
   onDismissRequest: () -> Unit,
 ) {
   BottomSheet(isShowing, onDismissRequest) { dismiss ->
@@ -43,13 +43,13 @@ fun HiddenAppsDialog(
         ListItem(
           headlineContent = {
             Text(
-              stringResource(R.string.hidden_apps),
+              stringResource(R.string.pin_shortcut),
               style = MaterialTheme.typography.headlineMedium,
             )
           },
           leadingContent = {
             Icon(
-              painter = painterResource(R.drawable.ic_baseline_visibility_24),
+              painter = painterResource(R.drawable.baseline_shortcut_24),
               contentDescription = null,
             )
           },
@@ -57,26 +57,23 @@ fun HiddenAppsDialog(
       }
 
       when (viewData) {
-        is HiddenAppsViewModel.HiddenAppsViewData.Loading -> {
+        is PinShortcutsViewModel.PinShortcutsViewData.Loading -> {
           item(span = { GridItemSpan(maxLineSpan) }) {
             Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
               CircularProgressIndicator(Modifier.size(64.dp))
             }
           }
         }
-        is HiddenAppsViewModel.HiddenAppsViewData.Loaded -> {
-          items(items = viewData.apps) { app ->
+        is PinShortcutsViewModel.PinShortcutsViewData.Loaded -> {
+          items(items = viewData.shortcutCreators) { shortcutCreator ->
             Card(Modifier.padding(4.dp)) {
               IconTile(
-                app.iconTileViewData,
+                shortcutCreator.iconTileViewData,
                 onClick = {
-                  onClick(it, app.userActivity)
+                  onClick(it, shortcutCreator.userShortcutCreator)
                   dismiss()
                 },
-                onLongClick = {
-                  onLongClick(it, app.userActivity)
-                  dismiss()
-                },
+                onLongClick = {},
               )
             }
           }
