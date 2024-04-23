@@ -1,6 +1,8 @@
 package link.danb.launcher.activities.hidden
 
 import android.app.Application
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.Drawable
 import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,14 +15,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import link.danb.launcher.activities.ActivityManager
-import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.apps.LauncherResourceProvider
-
-sealed interface HiddenAppsViewData {
-  data object Loading : HiddenAppsViewData
-
-  data class Loaded(val apps: List<ActivityDetailsViewModel.ActivityViewData>) : HiddenAppsViewData
-}
+import link.danb.launcher.database.ActivityData
 
 @HiltViewModel
 class HiddenAppsViewModel
@@ -44,7 +40,7 @@ constructor(
               .asFlow()
               .filter { it.isHidden && it.userActivity.userHandle == user }
               .map {
-                ActivityDetailsViewModel.ActivityViewData(
+                ActivityViewData(
                   it,
                   launcherResourceProvider.getSourceIcon(it.userActivity),
                   launcherResourceProvider.getBadge(it.userActivity.userHandle),
@@ -65,5 +61,18 @@ constructor(
 
   fun hideHiddenApps() {
     showHiddenApps.value = null
+  }
+
+  data class ActivityViewData(
+    val activityData: ActivityData,
+    val icon: AdaptiveIconDrawable,
+    val badge: Drawable,
+    val name: String,
+  )
+
+  sealed interface HiddenAppsViewData {
+    data object Loading : HiddenAppsViewData
+
+    data class Loaded(val apps: List<ActivityViewData>) : HiddenAppsViewData
   }
 }

@@ -139,13 +139,6 @@ constructor(
         )
       }
 
-  data class ActivityViewData(
-    val activityData: ActivityData,
-    val icon: AdaptiveIconDrawable,
-    val badge: Drawable,
-    val name: String,
-  )
-
   data class ActivityDetails(
     val activityData: ActivityData,
     val icon: AdaptiveIconDrawable,

@@ -32,7 +32,7 @@ import link.danb.launcher.ui.IconTile
 @Composable
 fun HiddenAppsDialog(
   isShowing: Boolean,
-  hiddenApps: HiddenAppsViewData?,
+  hiddenApps: HiddenAppsViewModel.HiddenAppsViewData?,
   onClick: (view: View, item: UserActivity) -> Unit,
   onLongClick: (view: View, item: UserActivity) -> Unit,
   onDismissRequest: () -> Unit,
@@ -57,14 +57,14 @@ fun HiddenAppsDialog(
       }
 
       when (hiddenApps) {
-        is HiddenAppsViewData.Loading -> {
+        is HiddenAppsViewModel.HiddenAppsViewData.Loading -> {
           item(span = { GridItemSpan(maxLineSpan) }) {
             Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
               CircularProgressIndicator(Modifier.size(64.dp))
             }
           }
         }
-        is HiddenAppsViewData.Loaded -> {
+        is HiddenAppsViewModel.HiddenAppsViewData.Loaded -> {
           items(items = hiddenApps.apps) { app ->
             Card(Modifier.padding(4.dp)) {
               IconTile(
