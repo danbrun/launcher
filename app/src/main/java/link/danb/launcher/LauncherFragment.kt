@@ -23,7 +23,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
-import androidx.core.os.BundleCompat
 import androidx.core.util.Consumer
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -39,9 +38,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityManager
-import link.danb.launcher.activities.HiddenActivitiesDialogFragment
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.details.ActivityDetailsViewModel
+import link.danb.launcher.activities.hidden.HiddenAppsDialog
+import link.danb.launcher.activities.hidden.HiddenAppsViewModel
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
@@ -74,6 +74,7 @@ class LauncherFragment : Fragment() {
 
   private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
   private val activityDetailsViewModel: ActivityDetailsViewModel by activityViewModels()
+  private val hiddenAppsViewModel: HiddenAppsViewModel by activityViewModels()
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
@@ -131,20 +132,6 @@ class LauncherFragment : Fragment() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       requireActivity().addOnNewIntentListener(onNewIntentListener)
     }
-
-    childFragmentManager.setFragmentResultListener(HiddenActivitiesDialogFragment.TAG, this) {
-      _,
-      data ->
-      val showDetailsFor =
-        BundleCompat.getParcelable(
-          data,
-          HiddenActivitiesDialogFragment.EXTRA_SHOW_DETAILS_FOR,
-          UserActivity::class.java,
-        )
-      if (showDetailsFor != null) {
-        activityDetailsViewModel.showActivityDetails(showDetailsFor)
-      }
-    }
   }
 
   override fun onCreateView(
@@ -163,6 +150,7 @@ class LauncherFragment : Fragment() {
       LauncherTheme {
         val bottomBarState by launcherViewModel.bottomBarState.collectAsState()
         val activityDetailsData by activityDetailsViewModel.activityDetails.collectAsState(null)
+        val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsState(null)
         val isShowing by showMoreActionsDialog.collectAsState()
 
         Scaffold(
@@ -199,12 +187,19 @@ class LauncherFragment : Fragment() {
                   .showNow(childFragmentManager, PinShortcutsDialogFragment.TAG)
               }
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
-                HiddenActivitiesDialogFragment.newInstance(user)
-                  .showNow(childFragmentManager, HiddenActivitiesDialogFragment.TAG)
+                hiddenAppsViewModel.showHiddenApps(user)
               }
             }
           },
           onDismissRequest = { showMoreActionsDialog.value = false },
+        )
+
+        HiddenAppsDialog(
+          isShowing = hiddenApps != null,
+          hiddenApps = hiddenApps,
+          onClick = { view, item -> launchActivity(view, item) },
+          onLongClick = { _, item -> activityDetailsViewModel.showActivityDetails(item) },
+          onDismissRequest = { hiddenAppsViewModel.hideHiddenApps() },
         )
 
         ActivityDetailsDialog(
@@ -339,6 +334,14 @@ class LauncherFragment : Fragment() {
 
   private fun toggleAppHidden(activityData: ActivityData) {
     activitiesViewModel.setMetadata(activityData.copy(isHidden = !activityData.isHidden))
+  }
+
+  private fun launchActivity(view: View, userActivity: UserActivity) {
+    activityManager.launchActivity(
+      userActivity,
+      view.boundsOnScreen,
+      view.makeScaleUpAnimation().toBundle(),
+    )
   }
 
   private fun launchShortcut(view: View, userShortcut: UserShortcut) {

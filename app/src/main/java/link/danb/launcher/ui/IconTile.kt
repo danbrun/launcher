@@ -78,6 +78,13 @@ fun IconTile(
         modifier = Modifier.fillMaxSize(),
         onReset = { view = it },
         onRelease = { view = null },
+        update = {
+          // Ensure view var is updated when icon changes
+          @Suppress("UNUSED_EXPRESSION")
+          icon
+
+          view = it
+        }
       )
     }
 
