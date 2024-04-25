@@ -56,6 +56,7 @@ import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
+import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewBinder
 import link.danb.launcher.tiles.TileViewItem
@@ -65,12 +66,12 @@ import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
-import link.danb.launcher.widgets.PinWidgetsDialogFragment
 import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetsViewModel
+import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
@@ -80,6 +81,7 @@ class LauncherFragment : Fragment() {
   private val hiddenAppsViewModel: HiddenAppsViewModel by activityViewModels()
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val pinShortcutsViewModel: PinShortcutsViewModel by activityViewModels()
+  private val pinWidgetsViewModel: PinWidgetsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
@@ -159,6 +161,7 @@ class LauncherFragment : Fragment() {
         val activityDetailsData by activityDetailsViewModel.activityDetails.collectAsState(null)
         val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsState(null)
         val pinShortcuts by pinShortcutsViewModel.pinShortcutsViewData.collectAsState(null)
+        val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsState(null)
         val isShowing by showMoreActionsDialog.collectAsState()
 
         Scaffold(
@@ -190,8 +193,7 @@ class LauncherFragment : Fragment() {
                 pinShortcutsViewModel.showPinShortcuts(user)
               }
               BottomBarAction.Type.PIN_WIDGET -> {
-                PinWidgetsDialogFragment.newInstance(user)
-                  .showNow(childFragmentManager, PinWidgetsDialogFragment.TAG)
+                pinWidgetsViewModel.showPinWidgetsDialog(user)
               }
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
                 hiddenAppsViewModel.showHiddenApps(user)
@@ -206,6 +208,13 @@ class LauncherFragment : Fragment() {
           viewData = pinShortcuts,
           onClick = { _, item -> launchShortcutCreator(item) },
           onDismissRequest = { pinShortcutsViewModel.hidePinShortcuts() },
+        )
+
+        PinWidgetsDialog(
+          isShowing = pinWidgets != null,
+          viewData = pinWidgets,
+          onClick = { item -> bindWidget(item) },
+          onDismissRequest = { pinWidgetsViewModel.hidePinWidgetsDialog() },
         )
 
         HiddenAppsDialog(
