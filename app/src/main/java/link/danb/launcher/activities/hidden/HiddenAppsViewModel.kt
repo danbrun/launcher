@@ -49,6 +49,7 @@ constructor(
                 )
               }
               .toList()
+              .sortedBy { it.iconTileViewData.name.lowercase() }
           )
         )
       } else {
