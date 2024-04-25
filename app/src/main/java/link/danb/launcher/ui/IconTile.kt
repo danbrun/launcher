@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
@@ -35,17 +37,20 @@ data class IconTileViewData(val icon: AdaptiveIconDrawable, val badge: Drawable,
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun IconTile(data: IconTileViewData, onClick: (Offset) -> Unit, onLongClick: (Offset) -> Unit) {
+fun IconTile(
+  data: IconTileViewData,
+  style: TextStyle = MaterialTheme.typography.labelLarge,
+  onClick: (Offset) -> Unit,
+  onLongClick: (Offset) -> Unit,
+) {
   var isPressed by remember { mutableStateOf(false) }
   var offset by remember { mutableStateOf(Offset.Zero) }
   val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
 
   Row(
     modifier =
-      Modifier.combinedClickable(
-          onClick = { onClick(offset) },
-          onLongClick = { onLongClick(offset) },
-        )
+      Modifier.clip(CardDefaults.shape)
+        .combinedClickable(onClick = { onClick(offset) }, onLongClick = { onLongClick(offset) })
         .pointerInput(isPressed) {
           awaitPointerEventScope {
             isPressed =
@@ -59,7 +64,6 @@ fun IconTile(data: IconTileViewData, onClick: (Offset) -> Unit, onLongClick: (Of
           }
         }
         .fillMaxSize()
-        .clip(CardDefaults.shape)
         .padding(8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
@@ -77,6 +81,7 @@ fun IconTile(data: IconTileViewData, onClick: (Offset) -> Unit, onLongClick: (Of
       maxLines = 2,
       overflow = TextOverflow.Ellipsis,
       modifier = Modifier.padding(start = 8.dp),
+      style = style,
     )
   }
 }
