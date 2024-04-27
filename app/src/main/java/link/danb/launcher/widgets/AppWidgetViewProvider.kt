@@ -48,9 +48,13 @@ constructor(
       appWidgetHost.createView(
         activity.applicationContext,
         widgetId,
-        appWidgetManager.getAppWidgetInfo(widgetId)
+        appWidgetManager.getAppWidgetInfo(widgetId),
       )
     }
+
+  fun AppWidgetHostView.setAppWidget(widgetId: Int) {
+    setAppWidget(widgetId, appWidgetManager.getAppWidgetInfo(widgetId))
+  }
 
   @RequiresApi(Build.VERSION_CODES.S)
   fun createPreview(appWidgetProviderInfo: AppWidgetProviderInfo): AppWidgetHostView =
@@ -58,7 +62,7 @@ constructor(
       .createView(
         activity.applicationContext,
         Resources.ID_NULL,
-        appWidgetProviderInfo.clone().apply { initialLayout = previewLayout }
+        appWidgetProviderInfo.clone().apply { initialLayout = previewLayout },
       )
       .also { view ->
         view.updateAppWidget(null)
@@ -69,7 +73,7 @@ constructor(
           val scale =
             min(
               (view.width.toFloat() - view.paddingLeft - view.paddingRight) / child.width,
-              (view.height.toFloat() - view.paddingTop - view.paddingBottom) / child.height
+              (view.height.toFloat() - view.paddingTop - view.paddingBottom) / child.height,
             )
 
           child.scaleX = scale

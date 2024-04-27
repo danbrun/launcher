@@ -125,7 +125,8 @@ constructor(
                 TileViewItem(
                   it,
                   launcherResourceProvider.getLabel(it),
-                  launcherResourceProvider.getIconWithCache(it).await(),
+                  launcherResourceProvider.getSourceIcon(it),
+                  launcherResourceProvider.getBadge(it.userHandle),
                 )
               },
           )
@@ -180,7 +181,8 @@ constructor(
     TileViewItem(
       activityData,
       launcherResourceProvider.getLabel(activityData.userActivity),
-      launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
+      launcherResourceProvider.getSourceIcon(activityData.userActivity),
+      launcherResourceProvider.getBadge(activityData.userActivity.userHandle),
     ) { other ->
       this is ActivityData && other is ActivityData && userActivity == other.userActivity
     }

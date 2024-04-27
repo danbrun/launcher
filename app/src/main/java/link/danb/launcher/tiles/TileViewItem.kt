@@ -1,5 +1,6 @@
 package link.danb.launcher.tiles
 
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import link.danb.launcher.R
 import link.danb.launcher.ui.ViewItem
@@ -7,7 +8,8 @@ import link.danb.launcher.ui.ViewItem
 class TileViewItem(
   val data: Any,
   val name: CharSequence,
-  val icon: Drawable,
+  val icon: AdaptiveIconDrawable,
+  val badge: Drawable,
   val areItemsTheSame: Any.(Any) -> Boolean = { this == it },
 ) : ViewItem {
 

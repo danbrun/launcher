@@ -39,6 +39,7 @@ data class IconTileViewData(val icon: AdaptiveIconDrawable, val badge: Drawable,
 @OptIn(ExperimentalFoundationApi::class)
 fun IconTile(
   data: IconTileViewData,
+  modifier: Modifier = Modifier,
   style: TextStyle = MaterialTheme.typography.labelLarge,
   onClick: (Offset) -> Unit,
   onLongClick: (Offset) -> Unit,
@@ -49,7 +50,7 @@ fun IconTile(
 
   Row(
     modifier =
-      Modifier.clip(CardDefaults.shape)
+      modifier.clip(CardDefaults.shape)
         .combinedClickable(onClick = { onClick(offset) }, onLongClick = { onLongClick(offset) })
         .pointerInput(isPressed) {
           awaitPointerEventScope {

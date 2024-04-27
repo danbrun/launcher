@@ -18,12 +18,29 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -31,7 +48,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -60,9 +76,12 @@ import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.tiles.TileViewBinder
 import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.tiles.TransparentTileViewHolder
 import link.danb.launcher.ui.GroupHeaderViewBinder
+import link.danb.launcher.ui.GroupHeaderViewItem
+import link.danb.launcher.ui.IconTile
+import link.danb.launcher.ui.IconTileViewData
 import link.danb.launcher.ui.ViewBinderAdapter
+import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
@@ -70,6 +89,7 @@ import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetViewBinder
+import link.danb.launcher.widgets.WidgetViewItem
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
@@ -91,7 +111,6 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
   @Inject lateinit var profileManager: ProfileManager
 
-  private lateinit var recyclerView: RecyclerView
   private lateinit var iconLaunchView: FrameLayout
   private lateinit var gestureIconView: GestureIconView
 
@@ -141,6 +160,7 @@ class LauncherFragment : Fragment() {
     }
   }
 
+  @OptIn(ExperimentalFoundationApi::class)
   override fun onCreateView(
     inflater: LayoutInflater,
     container: ViewGroup?,
@@ -164,6 +184,8 @@ class LauncherFragment : Fragment() {
         val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsState(null)
         val isShowing by showMoreActionsDialog.collectAsState()
 
+        val items by launcherViewModel.viewItems.collectAsState(emptyList())
+
         Scaffold(
           bottomBar = {
             LauncherBottomBar(
@@ -178,8 +200,65 @@ class LauncherFragment : Fragment() {
           },
           containerColor = Color.Transparent,
           content = { paddingValues ->
-            LauncherList(paddingValues = paddingValues, recyclerAdapter = recyclerAdapter) {
-              recyclerView = it
+            var isScrollEnabled by remember { mutableStateOf(true) }
+            LazyVerticalGrid(
+              columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
+              userScrollEnabled = isScrollEnabled,
+            ) {
+              item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(Modifier.height(paddingValues.calculateTopPadding()))
+              }
+
+              items(
+                items,
+                span = { item ->
+                  when (item) {
+                    is WidgetViewItem,
+                    is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
+                    else -> GridItemSpan(1)
+                  }
+                },
+              ) { item ->
+                when (item) {
+                  is WidgetViewItem -> {
+                    Widget(
+                      widgetData = item.widgetData,
+                      modifier = Modifier.animateItemPlacement(),
+                    ) {
+                      isScrollEnabled = it
+                    }
+                  }
+                  is GroupHeaderViewItem -> {
+                    Text(
+                      item.label,
+                      Modifier.padding(8.dp).animateItemPlacement(),
+                      style =
+                        MaterialTheme.typography.titleMedium.copy(
+                          color = Color.White,
+                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                        ),
+                    )
+                  }
+                  is TileViewItem -> {
+                    IconTile(
+                      data = IconTileViewData(item.icon, item.badge, item.name.toString()),
+                      modifier = Modifier.animateItemPlacement(),
+                      style =
+                        MaterialTheme.typography.labelMedium.copy(
+                          color = Color.White,
+                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                        ),
+                      onClick = { launchWithIconView(it) { onTileClick(this, item.data) } },
+                      onLongClick = { launchWithIconView(it) { onTileLongClick(item.data) } },
+                    )
+                  }
+                  else -> {}
+                }
+              }
+
+              item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
+              }
             }
           },
         )
@@ -260,21 +339,21 @@ class LauncherFragment : Fragment() {
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private fun maybeAnimateGestureContract(gestureContract: GestureContract) {
-    for ((index, item) in recyclerAdapter.currentList.withIndex()) {
-      if (
-        item is TileViewItem &&
-          item.data is ActivityData &&
-          item.data.userActivity.componentName.packageName ==
-            gestureContract.componentName.packageName &&
-          item.data.userActivity.userHandle == gestureContract.userHandle
-      ) {
-        val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
-        if (viewHolder != null && viewHolder is TransparentTileViewHolder) {
-          gestureIconView.animateNavigationGesture(gestureContract, viewHolder.iconView)
-          return
-        }
-      }
-    }
+//    for ((index, item) in recyclerAdapter.currentList.withIndex()) {
+//      if (
+//        item is TileViewItem &&
+//          item.data is ActivityData &&
+//          item.data.userActivity.componentName.packageName ==
+//            gestureContract.componentName.packageName &&
+//          item.data.userActivity.userHandle == gestureContract.userHandle
+//      ) {
+//        val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
+//        if (viewHolder != null && viewHolder is TransparentTileViewHolder) {
+//          gestureIconView.animateNavigationGesture(gestureContract, viewHolder.iconView)
+//          return
+//        }
+//      }
+//    }
   }
 
   private fun onTileClick(view: View, data: Any) {
@@ -320,11 +399,11 @@ class LauncherFragment : Fragment() {
   }
 
   private fun launchFirstItem() {
-    val index = recyclerAdapter.currentList.indexOfFirst { it is TileViewItem }
-    if (index > 0) {
-      recyclerView.findViewHolderForAdapterPosition(index)?.itemView?.performClick()
-    }
-    launcherViewModel.setFilter(ProfileFilter(Process.myUserHandle()))
+    //    val index = recyclerAdapter.currentList.indexOfFirst { it is TileViewItem }
+    //    if (index > 0) {
+    //      recyclerView.findViewHolderForAdapterPosition(index)?.itemView?.performClick()
+    //    }
+    //    launcherViewModel.setFilter(ProfileFilter(Process.myUserHandle()))
   }
 
   private fun onFabClick() {
