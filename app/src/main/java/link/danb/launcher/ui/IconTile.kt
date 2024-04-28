@@ -26,10 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +52,7 @@ fun IconTile(
   hide: Boolean = false,
   onPlace: ((Rect?) -> Unit)? = null,
 ) {
+  val hapticFeedback = LocalHapticFeedback.current
   var isPressed by remember { mutableStateOf(false) }
   var offset by remember { mutableStateOf(Offset.Zero) }
   val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
@@ -58,7 +61,13 @@ fun IconTile(
     modifier =
       modifier
         .clip(CardDefaults.shape)
-        .combinedClickable(onClick = { onClick(offset) }, onLongClick = { onLongClick(offset) })
+        .combinedClickable(
+          onClick = { onClick(offset) },
+          onLongClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            onLongClick(offset)
+          },
+        )
         .pointerInput(isPressed) {
           awaitPointerEventScope {
             isPressed =
