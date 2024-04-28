@@ -46,7 +46,7 @@ constructor(
                 ActivityDetailsViewModel.ShortcutCreatorViewData(
                   it,
                   IconTileViewData(
-                    launcherResourceProvider.getSourceIcon(it),
+                    launcherResourceProvider.getIcon(it),
                     launcherResourceProvider.getBadge(it.userHandle),
                     launcherResourceProvider.getLabel(it),
                   ),

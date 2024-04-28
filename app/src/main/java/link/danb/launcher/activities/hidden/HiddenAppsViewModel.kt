@@ -42,7 +42,7 @@ constructor(
                 ActivityViewData(
                   it.userActivity,
                   IconTileViewData(
-                    launcherResourceProvider.getSourceIcon(it.userActivity),
+                    launcherResourceProvider.getIcon(it.userActivity),
                     launcherResourceProvider.getBadge(it.userActivity.userHandle),
                     launcherResourceProvider.getLabel(it.userActivity),
                   ),

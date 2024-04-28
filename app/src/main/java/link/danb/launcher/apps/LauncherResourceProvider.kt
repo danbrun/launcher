@@ -32,7 +32,6 @@ import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.resolveApplication
 import link.danb.launcher.extensions.resolveShortcut
-import link.danb.launcher.icons.AdaptiveLauncherIconDrawable
 
 @Singleton
 class LauncherResourceProvider
@@ -41,7 +40,7 @@ constructor(@ApplicationContext private val context: Context) {
 
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
   private val density: Int by lazy { context.resources.displayMetrics.densityDpi }
-  private val icons: MutableMap<UserComponent, Deferred<Drawable>> = mutableMapOf()
+  private val icons: MutableMap<UserComponent, Deferred<AdaptiveIconDrawable>> = mutableMapOf()
   private val badges: MutableMap<UserHandle, Drawable> = mutableMapOf()
   private val coroutineScope: CoroutineScope = MainScope() + Dispatchers.IO
 
@@ -69,16 +68,13 @@ constructor(@ApplicationContext private val context: Context) {
       }
     }
 
-  suspend fun getIcon(userComponent: UserComponent): Drawable =
-    AdaptiveLauncherIconDrawable(getSourceIcon(userComponent)).getBadged(userComponent.userHandle)
-
-  fun getIconWithCache(userComponent: UserComponent): Deferred<Drawable> =
+  fun getIconWithCache(userComponent: UserComponent): Deferred<AdaptiveIconDrawable> =
     synchronized(this) {
       icons.getOrPut(userComponent) { coroutineScope.async { getIcon(userComponent) } }
     }
 
-  suspend fun getSourceIcon(userComponent: UserComponent): AdaptiveIconDrawable =
-    withContext(Dispatchers.IO) { userComponent.getSourceIconInternal().toAdaptiveIconDrawable() }
+  suspend fun getIcon(userComponent: UserComponent): AdaptiveIconDrawable =
+    withContext(Dispatchers.IO) { userComponent.getSourceIcon().toAdaptiveIconDrawable() }
 
   fun getBadge(userHandle: UserHandle): Drawable =
     badges.getOrPut(userHandle) {
@@ -89,7 +85,7 @@ constructor(@ApplicationContext private val context: Context) {
       )
     }
 
-  private fun UserComponent.getSourceIconInternal(): Drawable =
+  private fun UserComponent.getSourceIcon(): Drawable =
     when (this) {
       is UserApplication -> {
         launcherApps.resolveApplication(this).loadUnbadgedIcon(context.packageManager)
@@ -99,10 +95,10 @@ constructor(@ApplicationContext private val context: Context) {
       }
       is UserShortcut -> {
         launcherApps.getShortcutIconDrawable(launcherApps.resolveShortcut(this), density)
-          ?: UserApplication(packageName, userHandle).getSourceIconInternal()
+          ?: UserApplication(packageName, userHandle).getSourceIcon()
       }
       is UserShortcutCreator -> {
-        UserActivity(componentName, userHandle).getSourceIconInternal()
+        UserActivity(componentName, userHandle).getSourceIcon()
       }
     }
 
@@ -117,7 +113,4 @@ constructor(@ApplicationContext private val context: Context) {
 
     return AdaptiveIconDrawable(background, foreground)
   }
-
-  private fun Drawable.getBadged(user: UserHandle) =
-    context.packageManager.getUserBadgedIcon(this, user)
 }

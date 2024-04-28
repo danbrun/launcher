@@ -73,7 +73,7 @@ constructor(
         ActivityDetails(
           activityData,
           IconTileViewData(
-            launcherResourceProvider.getSourceIcon(activity),
+            launcherResourceProvider.getIcon(activity),
             launcherResourceProvider.getBadge(activity.userHandle),
             launcherResourceProvider.getLabel(activity),
           ),
@@ -99,7 +99,7 @@ constructor(
         ShortcutViewData(
           it,
           IconTileViewData(
-            launcherResourceProvider.getSourceIcon(it),
+            launcherResourceProvider.getIcon(it),
             launcherResourceProvider.getBadge(it.userHandle),
             launcherResourceProvider.getLabel(it),
           ),
@@ -114,7 +114,7 @@ constructor(
         ShortcutCreatorViewData(
           it,
           IconTileViewData(
-            launcherResourceProvider.getSourceIcon(it),
+            launcherResourceProvider.getIcon(it),
             launcherResourceProvider.getBadge(it.userHandle),
             launcherResourceProvider.getLabel(it),
           ),

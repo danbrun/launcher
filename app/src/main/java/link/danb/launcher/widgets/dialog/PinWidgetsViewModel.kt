@@ -65,7 +65,7 @@ constructor(
                     PinWidgetsViewData.PinWidgetViewItem.PinWidgetHeader(
                       entry.key,
                       IconTileViewData(
-                        launcherResourceProvider.getSourceIcon(entry.key),
+                        launcherResourceProvider.getIcon(entry.key),
                         launcherResourceProvider.getBadge(entry.key.userHandle),
                         launcherResourceProvider.getLabel(entry.key),
                       ),
