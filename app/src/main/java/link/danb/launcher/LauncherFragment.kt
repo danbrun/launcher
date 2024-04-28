@@ -4,12 +4,9 @@ import android.app.ActivityOptions
 import android.app.SearchManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Process
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -72,8 +69,6 @@ import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.IconTile
 import link.danb.launcher.ui.IconTileViewData
 import link.danb.launcher.ui.Widget
@@ -82,8 +77,6 @@ import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
-import link.danb.launcher.widgets.WidgetViewItem
-import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
 @AndroidEntryPoint
@@ -95,7 +88,6 @@ class LauncherFragment : Fragment() {
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val pinShortcutsViewModel: PinShortcutsViewModel by activityViewModels()
   private val pinWidgetsViewModel: PinWidgetsViewModel by activityViewModels()
-  private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
@@ -111,9 +103,7 @@ class LauncherFragment : Fragment() {
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
 
-  private val gestureData:
-    MutableMap<UserActivity, Pair<Pair<AdaptiveIconDrawable, Drawable>, Rect>> =
-    mutableMapOf()
+  private val gestureData: MutableMap<UserActivity, Pair<IconTileViewData, Rect>> = mutableMapOf()
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
@@ -125,8 +115,8 @@ class LauncherFragment : Fragment() {
     gestureIconView.animateNavigationGesture(
       gestureContract,
       data.second.toAndroidRectF(),
-      data.first.first,
-      data.first.second,
+      data.first.icon,
+      data.first.badge,
     )
   }
 
@@ -206,6 +196,14 @@ class LauncherFragment : Fragment() {
                     else -> GridItemSpan(1)
                   }
                 },
+                key = { item ->
+                  when (item) {
+                    is WidgetViewItem -> item.widgetData.widgetId
+                    is GroupHeaderViewItem -> item.name
+                    is ActivityViewItem -> item.userActivity
+                    is ShortcutViewItem -> item.userShortcut
+                  }
+                },
               ) { item ->
                 when (item) {
                   is WidgetViewItem -> {
@@ -218,7 +216,7 @@ class LauncherFragment : Fragment() {
                   }
                   is GroupHeaderViewItem -> {
                     Text(
-                      item.label,
+                      item.name,
                       Modifier.padding(8.dp).animateItemPlacement(),
                       style =
                         MaterialTheme.typography.titleMedium.copy(
@@ -227,30 +225,42 @@ class LauncherFragment : Fragment() {
                         ),
                     )
                   }
-                  is TileViewItem -> {
+                  is ShortcutViewItem -> {
                     IconTile(
-                      data = IconTileViewData(item.icon, item.badge, item.name.toString()),
+                      data = item.iconTileViewData,
                       modifier = Modifier.animateItemPlacement(),
                       style =
                         MaterialTheme.typography.labelMedium.copy(
                           color = Color.White,
                           shadow = Shadow(color = Color.Black, blurRadius = 8f),
                         ),
-                      onClick = { launchWithIconView(it) { onTileClick(this, item.data) } },
-                      onLongClick = { launchWithIconView(it) { onTileLongClick(item.data) } },
-                      hide = item.data is ActivityData && item.data.userActivity == gestureActivity,
+                      onClick = { launchShortcut(it, item.userShortcut) },
+                      onLongClick = { unpinShortcut(item.userShortcut) },
+                    )
+                  }
+                  is ActivityViewItem -> {
+                    IconTile(
+                      data = item.iconTileViewData,
+                      modifier = Modifier.animateItemPlacement(),
+                      style =
+                        MaterialTheme.typography.labelMedium.copy(
+                          color = Color.White,
+                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                        ),
+                      onClick = { launchActivity(it, item.userActivity) },
+                      onLongClick = {
+                        activityDetailsViewModel.showActivityDetails(item.userActivity)
+                      },
+                      hide = item.userActivity == gestureActivity,
                       onPlace = {
-                        if (item.data is ActivityData) {
-                          if (it == null) {
-                            gestureData.remove(item.data.userActivity)
-                          } else {
-                            gestureData[item.data.userActivity] = (item.icon to item.badge) to it
-                          }
+                        if (it == null) {
+                          gestureData.remove(item.userActivity)
+                        } else {
+                          gestureData[item.userActivity] = item.iconTileViewData to it
                         }
                       },
                     )
                   }
-                  else -> {}
                 }
               }
 
@@ -329,54 +339,23 @@ class LauncherFragment : Fragment() {
     }
   }
 
-  private fun onTileClick(view: View, data: Any) {
-    when (data) {
-      is ActivityData -> {
-        activityManager.launchActivity(
-          data.userActivity,
-          view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle(),
-        )
-        if (launcherViewModel.filter.value is SearchFilter) {
-          launcherViewModel.setFilter(ProfileFilter(Process.myUserHandle()))
-        }
+  private fun unpinShortcut(userShortcut: UserShortcut) {
+    MaterialAlertDialogBuilder(requireContext())
+      .setTitle(R.string.unpin_shortcut)
+      .setPositiveButton(android.R.string.ok) { _, _ ->
+        Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
+        shortcutManager.pinShortcut(userShortcut, isPinned = false)
       }
-      is UserShortcut -> {
-        shortcutManager.launchShortcut(
-          data,
-          view.boundsOnScreen,
-          view.makeScaleUpAnimation().toBundle(),
-        )
-      }
-      else -> throw NotImplementedError()
-    }
-  }
-
-  private fun onTileLongClick(tileViewData: Any) {
-    when (tileViewData) {
-      is ActivityData -> {
-        activityDetailsViewModel.showActivityDetails(tileViewData.userActivity)
-      }
-      is UserShortcut -> {
-        MaterialAlertDialogBuilder(requireContext())
-          .setTitle(R.string.unpin_shortcut)
-          .setPositiveButton(android.R.string.ok) { _, _ ->
-            Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-            shortcutManager.pinShortcut(tileViewData, isPinned = false)
-          }
-          .setNegativeButton(android.R.string.cancel, null)
-          .show()
-      }
-      else -> throw NotImplementedError()
-    }
+      .setNegativeButton(android.R.string.cancel, null)
+      .show()
   }
 
   private fun launchFirstItem() {
-    launcherViewModel.viewItems.value
-      .firstOrNull { it is TileViewItem && it.data is ActivityData }
-      ?.let {
-        launchActivity(Offset.Zero, ((it as TileViewItem).data as ActivityData).userActivity)
-      }
+    val firstActivity =
+      launcherViewModel.viewItems.value.filterIsInstance(ActivityViewItem::class.java).firstOrNull()
+    if (firstActivity != null) {
+      launchActivity(Offset.Zero, firstActivity.userActivity)
+    }
   }
 
   private fun onFabClick() {

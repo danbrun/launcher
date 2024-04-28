@@ -24,17 +24,34 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
+import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.ui.GroupHeaderViewItem
-import link.danb.launcher.ui.ViewItem
-import link.danb.launcher.widgets.WidgetEditorViewItem
+import link.danb.launcher.ui.IconTileViewData
 import link.danb.launcher.widgets.WidgetManager
-import link.danb.launcher.widgets.WidgetViewItem
+
+sealed interface ViewItem
+
+data class WidgetViewItem(val widgetData: WidgetData) : ViewItem
+
+data class GroupHeaderViewItem(val name: String) : ViewItem
+
+sealed interface IconTileViewItem : ViewItem {
+  val iconTileViewData: IconTileViewData
+}
+
+data class ShortcutViewItem(
+  val userShortcut: UserShortcut,
+  override val iconTileViewData: IconTileViewData,
+) : IconTileViewItem
+
+data class ActivityViewItem(
+  val userActivity: UserActivity,
+  override val iconTileViewData: IconTileViewData,
+) : IconTileViewItem
 
 @HiltViewModel
 class LauncherViewModel
@@ -80,13 +97,6 @@ constructor(
         BottomBarState(emptyList(), emptyList(), workProfileToggle = null, isSearching = false),
       )
 
-  fun toggleEditMode() {
-    val filter = filter.value
-    if (filter is ProfileFilter) {
-      _filter.value = filter.copy(isInEditMode = !filter.isInEditMode)
-    }
-  }
-
   fun setFilter(filter: Filter) {
     _filter.value = filter
   }
@@ -97,9 +107,6 @@ constructor(
         for (widget in widgets) {
           if (appWidgetManager.getAppWidgetInfo(widget.widgetId).profile == filter.profile) {
             add(WidgetViewItem(widget))
-            if (filter.isInEditMode) {
-              add(WidgetEditorViewItem(widget, appWidgetManager.getAppWidgetInfo(widget.widgetId)))
-            }
           }
         }
       }
@@ -121,16 +128,18 @@ constructor(
               .asFlow()
               .filter { it.userHandle == filter.profile }
               .map {
-                TileViewItem(
+                ShortcutViewItem(
                   it,
-                  launcherResourceProvider.getLabel(it),
-                  launcherResourceProvider.getIconWithCache(it).await(),
-                  launcherResourceProvider.getBadge(it.userHandle),
+                  IconTileViewData(
+                    launcherResourceProvider.getIconWithCache(it).await(),
+                    launcherResourceProvider.getBadge(it.userHandle),
+                    launcherResourceProvider.getLabel(it),
+                  ),
                 )
               },
           )
           .toList()
-          .sortedBy { it.name.toString().lowercase() }
+          .sortedBy { it.iconTileViewData.name.lowercase() }
 
       if (pinnedItems.isNotEmpty()) {
         add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
@@ -157,34 +166,34 @@ constructor(
           when (filter) {
             is ProfileFilter -> true
             is SearchFilter ->
-              it.name.toString().lowercase().contains(filter.query.lowercase().trim())
+              it.iconTileViewData.name.lowercase().contains(filter.query.lowercase().trim())
           }
         }
         .toList()
-        .partition { it.name.first().isLetter() }
+        .partition { it.iconTileViewData.name.first().isLetter() }
 
     if (miscellaneous.isNotEmpty()) {
       add(GroupHeaderViewItem(application.getString(R.string.ellipses)))
-      addAll(miscellaneous.sortedBy { it.name.toString().lowercase() })
+      addAll(miscellaneous.sortedBy { it.iconTileViewData.name.lowercase() })
     }
 
     for ((groupName, activityItems) in
-      alphabetical.groupBy { it.name.first().uppercaseChar() }.toSortedMap()) {
+      alphabetical.groupBy { it.iconTileViewData.name.first().uppercaseChar() }.toSortedMap()) {
 
       add(GroupHeaderViewItem(groupName.toString()))
-      addAll(activityItems.sortedBy { it.name.toString().lowercase() })
+      addAll(activityItems.sortedBy { it.iconTileViewData.name.lowercase() })
     }
   }
 
   private suspend fun getActivityTileItem(activityData: ActivityData) =
-    TileViewItem(
-      activityData,
-      launcherResourceProvider.getLabel(activityData.userActivity),
-      launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
-      launcherResourceProvider.getBadge(activityData.userActivity.userHandle),
-    ) { other ->
-      this is ActivityData && other is ActivityData && userActivity == other.userActivity
-    }
+    ActivityViewItem(
+      activityData.userActivity,
+      IconTileViewData(
+        launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
+        launcherResourceProvider.getBadge(activityData.userActivity.userHandle),
+        launcherResourceProvider.getLabel(activityData.userActivity),
+      ),
+    )
 
   private data class CombinedData(
     val activities: List<ActivityData>,
