@@ -82,6 +82,7 @@ dependencies {
 
     // Compose dependencies
     implementation(platform("androidx.compose:compose-bom:2024.04.01"))
+    implementation("androidx.compose.foundation:foundation:1.7.0-alpha07")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
