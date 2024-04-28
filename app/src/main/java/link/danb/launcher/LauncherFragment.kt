@@ -4,7 +4,8 @@ import android.app.ActivityOptions
 import android.app.SearchManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
-import android.graphics.Rect
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,11 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toRect
 import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -111,10 +115,16 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
   @Inject lateinit var profileManager: ProfileManager
 
-  private lateinit var iconLaunchView: FrameLayout
+  private lateinit var iconLaunchView: View
   private lateinit var gestureIconView: GestureIconView
 
   private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
+  private var gestureActivity: UserActivity? by mutableStateOf(null)
+
+  private val gestureData:
+    MutableMap<UserActivity, Pair<Pair<AdaptiveIconDrawable, Drawable>, Rect>> =
+    mutableMapOf()
 
   private val recyclerAdapter: ViewBinderAdapter by lazy {
     ViewBinderAdapter(
@@ -140,7 +150,17 @@ class LauncherFragment : Fragment() {
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
-    GestureContract.fromIntent(intent)?.let { maybeAnimateGestureContract(it) }
+    val gestureContract = GestureContract.fromIntent(intent) ?: return@Consumer
+
+    val data = gestureData[gestureContract.userActivity] ?: return@Consumer
+
+    gestureActivity = gestureContract.userActivity
+    gestureIconView.animateNavigationGesture(
+      gestureContract,
+      data.second.toAndroidRectF(),
+      data.first.first,
+      data.first.second,
+    )
   }
 
   private val shortcutActivityLauncher =
@@ -172,6 +192,7 @@ class LauncherFragment : Fragment() {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       gestureIconView = GestureIconView(view.context)
+      gestureIconView.onFinishGestureAnimation = { gestureActivity = null }
       view.addView(gestureIconView)
     }
 
@@ -250,6 +271,16 @@ class LauncherFragment : Fragment() {
                         ),
                       onClick = { launchWithIconView(it) { onTileClick(this, item.data) } },
                       onLongClick = { launchWithIconView(it) { onTileLongClick(item.data) } },
+                      hide = item.data is ActivityData && item.data.userActivity == gestureActivity,
+                      onPlace = {
+                        if (item.data is ActivityData) {
+                          if (it == null) {
+                            gestureData.remove(item.data.userActivity)
+                          } else {
+                            gestureData[item.data.userActivity] = (item.icon to item.badge) to it
+                          }
+                        }
+                      },
                     )
                   }
                   else -> {}
@@ -337,25 +368,6 @@ class LauncherFragment : Fragment() {
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.Q)
-  private fun maybeAnimateGestureContract(gestureContract: GestureContract) {
-//    for ((index, item) in recyclerAdapter.currentList.withIndex()) {
-//      if (
-//        item is TileViewItem &&
-//          item.data is ActivityData &&
-//          item.data.userActivity.componentName.packageName ==
-//            gestureContract.componentName.packageName &&
-//          item.data.userActivity.userHandle == gestureContract.userHandle
-//      ) {
-//        val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
-//        if (viewHolder != null && viewHolder is TransparentTileViewHolder) {
-//          gestureIconView.animateNavigationGesture(gestureContract, viewHolder.iconView)
-//          return
-//        }
-//      }
-//    }
-  }
-
   private fun onTileClick(view: View, data: Any) {
     when (data) {
       is ActivityData -> {
@@ -427,7 +439,11 @@ class LauncherFragment : Fragment() {
   }
 
   private fun openAppSettings(userActivity: UserActivity) {
-    activityManager.launchAppDetails(userActivity, Rect(), ActivityOptions.makeBasic().toBundle())
+    activityManager.launchAppDetails(
+      userActivity,
+      Rect.Zero.toAndroidRectF().toRect(),
+      ActivityOptions.makeBasic().toBundle(),
+    )
   }
 
   private fun toggleAppPinned(activityData: ActivityData) {

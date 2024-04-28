@@ -9,14 +9,11 @@ import android.os.UserHandle
 import android.view.SurfaceControl
 import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
+import link.danb.launcher.components.UserActivity
 import link.danb.launcher.extensions.getParcelableCompat
 
 @RequiresApi(Build.VERSION_CODES.Q)
-data class GestureContract(
-  val componentName: ComponentName,
-  val userHandle: UserHandle,
-  val message: Message,
-) {
+data class GestureContract(val userActivity: UserActivity, val message: Message) {
 
   fun sendBounds(bounds: RectF, surfaceControl: SurfaceControl, onFinishCallback: Message) {
     val message = Message.obtain(message)
@@ -45,7 +42,7 @@ data class GestureContract(
       val message: Message? = extras.getParcelableCompat(EXTRA_REMOTE_CALLBACK)
 
       if (component != null && user != null && message != null && message.replyTo != null) {
-        return GestureContract(component, user, message)
+        return GestureContract(UserActivity(component, user), message)
       }
       return null
     }

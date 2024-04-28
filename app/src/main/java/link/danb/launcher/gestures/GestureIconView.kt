@@ -1,9 +1,9 @@
 package link.danb.launcher.gestures
 
 import android.content.Context
-import android.graphics.Matrix
 import android.graphics.PixelFormat
 import android.graphics.RectF
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Handler
@@ -14,19 +14,23 @@ import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
-import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
-import androidx.core.graphics.toRectF
-import androidx.core.graphics.withMatrix
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.dimensionResource
 import link.danb.launcher.R
-import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.icons.LauncherIcon
 
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureIconView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
   LinearLayout(context, attrs) {
 
+  private val iconSize = context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
+
   private val surfaceView: SurfaceView = SurfaceView(context)
+  private val composeView: ComposeView = ComposeView(context)
 
   private val surfaceHolderCallback =
     object : SurfaceHolder.Callback {
@@ -58,9 +62,6 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
 
   init {
     addView(surfaceView)
-
-    val iconSize = context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
-
     surfaceView.apply {
       setZOrderOnTop(true)
 
@@ -70,11 +71,21 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
         addCallback(surfaceHolderCallback)
       }
     }
+
+    addView(composeView)
+    composeView.visibility = View.INVISIBLE
   }
 
+  var onFinishGestureAnimation: () -> Unit = {}
+
   @RequiresApi(Build.VERSION_CODES.Q)
-  fun animateNavigationGesture(gestureContract: GestureContract, iconView: ImageView) {
-    gestureAnimationData = GestureAnimationData(gestureContract, iconView, iconView.drawable)
+  fun animateNavigationGesture(
+    gestureContract: GestureContract,
+    bounds: RectF,
+    icon: AdaptiveIconDrawable,
+    badge: Drawable,
+  ) {
+    gestureAnimationData = GestureAnimationData(gestureContract, bounds, icon, badge)
     update()
   }
 
@@ -82,46 +93,39 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
     val data = gestureAnimationData ?: return
     val surfaceControl = surfaceView.surfaceControl ?: return
 
-    data.gestureContract.sendBounds(
-      data.iconView.boundsOnScreen.toRectF(),
-      surfaceControl,
-      onFinishCallback,
-    )
+    data.gestureContract.sendBounds(data.bounds, surfaceControl, onFinishCallback)
   }
 
   private fun draw() {
     val data = gestureAnimationData ?: return
 
-    val canvas = surfaceView.holder.lockCanvas() ?: return
-    canvas.withMatrix(
-      Matrix().apply {
-        val bounds = data.iconView.boundsOnScreen.toRectF()
-        setRectToRect(
-          data.icon.bounds.toRectF(),
-          RectF(0f, 0f, bounds.width(), bounds.height()),
-          Matrix.ScaleToFit.FILL,
-        )
-      }
-    ) {
-      data.icon.draw(canvas)
+    composeView.setContent {
+      LauncherIcon(
+        icon = data.icon,
+        badge = data.badge,
+        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+      )
     }
-    surfaceView.holder.unlockCanvasAndPost(canvas)
+    composeView.post {
+      val canvas = surfaceView.holder.lockCanvas() ?: return@post
+      composeView.draw(canvas)
+      surfaceView.holder.unlockCanvasAndPost(canvas)
 
-    data.iconView.setImageDrawable(null)
-    visibility = View.VISIBLE
+      visibility = View.VISIBLE
+    }
   }
 
   private fun finish() {
-    val data = gestureAnimationData ?: return
     gestureAnimationData = null
+    onFinishGestureAnimation()
 
-    data.iconView.setImageDrawable(data.icon)
     visibility = View.GONE
   }
 
   data class GestureAnimationData(
     val gestureContract: GestureContract,
-    val iconView: ImageView,
-    val icon: Drawable,
+    val bounds: RectF,
+    val icon: AdaptiveIconDrawable,
+    val badge: Drawable,
   )
 }
