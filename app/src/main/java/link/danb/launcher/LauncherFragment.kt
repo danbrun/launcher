@@ -49,15 +49,10 @@ import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
@@ -68,7 +63,6 @@ import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureContract
@@ -78,21 +72,16 @@ import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.tiles.TileViewBinder
 import link.danb.launcher.tiles.TileViewItem
-import link.danb.launcher.ui.GroupHeaderViewBinder
 import link.danb.launcher.ui.GroupHeaderViewItem
 import link.danb.launcher.ui.IconTile
 import link.danb.launcher.ui.IconTileViewData
-import link.danb.launcher.ui.ViewBinderAdapter
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
-import link.danb.launcher.widgets.WidgetEditorViewBinder
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
-import link.danb.launcher.widgets.WidgetViewBinder
 import link.danb.launcher.widgets.WidgetViewItem
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
@@ -125,28 +114,6 @@ class LauncherFragment : Fragment() {
   private val gestureData:
     MutableMap<UserActivity, Pair<Pair<AdaptiveIconDrawable, Drawable>, Rect>> =
     mutableMapOf()
-
-  private val recyclerAdapter: ViewBinderAdapter by lazy {
-    ViewBinderAdapter(
-      GroupHeaderViewBinder(),
-      TileViewBinder(this::onTileClick) { _, it -> onTileLongClick(it) },
-      WidgetViewBinder(appWidgetViewProvider) { launcherViewModel.toggleEditMode() },
-      WidgetEditorViewBinder(
-        appWidgetViewProvider,
-        widgetSizeUtil,
-        { widgetData: WidgetData, view: View ->
-          widgetManager.startConfigurationActivity(requireActivity(), view, widgetData.widgetId)
-        },
-        { widgetsViewModel.delete(it.widgetId) },
-        { widgetsViewModel.moveUp(it.widgetId) },
-        { widgetData: WidgetData, height: Int ->
-          widgetsViewModel.setHeight(widgetData.widgetId, height)
-        },
-        { widgetsViewModel.moveDown(it.widgetId) },
-        { launcherViewModel.toggleEditMode() },
-      ),
-    )
-  }
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
@@ -351,12 +318,6 @@ class LauncherFragment : Fragment() {
       }
     }
 
-    viewLifecycleOwner.lifecycleScope.launch {
-      viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-        launcherViewModel.viewItems.collectLatest { recyclerAdapter.submitList(it) }
-      }
-    }
-
     return view
   }
 
@@ -411,11 +372,11 @@ class LauncherFragment : Fragment() {
   }
 
   private fun launchFirstItem() {
-    //    val index = recyclerAdapter.currentList.indexOfFirst { it is TileViewItem }
-    //    if (index > 0) {
-    //      recyclerView.findViewHolderForAdapterPosition(index)?.itemView?.performClick()
-    //    }
-    //    launcherViewModel.setFilter(ProfileFilter(Process.myUserHandle()))
+    launcherViewModel.viewItems.value
+      .firstOrNull { it is TileViewItem && it.data is ActivityData }
+      ?.let {
+        launchActivity(Offset.Zero, ((it as TileViewItem).data as ActivityData).userActivity)
+      }
   }
 
   private fun onFabClick() {
