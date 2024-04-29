@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -199,7 +200,9 @@ private fun ExpandingAnimatedVisibility(visible: Boolean, content: @Composable (
 @Composable
 fun TabButtonGroup(iconButtons: @Composable () -> Unit) {
   Card(Modifier.padding(horizontal = 4.dp), RoundedCornerShape(28.dp)) {
-    Row(modifier = Modifier.padding(4.dp)) { iconButtons() }
+    Row(modifier = Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+      iconButtons()
+    }
   }
 }
 

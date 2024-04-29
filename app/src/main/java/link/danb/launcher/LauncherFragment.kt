@@ -77,6 +77,7 @@ import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
+import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
 @AndroidEntryPoint
@@ -88,6 +89,7 @@ class LauncherFragment : Fragment() {
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val pinShortcutsViewModel: PinShortcutsViewModel by activityViewModels()
   private val pinWidgetsViewModel: PinWidgetsViewModel by activityViewModels()
+  private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
@@ -99,6 +101,7 @@ class LauncherFragment : Fragment() {
   private lateinit var iconLaunchView: View
   private lateinit var gestureIconView: GestureIconView
 
+  private var isInEditMode: Boolean by mutableStateOf(false)
   private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
@@ -207,9 +210,16 @@ class LauncherFragment : Fragment() {
               ) { item ->
                 when (item) {
                   is WidgetViewItem -> {
-                    Widget(widgetData = item.widgetData, modifier = Modifier.animateItemPlacement()) {
-                      isScrollEnabled = it
-                    }
+                    Widget(
+                      widgetData = item.widgetData,
+                      modifier = Modifier.animateItemPlacement(),
+                      setScrollEnabled = { isScrollEnabled = it },
+                      isInEditMode = isInEditMode,
+                      moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
+                      moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
+                      remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
+                      setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
+                    )
                   }
                   is GroupHeaderViewItem -> {
                     Text(
@@ -281,6 +291,9 @@ class LauncherFragment : Fragment() {
               }
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
                 hiddenAppsViewModel.showHiddenApps(user)
+              }
+              BottomBarAction.Type.TOGGLE_EDIT_MODE -> {
+                isInEditMode = !isInEditMode
               }
             }
           },

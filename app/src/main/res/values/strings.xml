@@ -34,4 +34,9 @@
     <string name="unpin_app">Unpin app</string>
     <string name="uninstall">Uninstall</string>
     <string name="enable_work_profile">Enable your work profile to view shortcuts and widgets.</string>
+    <string name="edit_widgets">Toggle widget editing controls</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="remove">Remove</string>
+    <string name="adjust_height">Adjust height</string>
 </resources>
