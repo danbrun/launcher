@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
 import link.danb.launcher.components.UserApplication
-import link.danb.launcher.icons.LauncherIcon
+import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.WidgetPreview
 import link.danb.launcher.widgets.dialog.PinWidgetsViewData

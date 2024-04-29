@@ -37,7 +37,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
-import link.danb.launcher.icons.LauncherIcon
 
 data class IconTileViewData(val icon: AdaptiveIconDrawable, val badge: Drawable, val name: String)
 

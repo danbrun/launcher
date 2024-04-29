@@ -1,4 +1,4 @@
-package link.danb.launcher.icons
+package link.danb.launcher.ui
 
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable

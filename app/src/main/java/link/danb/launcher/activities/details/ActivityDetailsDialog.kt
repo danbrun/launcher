@@ -30,7 +30,7 @@ import link.danb.launcher.R
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.icons.LauncherIcon
+import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.IconTile
 import link.danb.launcher.ui.IconTileViewData

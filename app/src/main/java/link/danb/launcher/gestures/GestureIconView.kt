@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import link.danb.launcher.R
-import link.danb.launcher.icons.LauncherIcon
+import link.danb.launcher.ui.LauncherIcon
 
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureIconView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
