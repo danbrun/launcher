@@ -41,6 +41,7 @@ import link.danb.launcher.TabButton
 import link.danb.launcher.TabButtonGroup
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.updateAppWidgetSize
 import link.danb.launcher.widgets.AppWidgetViewProvider
 
 @Composable
@@ -89,7 +90,10 @@ fun Widget(
         },
       onReset = { it.setAppWidget(null) },
       onRelease = { it.setAppWidget(null) },
-      update = { it.setAppWidget(widgetData.widgetId) },
+      update = {
+        it.setAppWidget(widgetData.widgetId)
+        it.updateSize()
+      },
     )
 
     AnimatedVisibility(visible = isInEditMode) {
@@ -157,6 +161,10 @@ class WidgetFrame @JvmOverloads constructor(context: Context, attrs: AttributeSe
       removeView(appWidgetHostView)
       appWidgetHostView = null
     }
+  }
+
+  fun updateSize() {
+    appWidgetHostView?.updateAppWidgetSize(width, height)
   }
 }
 
