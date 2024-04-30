@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -28,8 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
 import link.danb.launcher.components.UserApplication
-import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.BottomSheet
+import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.WidgetPreview
 import link.danb.launcher.widgets.dialog.PinWidgetsViewData
 
@@ -110,12 +109,10 @@ fun PinWidgetsDialog(
               }
               is PinWidgetsViewData.PinWidgetViewItem.PinWidgetEntry -> {
                 AnimatedVisibility(visible = expandedApplications.contains(item.userApplication)) {
-                  Card(Modifier.padding(4.dp)) {
-                    WidgetPreview(
-                      item.widgetPreviewData,
-                      onClick = { onClick(item.widgetPreviewData.providerInfo) },
-                    )
-                  }
+                  WidgetPreview(
+                    item.widgetPreviewData,
+                    onClick = { onClick(item.widgetPreviewData.providerInfo) },
+                  )
                 }
               }
             }
