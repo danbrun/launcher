@@ -2,11 +2,13 @@ package link.danb.launcher
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
+import android.os.Build
 import android.os.Process
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +37,7 @@ import link.danb.launcher.widgets.WidgetManager
 
 sealed interface ViewItem
 
-data class WidgetViewItem(val widgetData: WidgetData) : ViewItem
+data class WidgetViewItem(val widgetData: WidgetData, val sizeRange: IntRange) : ViewItem
 
 data class GroupHeaderViewItem(val name: String) : ViewItem
 
@@ -105,8 +107,24 @@ constructor(
     buildList {
       if (filter is ProfileFilter) {
         for (widget in widgets) {
-          if (appWidgetManager.getAppWidgetInfo(widget.widgetId).profile == filter.profile) {
-            add(WidgetViewItem(widget))
+          val providerInfo = appWidgetManager.getAppWidgetInfo(widget.widgetId)
+          if (providerInfo.profile == filter.profile) {
+            val minHeight =
+              max(
+                providerInfo.minHeight,
+                application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
+              )
+            val maxHeight =
+              max(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                  providerInfo.maxResizeHeight
+                } else {
+                  0
+                },
+                application.resources.getDimensionPixelSize(R.dimen.widget_max_height),
+              )
+
+            add(WidgetViewItem(widget, minHeight..maxHeight))
           }
         }
       }

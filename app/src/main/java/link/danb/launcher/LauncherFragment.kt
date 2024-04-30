@@ -212,6 +212,7 @@ class LauncherFragment : Fragment() {
                   is WidgetViewItem -> {
                     Widget(
                       widgetData = item.widgetData,
+                      sizeRange = item.sizeRange,
                       modifier = Modifier.animateItemPlacement(),
                       setScrollEnabled = { isScrollEnabled = it },
                       isInEditMode = isInEditMode,

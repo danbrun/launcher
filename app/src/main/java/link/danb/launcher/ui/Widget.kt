@@ -47,6 +47,7 @@ import link.danb.launcher.widgets.AppWidgetViewProvider
 @Composable
 fun Widget(
   widgetData: WidgetData,
+  sizeRange: IntRange,
   modifier: Modifier = Modifier,
   setScrollEnabled: (Boolean) -> Unit,
   isInEditMode: Boolean,
@@ -58,7 +59,7 @@ fun Widget(
   var height by remember { mutableIntStateOf(widgetData.height) }
   var widgetFrame: WidgetFrame? by remember { mutableStateOf(null) }
   var isScrollEnabled: Boolean by remember { mutableStateOf(true) }
-  val draggableState = rememberDraggableState { height += it.toInt() }
+  val draggableState = rememberDraggableState { height = (height + it.toInt()).coerceIn(sizeRange) }
 
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
     AndroidView(
