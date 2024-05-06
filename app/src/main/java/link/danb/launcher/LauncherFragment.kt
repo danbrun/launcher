@@ -295,9 +295,6 @@ class LauncherFragment : Fragment() {
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
                 hiddenAppsViewModel.showHiddenApps(user)
               }
-              BottomBarAction.Type.TOGGLE_EDIT_MODE -> {
-                isInEditMode = !isInEditMode
-              }
             }
           },
           onDismissRequest = { showMoreActionsDialog.value = false },

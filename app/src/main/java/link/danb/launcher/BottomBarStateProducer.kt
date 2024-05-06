@@ -25,7 +25,6 @@ data class BottomBarAction(val icon: Int, val name: Int, val type: Type, val use
     PIN_SHORTCUT,
     PIN_WIDGET,
     SHOW_HIDDEN_APPS,
-    TOGGLE_EDIT_MODE,
   }
 }
 
@@ -119,14 +118,6 @@ object BottomBarStateProducer {
           R.drawable.ic_baseline_widgets_24,
           R.string.pin_widget,
           BottomBarAction.Type.PIN_WIDGET,
-          filter.profile,
-        )
-      )
-      add(
-        BottomBarAction(
-          R.drawable.baseline_edit_24,
-          R.string.edit_widgets,
-          BottomBarAction.Type.TOGGLE_EDIT_MODE,
           filter.profile,
         )
       )
