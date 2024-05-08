@@ -45,8 +45,6 @@ import androidx.core.view.children
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import link.danb.launcher.R
-import link.danb.launcher.TabButton
-import link.danb.launcher.TabButtonGroup
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.updateAppWidgetSize

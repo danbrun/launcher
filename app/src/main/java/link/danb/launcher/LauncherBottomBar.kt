@@ -16,11 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,15 +30,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import link.danb.launcher.ui.TabButton
+import link.danb.launcher.ui.TabButtonGroup
 
 @Composable
 fun LauncherBottomBar(
@@ -194,21 +191,5 @@ private fun ExpandingAnimatedVisibility(visible: Boolean, content: @Composable (
     exit = fadeOut() + shrinkHorizontally(),
   ) {
     content()
-  }
-}
-
-@Composable
-fun TabButtonGroup(iconButtons: @Composable () -> Unit) {
-  Card(Modifier.padding(horizontal = 4.dp), RoundedCornerShape(28.dp)) {
-    Row(modifier = Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-      iconButtons()
-    }
-  }
-}
-
-@Composable
-fun TabButton(icon: Painter, name: String, isChecked: Boolean, onClick: () -> Unit) {
-  FilledIconToggleButton(checked = isChecked, onCheckedChange = { _ -> onClick() }) {
-    Icon(painter = icon, contentDescription = name)
   }
 }
