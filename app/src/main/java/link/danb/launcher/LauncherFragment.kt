@@ -112,7 +112,7 @@ class LauncherFragment : Fragment() {
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
     val gestureContract = GestureContract.fromIntent(intent) ?: return@Consumer
 
-    val data = gestureData[gestureContract.userActivity] ?: return@Consumer
+    val data = getGestureData(gestureContract.userActivity) ?: return@Consumer
 
     gestureActivity = gestureContract.userActivity
     gestureIconView.animateNavigationGesture(
@@ -121,6 +121,20 @@ class LauncherFragment : Fragment() {
       data.first.icon,
       data.first.badge,
     )
+  }
+
+  private fun getGestureData(userActivity: UserActivity): Pair<IconTileViewData, Rect>? {
+    if (gestureData.containsKey(userActivity)) {
+      return gestureData[userActivity]
+    }
+
+    for (entry in gestureData) {
+      if (entry.key.packageName == userActivity.packageName) {
+        return entry.value
+      }
+    }
+
+    return null
   }
 
   private val shortcutActivityLauncher =
