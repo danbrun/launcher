@@ -9,6 +9,7 @@ import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
 import android.os.Build
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -28,9 +29,13 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
 
   private var appWidgetHostView: AppWidgetHostView? = null
+  private var isPreview: Boolean = false
+
+  override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean = isPreview
 
   fun setAppWidget(widgetId: Int) {
     createOrUpdateView(widgetId, appWidgetManager.getAppWidgetInfo(widgetId))
+    isPreview = false
   }
 
   @RequiresApi(Build.VERSION_CODES.S)
@@ -39,11 +44,13 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
       ResourcesCompat.ID_NULL,
       providerInfo.clone().apply { initialLayout = previewLayout },
     )
+    isPreview = true
   }
 
   fun clearAppWidget() {
     removeAllViews()
     appWidgetHostView = null
+    isPreview = false
   }
 
   fun updateSize() {
