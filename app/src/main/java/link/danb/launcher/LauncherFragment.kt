@@ -101,7 +101,6 @@ class LauncherFragment : Fragment() {
   private lateinit var iconLaunchView: View
   private lateinit var gestureIconView: GestureIconView
 
-  private var isInEditMode: Boolean by mutableStateOf(false)
   private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
@@ -228,10 +227,7 @@ class LauncherFragment : Fragment() {
                       widgetData = item.widgetData,
                       sizeRange = item.sizeRange,
                       modifier = Modifier.animateItemPlacement(),
-                      onLongClick = { isInEditMode = true },
                       setScrollEnabled = { isScrollEnabled = it },
-                      isInEditMode = isInEditMode,
-                      confirm = { isInEditMode = false },
                       moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
                       moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
                       remove = { widgetsViewModel.delete(item.widgetData.widgetId) },

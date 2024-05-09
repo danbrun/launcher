@@ -55,16 +55,14 @@ fun Widget(
   widgetData: WidgetData,
   sizeRange: IntRange,
   modifier: Modifier = Modifier,
-  onLongClick: () -> Unit,
   setScrollEnabled: (Boolean) -> Unit,
-  isInEditMode: Boolean,
-  confirm: () -> Unit,
   moveUp: () -> Unit,
   moveDown: () -> Unit,
   remove: () -> Unit,
   setHeight: (Int) -> Unit,
 ) {
   var height by remember { mutableIntStateOf(widgetData.height) }
+  var isEditing by remember { mutableStateOf(false) }
   var widgetFrame: WidgetFrame? by remember { mutableStateOf(null) }
   var isScrollEnabled: Boolean by remember { mutableStateOf(true) }
   val draggableState = rememberDraggableState { height = (height + it.toInt()).coerceIn(sizeRange) }
@@ -86,7 +84,7 @@ fun Widget(
                 }
               } catch (_: PointerEventTimeoutCancellationException) {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                onLongClick()
+                isEditing = true
 
                 do {
                   val event = awaitPointerEvent(PointerEventPass.Initial)
@@ -124,14 +122,14 @@ fun Widget(
       },
     )
 
-    AnimatedVisibility(visible = isInEditMode) {
+    AnimatedVisibility(visible = isEditing) {
       Row {
         TabButtonGroup {
           TabButton(
             painterResource(R.drawable.baseline_check_24),
             stringResource(R.string.done),
             isChecked = false,
-            onClick = confirm,
+            onClick = { isEditing = false },
           )
         }
 
