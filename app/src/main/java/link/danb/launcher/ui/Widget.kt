@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import android.widget.ListView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -27,20 +26,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastAny
-import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.children
 import link.danb.launcher.R
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
+import link.danb.launcher.extensions.detectLongPress
 import link.danb.launcher.widgets.WidgetFrameView
 
 @Composable
@@ -68,22 +65,10 @@ fun Widget(
         modifier
           .fillMaxWidth()
           .height(with(LocalDensity.current) { height.toDp() })
-          .pointerInput(1) {
-            awaitEachGesture {
-              awaitFirstDown(true, PointerEventPass.Initial)
-              try {
-                withTimeout(viewConfiguration.longPressTimeoutMillis) {
-                  waitForUpOrCancellation(PointerEventPass.Initial)
-                }
-              } catch (_: PointerEventTimeoutCancellationException) {
-                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                isEditing = true
-
-                do {
-                  val event = awaitPointerEvent(PointerEventPass.Initial)
-                  event.changes.fastForEach { it.consume() }
-                } while (event.changes.fastAny { it.pressed })
-              }
+          .pointerInput(widgetFrame) {
+            detectLongPress(PointerEventPass.Initial) {
+              hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+              isEditing = true
             }
           }
           .pointerInput(widgetFrame, isScrollEnabled) {
