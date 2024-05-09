@@ -1,16 +1,10 @@
 package link.danb.launcher.ui
 
-import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetProviderInfo
-import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.util.AttributeSet
-import android.view.MotionEvent
-import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -27,9 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.WidgetFrameView
 
 data class WidgetPreviewData(
   val providerInfo: AppWidgetProviderInfo,
@@ -48,9 +40,10 @@ fun WidgetPreview(item: WidgetPreviewData, onClick: () -> Unit) {
     ) {
       Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         AndroidView(
-          factory = { WidgetPreviewFrame(it) },
-          update = { it.setAppWidgetProviderInfo(item.providerInfo.clone().apply { initialLayout = previewLayout }) },
-          onReset = {},
+          factory = { WidgetFrameView(it) },
+          update = { it.setAppWidgetPreview(item.providerInfo) },
+          onReset = { it.clearAppWidget() },
+          onRelease = { it.clearAppWidget() },
         )
       }
     } else {
@@ -73,28 +66,5 @@ fun WidgetPreview(item: WidgetPreviewData, onClick: () -> Unit) {
         textAlign = TextAlign.Center,
       )
     }
-  }
-}
-
-@AndroidEntryPoint
-@RequiresApi(Build.VERSION_CODES.S)
-class WidgetPreviewFrame @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
-  FrameLayout(context, attrs) {
-
-  @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
-
-  private var appWidgetHostView: AppWidgetHostView? = null
-
-  fun setAppWidgetProviderInfo(appWidgetProviderInfo: AppWidgetProviderInfo) {
-    if (appWidgetHostView == null) {
-      appWidgetHostView = appWidgetViewProvider.createPreview(appWidgetProviderInfo)
-      addView(appWidgetHostView)
-    } else {
-      appWidgetHostView?.setAppWidget(Resources.ID_NULL, appWidgetProviderInfo)
-    }
-  }
-
-  override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-    return true
   }
 }

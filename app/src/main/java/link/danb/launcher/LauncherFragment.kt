@@ -74,7 +74,6 @@ import link.danb.launcher.ui.IconTileViewData
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
-import link.danb.launcher.widgets.AppWidgetViewProvider
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetsViewModel
@@ -92,7 +91,6 @@ class LauncherFragment : Fragment() {
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
-  @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil

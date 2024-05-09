@@ -1,11 +1,7 @@
 package link.danb.launcher.ui
 
-import android.appwidget.AppWidgetHostView
-import android.content.Context
-import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.ListView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.gestures.Orientation
@@ -42,13 +38,10 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.children
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import link.danb.launcher.R
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
-import link.danb.launcher.extensions.updateAppWidgetSize
-import link.danb.launcher.widgets.AppWidgetViewProvider
+import link.danb.launcher.widgets.WidgetFrameView
 
 @Composable
 fun Widget(
@@ -63,14 +56,14 @@ fun Widget(
 ) {
   var height by remember { mutableIntStateOf(widgetData.height) }
   var isEditing by remember { mutableStateOf(false) }
-  var widgetFrame: WidgetFrame? by remember { mutableStateOf(null) }
+  var widgetFrame: WidgetFrameView? by remember { mutableStateOf(null) }
   var isScrollEnabled: Boolean by remember { mutableStateOf(true) }
   val draggableState = rememberDraggableState { height = (height + it.toInt()).coerceIn(sizeRange) }
   val hapticFeedback = LocalHapticFeedback.current
 
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
     AndroidView(
-      factory = { WidgetFrame(it).apply { widgetFrame = this } },
+      factory = { WidgetFrameView(it).apply { widgetFrame = this } },
       modifier =
         modifier
           .fillMaxWidth()
@@ -114,8 +107,8 @@ fun Widget(
               setScrollEnabled(isScrollEnabled)
             }
           },
-      onReset = { it.setAppWidget(null) },
-      onRelease = { it.setAppWidget(null) },
+      onReset = { it.clearAppWidget() },
+      onRelease = { it.clearAppWidget() },
       update = {
         it.setAppWidget(widgetData.widgetId)
         it.updateSize()
@@ -170,37 +163,6 @@ fun Widget(
         }
       }
     }
-  }
-}
-
-@AndroidEntryPoint
-class WidgetFrame @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
-  FrameLayout(context, attrs) {
-
-  @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
-
-  private var appWidgetHostView: AppWidgetHostView? = null
-
-  init {
-    requestDisallowInterceptTouchEvent(true)
-  }
-
-  fun setAppWidget(widgetId: Int?) {
-    if (widgetId != null) {
-      if (appWidgetHostView == null) {
-        appWidgetHostView = appWidgetViewProvider.getView(widgetId)
-        addView(appWidgetHostView)
-      } else {
-        with(appWidgetViewProvider) { appWidgetHostView!!.setAppWidget(widgetId) }
-      }
-    } else if (appWidgetHostView != null) {
-      removeView(appWidgetHostView)
-      appWidgetHostView = null
-    }
-  }
-
-  fun updateSize() {
-    appWidgetHostView?.updateAppWidgetSize(width, height)
   }
 }
 
