@@ -62,6 +62,7 @@ import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
+import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfileManager
@@ -69,7 +70,6 @@ import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
@@ -91,10 +91,11 @@ class LauncherFragment : Fragment() {
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
+  @Inject lateinit var gestureActivityIconStore: GestureActivityIconStore
+  @Inject lateinit var profileManager: ProfileManager
   @Inject lateinit var shortcutManager: ShortcutManager
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
-  @Inject lateinit var profileManager: ProfileManager
 
   private lateinit var iconLaunchView: View
   private lateinit var gestureIconView: GestureIconView
@@ -103,34 +104,19 @@ class LauncherFragment : Fragment() {
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
 
-  private val gestureData: MutableMap<UserActivity, Pair<LauncherIconData, Rect>> = mutableMapOf()
-
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
     val gestureContract = GestureContract.fromIntent(intent) ?: return@Consumer
 
-    val data = getGestureData(gestureContract.userActivity) ?: return@Consumer
+    val data =
+      gestureActivityIconStore.getActivityIconState(gestureContract.userActivity) ?: return@Consumer
 
     gestureActivity = gestureContract.userActivity
     gestureIconView.animateNavigationGesture(
       gestureContract,
-      data.second.toAndroidRectF(),
-      data.first,
+      data.boundsInRoot.toAndroidRectF(),
+      data.launcherIconData,
     )
-  }
-
-  private fun getGestureData(userActivity: UserActivity): Pair<LauncherIconData, Rect>? {
-    if (gestureData.containsKey(userActivity)) {
-      return gestureData[userActivity]
-    }
-
-    for (entry in gestureData) {
-      if (entry.key.packageName == userActivity.packageName) {
-        return entry.value
-      }
-    }
-
-    return null
   }
 
   private val shortcutActivityLauncher =
@@ -271,10 +257,14 @@ class LauncherFragment : Fragment() {
                       hide = item.userActivity == gestureActivity,
                       onPlace = {
                         if (it == null) {
-                          gestureData.remove(item.userActivity)
+                          (item.userActivity)
+                          gestureActivityIconStore.clearActivityState(item.userActivity)
                         } else {
-                          gestureData[item.userActivity] =
-                            item.launcherTileData.launcherIconData to it
+                          gestureActivityIconStore.setActivityState(
+                            item.userActivity,
+                            item.launcherTileData.launcherIconData,
+                            it,
+                          )
                         }
                       },
                     )
