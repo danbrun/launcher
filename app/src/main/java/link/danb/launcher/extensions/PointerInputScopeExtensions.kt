@@ -14,9 +14,7 @@ suspend fun PointerInputScope.detectLongPress(pass: PointerEventPass, onLongPres
   awaitEachGesture {
     awaitFirstDown(pass = pass)
     try {
-      withTimeout(viewConfiguration.longPressTimeoutMillis) {
-        waitForUpOrCancellation(PointerEventPass.Initial)
-      }
+      withTimeout(viewConfiguration.longPressTimeoutMillis) { waitForUpOrCancellation(pass) }
     } catch (_: PointerEventTimeoutCancellationException) {
       onLongPress()
 
