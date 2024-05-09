@@ -33,6 +33,12 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
 
   override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean = isPreview
 
+  override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+    super.onLayout(changed, left, top, right, bottom)
+
+    appWidgetHostView?.updateAppWidgetSize(width, height)
+  }
+
   fun setAppWidget(widgetId: Int) {
     createOrUpdateView(widgetId, appWidgetManager.getAppWidgetInfo(widgetId))
     isPreview = false
@@ -51,10 +57,6 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
     removeAllViews()
     appWidgetHostView = null
     isPreview = false
-  }
-
-  fun updateSize() {
-    appWidgetHostView?.updateAppWidgetSize(width, height)
   }
 
   private fun createOrUpdateView(widgetId: Int, providerInfo: AppWidgetProviderInfo) {

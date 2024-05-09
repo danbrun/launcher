@@ -109,10 +109,7 @@ fun Widget(
           },
       onReset = { it.clearAppWidget() },
       onRelease = { it.clearAppWidget() },
-      update = {
-        it.setAppWidget(widgetData.widgetId)
-        it.updateSize()
-      },
+      update = { it.setAppWidget(widgetData.widgetId) },
     )
 
     AnimatedVisibility(visible = isEditing) {
