@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserApplication
-import link.danb.launcher.ui.IconTileViewData
+import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
 
 sealed interface PinWidgetsViewData {
@@ -27,7 +28,7 @@ sealed interface PinWidgetsViewData {
 
     data class PinWidgetHeader(
       val userApplication: UserApplication,
-      val iconTileViewData: IconTileViewData,
+      val launcherTileData: LauncherTileData,
     ) : PinWidgetViewItem
 
     data class PinWidgetEntry(
@@ -64,9 +65,11 @@ constructor(
                   add(
                     PinWidgetsViewData.PinWidgetViewItem.PinWidgetHeader(
                       entry.key,
-                      IconTileViewData(
-                        launcherResourceProvider.getIcon(entry.key),
-                        launcherResourceProvider.getBadge(entry.key.userHandle),
+                      LauncherTileData(
+                        LauncherIconData(
+                          launcherResourceProvider.getIcon(entry.key),
+                          launcherResourceProvider.getBadge(entry.key.userHandle),
+                        ),
                         launcherResourceProvider.getLabel(entry.key),
                       ),
                     )

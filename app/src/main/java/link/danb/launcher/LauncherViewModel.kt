@@ -32,7 +32,8 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.IconTileViewData
+import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.widgets.WidgetManager
 
 sealed interface ViewItem
@@ -42,17 +43,17 @@ data class WidgetViewItem(val widgetData: WidgetData, val sizeRange: IntRange) :
 data class GroupHeaderViewItem(val name: String) : ViewItem
 
 sealed interface IconTileViewItem : ViewItem {
-  val iconTileViewData: IconTileViewData
+  val launcherTileData: LauncherTileData
 }
 
 data class ShortcutViewItem(
   val userShortcut: UserShortcut,
-  override val iconTileViewData: IconTileViewData,
+  override val launcherTileData: LauncherTileData,
 ) : IconTileViewItem
 
 data class ActivityViewItem(
   val userActivity: UserActivity,
-  override val iconTileViewData: IconTileViewData,
+  override val launcherTileData: LauncherTileData,
 ) : IconTileViewItem
 
 @HiltViewModel
@@ -148,16 +149,18 @@ constructor(
               .map {
                 ShortcutViewItem(
                   it,
-                  IconTileViewData(
-                    launcherResourceProvider.getIconWithCache(it).await(),
-                    launcherResourceProvider.getBadge(it.userHandle),
+                  LauncherTileData(
+                    LauncherIconData(
+                      launcherResourceProvider.getIconWithCache(it).await(),
+                      launcherResourceProvider.getBadge(it.userHandle),
+                    ),
                     launcherResourceProvider.getLabel(it),
                   ),
                 )
               },
           )
           .toList()
-          .sortedBy { it.iconTileViewData.name.lowercase() }
+          .sortedBy { it.launcherTileData.name.lowercase() }
 
       if (pinnedItems.isNotEmpty()) {
         add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
@@ -184,31 +187,33 @@ constructor(
           when (filter) {
             is ProfileFilter -> true
             is SearchFilter ->
-              it.iconTileViewData.name.lowercase().contains(filter.query.lowercase().trim())
+              it.launcherTileData.name.lowercase().contains(filter.query.lowercase().trim())
           }
         }
         .toList()
-        .partition { it.iconTileViewData.name.first().isLetter() }
+        .partition { it.launcherTileData.name.first().isLetter() }
 
     if (miscellaneous.isNotEmpty()) {
       add(GroupHeaderViewItem(application.getString(R.string.ellipses)))
-      addAll(miscellaneous.sortedBy { it.iconTileViewData.name.lowercase() })
+      addAll(miscellaneous.sortedBy { it.launcherTileData.name.lowercase() })
     }
 
     for ((groupName, activityItems) in
-      alphabetical.groupBy { it.iconTileViewData.name.first().uppercaseChar() }.toSortedMap()) {
+      alphabetical.groupBy { it.launcherTileData.name.first().uppercaseChar() }.toSortedMap()) {
 
       add(GroupHeaderViewItem(groupName.toString()))
-      addAll(activityItems.sortedBy { it.iconTileViewData.name.lowercase() })
+      addAll(activityItems.sortedBy { it.launcherTileData.name.lowercase() })
     }
   }
 
   private suspend fun getActivityTileItem(activityData: ActivityData) =
     ActivityViewItem(
       activityData.userActivity,
-      IconTileViewData(
-        launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
-        launcherResourceProvider.getBadge(activityData.userActivity.userHandle),
+      LauncherTileData(
+        LauncherIconData(
+          launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
+          launcherResourceProvider.getBadge(activityData.userActivity.userHandle),
+        ),
         launcherResourceProvider.getLabel(activityData.userActivity),
       ),
     )

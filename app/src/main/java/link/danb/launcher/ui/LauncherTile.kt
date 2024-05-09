@@ -1,7 +1,5 @@
 package link.danb.launcher.ui
 
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -38,12 +36,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
 
-data class IconTileViewData(val icon: AdaptiveIconDrawable, val badge: Drawable, val name: String)
+data class LauncherTileData(val launcherIconData: LauncherIconData, val name: String)
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun IconTile(
-  data: IconTileViewData,
+fun LauncherTile(
+  data: LauncherTileData,
   modifier: Modifier = Modifier,
   style: TextStyle = MaterialTheme.typography.labelLarge,
   onClick: (Offset) -> Unit,
@@ -87,8 +85,7 @@ fun IconTile(
       Spacer(Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
     } else {
       LauncherIcon(
-        data.icon,
-        data.badge,
+        data.launcherIconData,
         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)).onGloballyPositioned {
           offset = it.positionInRoot()
           onPlace?.invoke(it.boundsInRoot())

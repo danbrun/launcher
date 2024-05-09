@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.ui.BottomSheet
-import link.danb.launcher.ui.IconTile
+import link.danb.launcher.ui.LauncherTile
 
 @Composable
 fun PinShortcutsDialog(
@@ -66,8 +66,8 @@ fun PinShortcutsDialog(
         is PinShortcutsViewModel.PinShortcutsViewData.Loaded -> {
           items(items = viewData.shortcutCreators) { shortcutCreator ->
             Card(Modifier.padding(4.dp)) {
-              IconTile(
-                shortcutCreator.iconTileViewData,
+              LauncherTile(
+                shortcutCreator.launcherTileData,
                 onClick = {
                   onClick(it, shortcutCreator.userShortcutCreator)
                   dismiss()

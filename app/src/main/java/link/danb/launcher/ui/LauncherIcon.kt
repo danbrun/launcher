@@ -10,15 +10,16 @@ import androidx.compose.ui.draw.clip
 import link.danb.launcher.extensions.drawAdaptiveIcon
 import link.danb.launcher.extensions.drawDrawable
 
+data class LauncherIconData(val icon: AdaptiveIconDrawable, val badge: Drawable)
+
 @Composable
 fun LauncherIcon(
-  icon: AdaptiveIconDrawable,
-  badge: Drawable,
+  data: LauncherIconData,
   modifier: Modifier = Modifier,
   insetMultiplier: Float = 1f,
 ) {
   Canvas(modifier.clip(CardDefaults.shape)) {
-    drawAdaptiveIcon(icon, insetMultiplier)
-    drawDrawable(badge)
+    drawAdaptiveIcon(data.icon, insetMultiplier)
+    drawDrawable(data.badge)
   }
 }

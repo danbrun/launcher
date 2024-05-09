@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import link.danb.launcher.R
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.ui.BottomSheet
-import link.danb.launcher.ui.IconTile
+import link.danb.launcher.ui.LauncherTile
 
 @Composable
 fun HiddenAppsDialog(
@@ -67,8 +67,8 @@ fun HiddenAppsDialog(
         is HiddenAppsViewModel.HiddenAppsViewData.Loaded -> {
           items(items = viewData.apps) { app ->
             Card(Modifier.padding(4.dp)) {
-              IconTile(
-                app.iconTileViewData,
+              LauncherTile(
+                app.launcherTileData,
                 onClick = {
                   onClick(it, app.userActivity)
                   dismiss()

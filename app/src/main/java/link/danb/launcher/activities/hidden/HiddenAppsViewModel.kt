@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.toList
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
-import link.danb.launcher.ui.IconTileViewData
+import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
 class HiddenAppsViewModel
@@ -41,15 +42,17 @@ constructor(
               .map {
                 ActivityViewData(
                   it.userActivity,
-                  IconTileViewData(
-                    launcherResourceProvider.getIcon(it.userActivity),
-                    launcherResourceProvider.getBadge(it.userActivity.userHandle),
+                  LauncherTileData(
+                    LauncherIconData(
+                      launcherResourceProvider.getIcon(it.userActivity),
+                      launcherResourceProvider.getBadge(it.userActivity.userHandle),
+                    ),
                     launcherResourceProvider.getLabel(it.userActivity),
                   ),
                 )
               }
               .toList()
-              .sortedBy { it.iconTileViewData.name.lowercase() }
+              .sortedBy { it.launcherTileData.name.lowercase() }
           )
         )
       } else {
@@ -67,7 +70,7 @@ constructor(
 
   data class ActivityViewData(
     val userActivity: UserActivity,
-    val iconTileViewData: IconTileViewData,
+    val launcherTileData: LauncherTileData,
   )
 
   sealed interface HiddenAppsViewData {

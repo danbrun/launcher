@@ -3,8 +3,6 @@ package link.danb.launcher.gestures
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.RectF
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -22,6 +20,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import link.danb.launcher.R
 import link.danb.launcher.ui.LauncherIcon
+import link.danb.launcher.ui.LauncherIconData
 
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureIconView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
@@ -82,10 +81,9 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
   fun animateNavigationGesture(
     gestureContract: GestureContract,
     bounds: RectF,
-    icon: AdaptiveIconDrawable,
-    badge: Drawable,
+    launcherIconData: LauncherIconData,
   ) {
-    gestureAnimationData = GestureAnimationData(gestureContract, bounds, icon, badge)
+    gestureAnimationData = GestureAnimationData(gestureContract, bounds, launcherIconData)
     update()
   }
 
@@ -101,8 +99,7 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
 
     composeView.setContent {
       LauncherIcon(
-        icon = data.icon,
-        badge = data.badge,
+        data.launcherIconData,
         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
       )
     }
@@ -125,7 +122,6 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
   data class GestureAnimationData(
     val gestureContract: GestureContract,
     val bounds: RectF,
-    val icon: AdaptiveIconDrawable,
-    val badge: Drawable,
+    val launcherIconData: LauncherIconData,
   )
 }

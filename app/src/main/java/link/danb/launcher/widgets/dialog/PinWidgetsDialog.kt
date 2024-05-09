@@ -75,7 +75,7 @@ fun PinWidgetsDialog(
                 ListItem(
                   headlineContent = {
                     Text(
-                      item.iconTileViewData.name,
+                      item.launcherTileData.name,
                       style = MaterialTheme.typography.headlineMedium,
                     )
                   },
@@ -88,8 +88,7 @@ fun PinWidgetsDialog(
                   },
                   leadingContent = {
                     LauncherIcon(
-                      item.iconTileViewData.icon,
-                      item.iconTileViewData.badge,
+                      item.launcherTileData.launcherIconData,
                       Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
                     )
                   },

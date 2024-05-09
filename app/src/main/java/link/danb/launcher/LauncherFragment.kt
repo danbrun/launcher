@@ -69,8 +69,8 @@ import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.IconTile
-import link.danb.launcher.ui.IconTileViewData
+import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
@@ -103,7 +103,7 @@ class LauncherFragment : Fragment() {
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
 
-  private val gestureData: MutableMap<UserActivity, Pair<IconTileViewData, Rect>> = mutableMapOf()
+  private val gestureData: MutableMap<UserActivity, Pair<LauncherIconData, Rect>> = mutableMapOf()
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
@@ -115,12 +115,11 @@ class LauncherFragment : Fragment() {
     gestureIconView.animateNavigationGesture(
       gestureContract,
       data.second.toAndroidRectF(),
-      data.first.icon,
-      data.first.badge,
+      data.first,
     )
   }
 
-  private fun getGestureData(userActivity: UserActivity): Pair<IconTileViewData, Rect>? {
+  private fun getGestureData(userActivity: UserActivity): Pair<LauncherIconData, Rect>? {
     if (gestureData.containsKey(userActivity)) {
       return gestureData[userActivity]
     }
@@ -244,8 +243,8 @@ class LauncherFragment : Fragment() {
                     )
                   }
                   is ShortcutViewItem -> {
-                    IconTile(
-                      data = item.iconTileViewData,
+                    LauncherTile(
+                      data = item.launcherTileData,
                       modifier = Modifier.animateItemPlacement(),
                       style =
                         MaterialTheme.typography.labelMedium.copy(
@@ -257,8 +256,8 @@ class LauncherFragment : Fragment() {
                     )
                   }
                   is ActivityViewItem -> {
-                    IconTile(
-                      data = item.iconTileViewData,
+                    LauncherTile(
+                      data = item.launcherTileData,
                       modifier = Modifier.animateItemPlacement(),
                       style =
                         MaterialTheme.typography.labelMedium.copy(
@@ -274,7 +273,8 @@ class LauncherFragment : Fragment() {
                         if (it == null) {
                           gestureData.remove(item.userActivity)
                         } else {
-                          gestureData[item.userActivity] = item.iconTileViewData to it
+                          gestureData[item.userActivity] =
+                            item.launcherTileData.launcherIconData to it
                         }
                       },
                     )

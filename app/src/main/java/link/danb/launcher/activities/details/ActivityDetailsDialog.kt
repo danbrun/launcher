@@ -30,10 +30,10 @@ import link.danb.launcher.R
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.BottomSheet
-import link.danb.launcher.ui.IconTile
-import link.danb.launcher.ui.IconTileViewData
+import link.danb.launcher.ui.LauncherIcon
+import link.danb.launcher.ui.LauncherTile
+import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreview
 
 @Composable
@@ -56,7 +56,7 @@ fun ActivityDetailsDialog(
       val activityData = checkNotNull(activityDetailsData).activityData
 
       item(span = { GridItemSpan(maxLineSpan) }) {
-        ActivityHeader(activityDetailsData.iconTileViewData)
+        ActivityHeader(activityDetailsData.launcherTileData)
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
@@ -108,8 +108,8 @@ fun ActivityDetailsDialog(
           items(activityDetailsData.shortcutsAndWidgets.shortcuts, key = { it.userShortcut }) { item
             ->
             Card(Modifier.padding(4.dp)) {
-              IconTile(
-                item.iconTileViewData,
+              LauncherTile(
+                item.launcherTileData,
                 onClick = { view ->
                   onShortcutClick(view, item.userShortcut)
                   dismiss()
@@ -130,8 +130,8 @@ fun ActivityDetailsDialog(
             key = { it.userShortcutCreator },
           ) { item ->
             Card(Modifier.padding(4.dp)) {
-              IconTile(
-                item.iconTileViewData,
+              LauncherTile(
+                item.launcherTileData,
                 onClick = { view ->
                   onShortcutCreatorClick(view, item.userShortcutCreator)
                   dismiss()
@@ -163,13 +163,12 @@ fun ActivityDetailsDialog(
 }
 
 @Composable
-private fun ActivityHeader(data: IconTileViewData) {
+private fun ActivityHeader(data: LauncherTileData) {
   ListItem(
     headlineContent = { Text(data.name, style = MaterialTheme.typography.headlineMedium) },
     leadingContent = {
       LauncherIcon(
-        data.icon,
-        data.badge,
+        data.launcherIconData,
         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
       )
     },
