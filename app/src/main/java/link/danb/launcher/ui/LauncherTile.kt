@@ -43,7 +43,7 @@ data class LauncherTileData(val launcherIconData: LauncherIconData, val name: St
 fun LauncherTile(
   data: LauncherTileData,
   modifier: Modifier = Modifier,
-  style: TextStyle = MaterialTheme.typography.labelLarge,
+  style: TextStyle = MaterialTheme.typography.labelMedium,
   onClick: (Offset) -> Unit,
   onLongClick: (Offset) -> Unit,
   hide: Boolean = false,
