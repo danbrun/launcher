@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +45,7 @@ import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -154,14 +154,15 @@ class LauncherFragment : Fragment() {
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       LauncherTheme {
-        val bottomBarState by launcherViewModel.bottomBarState.collectAsState()
-        val activityDetailsData by activityDetailsViewModel.activityDetails.collectAsState(null)
-        val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsState(null)
-        val pinShortcuts by pinShortcutsViewModel.pinShortcutsViewData.collectAsState(null)
-        val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsState(null)
-        val isShowing by showMoreActionsDialog.collectAsState()
-
-        val items by launcherViewModel.viewItems.collectAsState(emptyList())
+        val bottomBarState by launcherViewModel.bottomBarState.collectAsStateWithLifecycle()
+        val activityDetailsData by
+          activityDetailsViewModel.activityDetails.collectAsStateWithLifecycle(null)
+        val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsStateWithLifecycle(null)
+        val pinShortcuts by
+          pinShortcutsViewModel.pinShortcutsViewData.collectAsStateWithLifecycle(null)
+        val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsStateWithLifecycle(null)
+        val isShowing by showMoreActionsDialog.collectAsStateWithLifecycle()
+        val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(emptyList())
 
         Scaffold(
           bottomBar = {
