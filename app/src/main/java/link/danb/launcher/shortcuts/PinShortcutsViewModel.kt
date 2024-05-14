@@ -5,6 +5,8 @@ import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
@@ -57,6 +59,7 @@ constructor(
               }
               .toList()
               .sortedBy { it.launcherTileData.name.lowercase() }
+              .toImmutableList()
           )
         )
       } else {
@@ -77,7 +80,7 @@ constructor(
     data object Loading : PinShortcutsViewData
 
     data class Loaded(
-      val shortcutCreators: List<ActivityDetailsViewModel.ShortcutCreatorViewData>
+      val shortcutCreators: ImmutableList<ActivityDetailsViewModel.ShortcutCreatorViewData>
     ) : PinShortcutsViewData
   }
 }

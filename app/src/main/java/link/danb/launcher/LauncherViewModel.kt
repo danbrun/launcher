@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.math.max
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,7 +77,7 @@ constructor(
   val filter: StateFlow<Filter> = _filter.asStateFlow()
 
   @OptIn(FlowPreview::class)
-  val viewItems: StateFlow<List<ViewItem>> =
+  val viewItems: StateFlow<ImmutableList<ViewItem>> =
     combine(
         activityManager.data,
         shortcutManager.shortcuts,
@@ -84,11 +87,18 @@ constructor(
       )
       .debounce(100)
       .map {
-        getWidgetListViewItems(it.widgets, it.filter) +
-          getPinnedListViewItems(it.activities, it.shortcuts, it.filter) +
-          getAppListViewItems(it.activities, it.filter)
+        buildList {
+            addWidgetListViewItems(it.widgets, it.filter)
+            addPinnedListViewItems(it.activities, it.shortcuts, it.filter)
+            addAppListViewItems(it.activities, it.filter)
+          }
+          .toImmutableList()
       }
-      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), listOf())
+      .stateIn(
+        viewModelScope + Dispatchers.IO,
+        SharingStarted.WhileSubscribed(),
+        persistentListOf(),
+      )
 
   val bottomBarState: StateFlow<BottomBarState> =
     combine(activityManager.data, filter, profileManager.profiles) { activities, filter, profiles ->
@@ -104,38 +114,40 @@ constructor(
     _filter.value = filter
   }
 
-  private fun getWidgetListViewItems(widgets: List<WidgetData>, filter: Filter): List<ViewItem> =
-    buildList {
-      if (filter is ProfileFilter) {
-        for (widget in widgets) {
-          val providerInfo = appWidgetManager.getAppWidgetInfo(widget.widgetId)
-          if (providerInfo.profile == filter.profile) {
-            val minHeight =
-              max(
-                providerInfo.minHeight,
-                application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
-              )
-            val maxHeight =
-              max(
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                  providerInfo.maxResizeHeight
-                } else {
-                  0
-                },
-                application.resources.getDimensionPixelSize(R.dimen.widget_max_height),
-              )
+  private fun MutableList<ViewItem>.addWidgetListViewItems(
+    widgets: List<WidgetData>,
+    filter: Filter,
+  ) {
+    if (filter is ProfileFilter) {
+      for (widget in widgets) {
+        val providerInfo = appWidgetManager.getAppWidgetInfo(widget.widgetId)
+        if (providerInfo.profile == filter.profile) {
+          val minHeight =
+            max(
+              providerInfo.minHeight,
+              application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
+            )
+          val maxHeight =
+            max(
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                providerInfo.maxResizeHeight
+              } else {
+                0
+              },
+              application.resources.getDimensionPixelSize(R.dimen.widget_max_height),
+            )
 
-            add(WidgetViewItem(widget, minHeight..maxHeight))
-          }
+          add(WidgetViewItem(widget, minHeight..maxHeight))
         }
       }
     }
+  }
 
-  private suspend fun getPinnedListViewItems(
+  private suspend fun MutableList<ViewItem>.addPinnedListViewItems(
     activities: List<ActivityData>,
     shortcuts: List<UserShortcut>,
     filter: Filter,
-  ): List<ViewItem> = buildList {
+  ) {
     if (filter is ProfileFilter) {
       val pinnedItems =
         merge(
@@ -169,10 +181,10 @@ constructor(
     }
   }
 
-  private suspend fun getAppListViewItems(
+  private suspend fun MutableList<ViewItem>.addAppListViewItems(
     activities: List<ActivityData>,
     filter: Filter,
-  ): List<ViewItem> = buildList {
+  ) {
     val (alphabetical, miscellaneous) =
       activities
         .asFlow()

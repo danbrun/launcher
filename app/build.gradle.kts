@@ -78,6 +78,9 @@ dependencies {
     // Google dependencies
     implementation("com.google.android.material:material:1.12.0")
 
+    // Jetbrains dependencies
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
+
     // JUnit dependencies
     testImplementation("junit:junit:4.13.2")
 

@@ -48,6 +48,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.collections.immutable.persistentListOf
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -162,7 +163,7 @@ class LauncherFragment : Fragment() {
           pinShortcutsViewModel.pinShortcutsViewData.collectAsStateWithLifecycle(null)
         val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsStateWithLifecycle(null)
         val isShowing by showMoreActionsDialog.collectAsStateWithLifecycle()
-        val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(emptyList())
+        val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
 
         Scaffold(
           bottomBar = {

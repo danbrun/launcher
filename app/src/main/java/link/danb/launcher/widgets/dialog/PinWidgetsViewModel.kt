@@ -7,6 +7,8 @@ import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +24,7 @@ sealed interface PinWidgetsViewData {
 
   data object Loading : PinWidgetsViewData
 
-  data class Loaded(val viewItems: List<PinWidgetViewItem>) : PinWidgetsViewData
+  data class Loaded(val viewItems: ImmutableList<PinWidgetViewItem>) : PinWidgetsViewData
 
   sealed interface PinWidgetViewItem {
 
@@ -97,6 +99,7 @@ constructor(
                   }
                 }
               }
+              .toImmutableList()
           )
         )
       } else {

@@ -5,6 +5,8 @@ import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
@@ -53,6 +55,7 @@ constructor(
               }
               .toList()
               .sortedBy { it.launcherTileData.name.lowercase() }
+              .toImmutableList()
           )
         )
       } else {
@@ -76,6 +79,6 @@ constructor(
   sealed interface HiddenAppsViewData {
     data object Loading : HiddenAppsViewData
 
-    data class Loaded(val apps: List<ActivityViewData>) : HiddenAppsViewData
+    data class Loaded(val apps: ImmutableList<ActivityViewData>) : HiddenAppsViewData
   }
 }

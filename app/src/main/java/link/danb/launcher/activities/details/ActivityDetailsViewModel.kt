@@ -6,6 +6,8 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,7 +97,7 @@ constructor(
     _details.value = null
   }
 
-  private suspend fun getShortcuts(userActivity: UserActivity) =
+  private suspend fun getShortcuts(userActivity: UserActivity): ImmutableList<ShortcutViewData> =
     shortcutManager
       .getShortcuts(userActivity)
       .map {
@@ -111,8 +113,11 @@ constructor(
         )
       }
       .sortedBy { it.launcherTileData.name }
+      .toImmutableList()
 
-  private suspend fun getShortcutCreators(userActivity: UserActivity) =
+  private suspend fun getShortcutCreators(
+    userActivity: UserActivity
+  ): ImmutableList<ShortcutCreatorViewData> =
     shortcutManager
       .getShortcutCreators(userActivity)
       .map {
@@ -128,8 +133,9 @@ constructor(
         )
       }
       .sortedBy { it.launcherTileData.name }
+      .toImmutableList()
 
-  private suspend fun getWidgets(userActivity: UserActivity) =
+  private suspend fun getWidgets(userActivity: UserActivity): ImmutableList<WidgetPreviewData> =
     appWidgetManager
       .getInstalledProvidersForPackage(
         userActivity.componentName.packageName,
@@ -150,6 +156,7 @@ constructor(
           },
         )
       }
+      .toImmutableList()
 
   data class ActivityDetails(
     val activityData: ActivityData,
@@ -163,9 +170,9 @@ constructor(
     data object ProfileDisabled : ShortcutsAndWidgets
 
     data class Loaded(
-      val shortcuts: List<ShortcutViewData>,
-      val configurableShortcuts: List<ShortcutCreatorViewData>,
-      val widgets: List<WidgetPreviewData>,
+      val shortcuts: ImmutableList<ShortcutViewData>,
+      val configurableShortcuts: ImmutableList<ShortcutCreatorViewData>,
+      val widgets: ImmutableList<WidgetPreviewData>,
     ) : ShortcutsAndWidgets
   }
 
