@@ -14,13 +14,14 @@ import android.view.SurfaceView
 import android.view.View
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import link.danb.launcher.R
-import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.drawLauncherIcon
 
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureIconView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
@@ -29,7 +30,6 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
   private val iconSize = context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
 
   private val surfaceView: SurfaceView = SurfaceView(context)
-  private val composeView: ComposeView = ComposeView(context)
 
   private val surfaceHolderCallback =
     object : SurfaceHolder.Callback {
@@ -70,9 +70,6 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
         addCallback(surfaceHolderCallback)
       }
     }
-
-    addView(composeView)
-    composeView.visibility = View.INVISIBLE
   }
 
   var onFinishGestureAnimation: () -> Unit = {}
@@ -97,19 +94,18 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
   private fun draw() {
     val data = gestureAnimationData ?: return
 
-    composeView.setContent {
-      LauncherIcon(
-        data.launcherIconData,
-        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-      )
+    val canvas = surfaceView.holder.lockCanvas() ?: return
+    CanvasDrawScope().draw(
+      Density(context),
+      LayoutDirection.Ltr,
+      Canvas(canvas),
+      Size(canvas.width.toFloat(), canvas.height.toFloat()),
+    ) {
+      drawLauncherIcon(data.launcherIconData)
     }
-    composeView.post {
-      val canvas = surfaceView.holder.lockCanvas() ?: return@post
-      composeView.draw(canvas)
-      surfaceView.holder.unlockCanvasAndPost(canvas)
+    surfaceView.holder.unlockCanvasAndPost(canvas)
 
-      visibility = View.VISIBLE
-    }
+    visibility = View.VISIBLE
   }
 
   private fun finish() {
