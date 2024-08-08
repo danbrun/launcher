@@ -64,15 +64,15 @@ dependencies {
 
     // AndroidX dependencies
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.collection:collection-ktx:1.4.0")
-    implementation("androidx.fragment:fragment-ktx:1.7.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.collection:collection-ktx:1.4.3")
+    implementation("androidx.fragment:fragment-ktx:1.8.2")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.activity:activity-compose:1.9.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.activity:activity-compose:1.9.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 
     // Google dependencies
     implementation("com.google.android.material:material:1.12.0")
@@ -84,7 +84,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     // Compose dependencies
-    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -101,7 +101,7 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:$daggerVersion")
 
     // Lifecycle dependencies
-    val lifecycleVersion = "2.8.0"
+    val lifecycleVersion = "2.8.4"
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-reactivestreams-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
