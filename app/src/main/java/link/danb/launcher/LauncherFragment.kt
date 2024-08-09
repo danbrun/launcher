@@ -48,8 +48,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.collections.immutable.persistentListOf
 import javax.inject.Inject
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityManager
@@ -420,6 +420,9 @@ class LauncherFragment : Fragment() {
         boundsOnScreen,
         makeScaleUpAnimation().toBundle(),
       )
+    }
+    if (launcherViewModel.filter.value is SearchFilter) {
+      launcherViewModel.setFilter(ProfileFilter(profileManager.profiles.value.personal))
     }
   }
 
