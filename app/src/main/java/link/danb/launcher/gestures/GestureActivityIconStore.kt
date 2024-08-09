@@ -6,7 +6,11 @@ import javax.inject.Inject
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.ui.LauncherIconData
 
-data class GestureActivityIconState(val launcherIconData: LauncherIconData, val boundsInRoot: Rect)
+data class GestureActivityIconState(
+  val userActivity: UserActivity,
+  val launcherIconData: LauncherIconData,
+  val boundsInRoot: Rect,
+)
 
 @ActivityScoped
 class GestureActivityIconStore @Inject constructor() {
@@ -16,12 +20,12 @@ class GestureActivityIconStore @Inject constructor() {
 
   fun getActivityIconState(userActivity: UserActivity): GestureActivityIconState? {
     if (activityStates.containsKey(userActivity)) {
-      return activityStates.getValue(userActivity).toImmutableState()
+      return activityStates.getValue(userActivity).toImmutableState(userActivity)
     }
 
     for (entry in activityStates) {
       if (entry.key.packageName == userActivity.packageName) {
-        return entry.value.toImmutableState()
+        return entry.value.toImmutableState(entry.key)
       }
     }
 
@@ -51,7 +55,7 @@ class GestureActivityIconStore @Inject constructor() {
     var launcherIconData: LauncherIconData,
     var boundsInRoot: Rect,
   ) {
-    fun toImmutableState(): GestureActivityIconState =
-      GestureActivityIconState(launcherIconData, boundsInRoot)
+    fun toImmutableState(userActivity: UserActivity): GestureActivityIconState =
+      GestureActivityIconState(userActivity, launcherIconData, boundsInRoot)
   }
 }

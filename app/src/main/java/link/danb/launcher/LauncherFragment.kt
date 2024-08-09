@@ -112,7 +112,7 @@ class LauncherFragment : Fragment() {
     val data =
       gestureActivityIconStore.getActivityIconState(gestureContract.userActivity) ?: return@Consumer
 
-    gestureActivity = gestureContract.userActivity
+    gestureActivity = data.userActivity
     gestureIconView.animateNavigationGesture(
       gestureContract,
       data.boundsInRoot.toAndroidRectF(),
