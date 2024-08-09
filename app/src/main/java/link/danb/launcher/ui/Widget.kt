@@ -92,7 +92,7 @@ fun Widget(
               setScrollEnabled(isScrollEnabled)
             }
           },
-      onReset = { it.clearAppWidget() },
+      onReset = {},
       onRelease = { it.clearAppWidget() },
       update = { it.setAppWidget(widgetData.widgetId) },
     )

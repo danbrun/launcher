@@ -29,6 +29,16 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
 
   private var appWidgetHostView: AppWidgetHostView? = null
+    private set(value) {
+      if (value == null) {
+        removeAllViews()
+      } else if (field !== value) {
+        (value.parent as WidgetFrameView?)?.clearAppWidget()
+        addView(value)
+      }
+      field = value
+    }
+
   private var isPreview: Boolean = false
 
   override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean = isPreview
@@ -40,32 +50,20 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
   }
 
   fun setAppWidget(widgetId: Int) {
-    createOrUpdateView(widgetId, appWidgetManager.getAppWidgetInfo(widgetId))
+    appWidgetHostView =
+      appWidgetViewProvider.getView(widgetId, appWidgetManager.getAppWidgetInfo(widgetId))
     isPreview = false
   }
 
   @RequiresApi(Build.VERSION_CODES.S)
   fun setAppWidgetPreview(providerInfo: AppWidgetProviderInfo) {
-    createOrUpdateView(
-      ResourcesCompat.ID_NULL,
-      providerInfo.clone().apply { initialLayout = previewLayout },
-    )
+    appWidgetHostView = appWidgetViewProvider.getPreview(providerInfo)
     isPreview = true
   }
 
   fun clearAppWidget() {
-    removeAllViews()
     appWidgetHostView = null
     isPreview = false
-  }
-
-  private fun createOrUpdateView(widgetId: Int, providerInfo: AppWidgetProviderInfo) {
-    if (appWidgetHostView == null) {
-      appWidgetHostView = appWidgetViewProvider.createView(widgetId, providerInfo)
-      addView(appWidgetHostView)
-    } else {
-      appWidgetHostView?.setAppWidget(widgetId, providerInfo)
-    }
   }
 }
 
@@ -77,6 +75,7 @@ constructor(
   activity: Activity,
   private val appWidgetHost: AppWidgetHost,
 ) {
+  private val appWidgetViewCache: MutableMap<Int, AppWidgetHostView> = mutableMapOf()
 
   private val lifecycleObserver =
     object : DefaultLifecycleObserver {
@@ -93,6 +92,16 @@ constructor(
     (activity as AppCompatActivity).lifecycle.addObserver(lifecycleObserver)
   }
 
-  fun createView(widgetId: Int, providerInfo: AppWidgetProviderInfo): AppWidgetHostView =
-    appWidgetHost.createView(application, widgetId, providerInfo)
+  fun getView(widgetId: Int, providerInfo: AppWidgetProviderInfo): AppWidgetHostView =
+    appWidgetViewCache.getOrPut(widgetId) {
+      appWidgetHost.createView(application, widgetId, providerInfo)
+    }
+
+  @RequiresApi(Build.VERSION_CODES.S)
+  fun getPreview(providerInfo: AppWidgetProviderInfo): AppWidgetHostView =
+    appWidgetHost.createView(
+      application,
+      ResourcesCompat.ID_NULL,
+      providerInfo.clone().apply { initialLayout = previewLayout },
+    )
 }
