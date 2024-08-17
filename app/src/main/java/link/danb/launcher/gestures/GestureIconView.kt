@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import link.danb.launcher.R
 import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.MonochromeIconTheme
 import link.danb.launcher.ui.drawLauncherIcon
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -79,8 +80,10 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
     gestureContract: GestureContract,
     bounds: RectF,
     launcherIconData: LauncherIconData,
+    useMonochromeIcons: Boolean,
   ) {
-    gestureAnimationData = GestureAnimationData(gestureContract, bounds, launcherIconData)
+    gestureAnimationData =
+      GestureAnimationData(gestureContract, bounds, launcherIconData, useMonochromeIcons)
     update()
   }
 
@@ -101,7 +104,11 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
       Canvas(canvas),
       Size(canvas.width.toFloat(), canvas.height.toFloat()),
     ) {
-      drawLauncherIcon(data.launcherIconData)
+      drawLauncherIcon(
+        data.launcherIconData,
+        MonochromeIconTheme.fromContext(context),
+        useMonochromeIcons = data.useMonochromeIcons,
+      )
     }
     surfaceView.holder.unlockCanvasAndPost(canvas)
 
@@ -119,5 +126,6 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
     val gestureContract: GestureContract,
     val bounds: RectF,
     val launcherIconData: LauncherIconData,
+    val useMonochromeIcons: Boolean,
   )
 }

@@ -27,6 +27,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +84,8 @@ import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
+val LocalUseMonochromeIcons: ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
+
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
@@ -104,6 +110,7 @@ class LauncherFragment : Fragment() {
   private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
+  private var useMonochromeIcons: Boolean by mutableStateOf(false)
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
@@ -117,6 +124,7 @@ class LauncherFragment : Fragment() {
       gestureContract,
       data.boundsInRoot.toAndroidRectF(),
       data.launcherIconData,
+      useMonochromeIcons,
     )
   }
 
@@ -154,7 +162,7 @@ class LauncherFragment : Fragment() {
     }
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
-      LauncherTheme {
+      Wrapper {
         val bottomBarState by launcherViewModel.bottomBarState.collectAsStateWithLifecycle()
         val activityDetailsData by
           activityDetailsViewModel.activityDetails.collectAsStateWithLifecycle(null)
@@ -295,6 +303,9 @@ class LauncherFragment : Fragment() {
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
                 hiddenAppsViewModel.showHiddenApps(user)
               }
+              BottomBarAction.Type.TOGGLE_MONOCHROME -> {
+                useMonochromeIcons = !useMonochromeIcons
+              }
             }
           },
           onDismissRequest = { showMoreActionsDialog.value = false },
@@ -339,6 +350,13 @@ class LauncherFragment : Fragment() {
     }
 
     return view
+  }
+
+  @Composable
+  private fun Wrapper(content: @Composable () -> Unit) {
+    LauncherTheme {
+      CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) { content() }
+    }
   }
 
   override fun onDestroy() {

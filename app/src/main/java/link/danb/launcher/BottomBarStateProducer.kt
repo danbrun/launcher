@@ -25,6 +25,7 @@ data class BottomBarAction(val icon: Int, val name: Int, val type: Type, val use
     PIN_SHORTCUT,
     PIN_WIDGET,
     SHOW_HIDDEN_APPS,
+    TOGGLE_MONOCHROME,
   }
 }
 
@@ -133,5 +134,14 @@ object BottomBarStateProducer {
         )
       )
     }
+
+    add(
+      BottomBarAction(
+        R.drawable.ic_baseline_visibility_24,
+        R.string.toggle_monochrome,
+        BottomBarAction.Type.TOGGLE_MONOCHROME,
+        filter.profile,
+      )
+    )
   }
 }
