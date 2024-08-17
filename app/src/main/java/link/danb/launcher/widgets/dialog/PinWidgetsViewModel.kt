@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserApplication
-import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
 
@@ -67,13 +66,7 @@ constructor(
                   add(
                     PinWidgetsViewData.PinWidgetViewItem.PinWidgetHeader(
                       entry.key,
-                      LauncherTileData(
-                        LauncherIconData(
-                          launcherResourceProvider.getIcon(entry.key),
-                          launcherResourceProvider.getBadge(entry.key.userHandle),
-                        ),
-                        launcherResourceProvider.getLabel(entry.key),
-                      ),
+                      launcherResourceProvider.getTileData(entry.key),
                     )
                   )
 

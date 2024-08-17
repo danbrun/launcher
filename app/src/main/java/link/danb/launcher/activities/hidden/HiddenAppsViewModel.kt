@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.toList
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
-import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
@@ -44,13 +43,7 @@ constructor(
               .map {
                 ActivityViewData(
                   it.userActivity,
-                  LauncherTileData(
-                    LauncherIconData(
-                      launcherResourceProvider.getIcon(it.userActivity),
-                      launcherResourceProvider.getBadge(it.userActivity.userHandle),
-                    ),
-                    launcherResourceProvider.getLabel(it.userActivity),
-                  ),
+                  launcherResourceProvider.getTileData(it.userActivity),
                 )
               }
               .toList()

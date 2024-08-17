@@ -35,7 +35,6 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.widgets.WidgetManager
 
@@ -159,16 +158,7 @@ constructor(
               .asFlow()
               .filter { it.userHandle == filter.profile }
               .map {
-                ShortcutViewItem(
-                  it,
-                  LauncherTileData(
-                    LauncherIconData(
-                      launcherResourceProvider.getIconWithCache(it).await(),
-                      launcherResourceProvider.getBadge(it.userHandle),
-                    ),
-                    launcherResourceProvider.getLabel(it),
-                  ),
-                )
+                ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it).await())
               },
           )
           .toList()
@@ -221,13 +211,7 @@ constructor(
   private suspend fun getActivityTileItem(activityData: ActivityData) =
     ActivityViewItem(
       activityData.userActivity,
-      LauncherTileData(
-        LauncherIconData(
-          launcherResourceProvider.getIconWithCache(activityData.userActivity).await(),
-          launcherResourceProvider.getBadge(activityData.userActivity.userHandle),
-        ),
-        launcherResourceProvider.getLabel(activityData.userActivity),
-      ),
+      launcherResourceProvider.getTileDataWithCache(activityData.userActivity).await(),
     )
 
   private data class CombinedData(

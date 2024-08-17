@@ -24,7 +24,6 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.profiles.PersonalAndWorkProfiles
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
 
@@ -75,13 +74,7 @@ constructor(
       if (activity != null && activityData != null && shortcutsAndWidgets != null) {
         ActivityDetails(
           activityData,
-          LauncherTileData(
-            LauncherIconData(
-              launcherResourceProvider.getIcon(activity),
-              launcherResourceProvider.getBadge(activity.userHandle),
-            ),
-            launcherResourceProvider.getLabel(activity),
-          ),
+          launcherResourceProvider.getTileData(activityData.userActivity),
           shortcutsAndWidgets,
         )
       } else {
@@ -100,18 +93,7 @@ constructor(
   private suspend fun getShortcuts(userActivity: UserActivity): ImmutableList<ShortcutViewData> =
     shortcutManager
       .getShortcuts(userActivity)
-      .map {
-        ShortcutViewData(
-          it,
-          LauncherTileData(
-            LauncherIconData(
-              launcherResourceProvider.getIcon(it),
-              launcherResourceProvider.getBadge(it.userHandle),
-            ),
-            launcherResourceProvider.getLabel(it),
-          ),
-        )
-      }
+      .map { ShortcutViewData(it, launcherResourceProvider.getTileData(it)) }
       .sortedBy { it.launcherTileData.name }
       .toImmutableList()
 
@@ -120,18 +102,7 @@ constructor(
   ): ImmutableList<ShortcutCreatorViewData> =
     shortcutManager
       .getShortcutCreators(userActivity)
-      .map {
-        ShortcutCreatorViewData(
-          it,
-          LauncherTileData(
-            LauncherIconData(
-              launcherResourceProvider.getIcon(it),
-              launcherResourceProvider.getBadge(it.userHandle),
-            ),
-            launcherResourceProvider.getLabel(it),
-          ),
-        )
-      }
+      .map { ShortcutCreatorViewData(it, launcherResourceProvider.getTileData(it)) }
       .sortedBy { it.launcherTileData.name }
       .toImmutableList()
 

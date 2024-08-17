@@ -32,6 +32,8 @@ import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.extensions.resolveActivity
 import link.danb.launcher.extensions.resolveApplication
 import link.danb.launcher.extensions.resolveShortcut
+import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.ui.LauncherTileData
 
 @Singleton
 class LauncherResourceProvider
@@ -82,6 +84,23 @@ constructor(@ApplicationContext private val context: Context) {
       context.packageManager.getUserBadgedIcon(
         BitmapDrawable(context.resources, Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)),
         userHandle,
+      )
+    }
+
+  suspend fun getTileData(userComponent: UserComponent): LauncherTileData =
+    LauncherTileData(
+      LauncherIconData(getIcon(userComponent), getBadge(userComponent.userHandle)),
+      getLabel(userComponent),
+    )
+
+  suspend fun getTileDataWithCache(userComponent: UserComponent): Deferred<LauncherTileData> =
+    coroutineScope.async {
+      LauncherTileData(
+        LauncherIconData(
+          getIconWithCache(userComponent).await(),
+          getBadge(userComponent.userHandle),
+        ),
+        getLabel(userComponent),
       )
     }
 

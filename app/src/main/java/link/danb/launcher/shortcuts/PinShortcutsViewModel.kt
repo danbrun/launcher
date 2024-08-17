@@ -19,8 +19,6 @@ import kotlinx.coroutines.flow.transform
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.ui.LauncherIconData
-import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
 class PinShortcutsViewModel
@@ -48,13 +46,7 @@ constructor(
               .map {
                 ActivityDetailsViewModel.ShortcutCreatorViewData(
                   it,
-                  LauncherTileData(
-                    LauncherIconData(
-                      launcherResourceProvider.getIcon(it),
-                      launcherResourceProvider.getBadge(it.userHandle),
-                    ),
-                    launcherResourceProvider.getLabel(it),
-                  ),
+                  launcherResourceProvider.getTileData(it),
                 )
               }
               .toList()
