@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalOf
@@ -71,6 +70,7 @@ import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.settings.SettingsViewModel
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.PinWidgetsDialog
@@ -95,6 +95,7 @@ class LauncherFragment : Fragment() {
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val pinShortcutsViewModel: PinShortcutsViewModel by activityViewModels()
   private val pinWidgetsViewModel: PinWidgetsViewModel by activityViewModels()
+  private val settingsViewModel: SettingsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
@@ -110,7 +111,6 @@ class LauncherFragment : Fragment() {
   private val showMoreActionsDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
   private var gestureActivity: UserActivity? by mutableStateOf(null)
-  private var useMonochromeIcons: Boolean by mutableStateOf(false)
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
@@ -124,7 +124,7 @@ class LauncherFragment : Fragment() {
       gestureContract,
       data.boundsInRoot.toAndroidRectF(),
       data.launcherIconData,
-      useMonochromeIcons,
+      settingsViewModel.useMonochromeIcons.value,
     )
   }
 
@@ -162,201 +162,196 @@ class LauncherFragment : Fragment() {
     }
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
-      Wrapper {
-        val bottomBarState by launcherViewModel.bottomBarState.collectAsStateWithLifecycle()
-        val activityDetailsData by
-          activityDetailsViewModel.activityDetails.collectAsStateWithLifecycle(null)
-        val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsStateWithLifecycle(null)
-        val pinShortcuts by
-          pinShortcutsViewModel.pinShortcutsViewData.collectAsStateWithLifecycle(null)
-        val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsStateWithLifecycle(null)
-        val isShowing by showMoreActionsDialog.collectAsStateWithLifecycle()
-        val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
+      LauncherTheme {
+        val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
+        CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) {
+          val bottomBarState by launcherViewModel.bottomBarState.collectAsStateWithLifecycle()
+          val activityDetailsData by
+            activityDetailsViewModel.activityDetails.collectAsStateWithLifecycle(null)
+          val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsStateWithLifecycle(null)
+          val pinShortcuts by
+            pinShortcutsViewModel.pinShortcutsViewData.collectAsStateWithLifecycle(null)
+          val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsStateWithLifecycle(null)
+          val isShowing by showMoreActionsDialog.collectAsStateWithLifecycle()
+          val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
 
-        Scaffold(
-          bottomBar = {
-            LauncherBottomBar(
-              bottomBarState,
-              onChangeFilter = { launcherViewModel.setFilter(it) },
-              onSearchGo = { launchFirstItem() },
-              onWorkProfileToggled = { profileManager.setWorkProfileEnabled(it) },
-              onMoreActionsClick = { showMoreActionsDialog.value = true },
-              onSearchChange = { launcherViewModel.setFilter(SearchFilter(it)) },
-              onSearchFabClick = { onFabClick() },
-            )
-          },
-          containerColor = Color.Transparent,
-          content = { paddingValues ->
-            var isScrollEnabled by remember { mutableStateOf(true) }
-            LazyVerticalGrid(
-              columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
-              userScrollEnabled = isScrollEnabled,
-            ) {
-              item(span = { GridItemSpan(maxLineSpan) }) {
-                Spacer(Modifier.height(paddingValues.calculateTopPadding()))
-              }
+          Scaffold(
+            bottomBar = {
+              LauncherBottomBar(
+                bottomBarState,
+                onChangeFilter = { launcherViewModel.setFilter(it) },
+                onSearchGo = { launchFirstItem() },
+                onWorkProfileToggled = { profileManager.setWorkProfileEnabled(it) },
+                onMoreActionsClick = { showMoreActionsDialog.value = true },
+                onSearchChange = { launcherViewModel.setFilter(SearchFilter(it)) },
+                onSearchFabClick = { onFabClick() },
+              )
+            },
+            containerColor = Color.Transparent,
+            content = { paddingValues ->
+              var isScrollEnabled by remember { mutableStateOf(true) }
+              LazyVerticalGrid(
+                columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
+                userScrollEnabled = isScrollEnabled,
+              ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                  Spacer(Modifier.height(paddingValues.calculateTopPadding()))
+                }
 
-              items(
-                items,
-                span = { item ->
+                items(
+                  items,
+                  span = { item ->
+                    when (item) {
+                      is WidgetViewItem,
+                      is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
+                      else -> GridItemSpan(1)
+                    }
+                  },
+                  key = { item ->
+                    when (item) {
+                      is WidgetViewItem -> item.widgetData.widgetId
+                      is GroupHeaderViewItem -> item.name
+                      is ActivityViewItem -> item.userActivity
+                      is ShortcutViewItem -> item.userShortcut
+                    }
+                  },
+                ) { item ->
                   when (item) {
-                    is WidgetViewItem,
-                    is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
-                    else -> GridItemSpan(1)
-                  }
-                },
-                key = { item ->
-                  when (item) {
-                    is WidgetViewItem -> item.widgetData.widgetId
-                    is GroupHeaderViewItem -> item.name
-                    is ActivityViewItem -> item.userActivity
-                    is ShortcutViewItem -> item.userShortcut
-                  }
-                },
-              ) { item ->
-                when (item) {
-                  is WidgetViewItem -> {
-                    Widget(
-                      widgetData = item.widgetData,
-                      sizeRange = item.sizeRange,
-                      modifier = Modifier.animateItemPlacement(),
-                      setScrollEnabled = { isScrollEnabled = it },
-                      moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
-                      moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
-                      remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
-                      setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
-                    )
-                  }
-                  is GroupHeaderViewItem -> {
-                    Text(
-                      item.name,
-                      Modifier.padding(8.dp).animateItemPlacement(),
-                      style =
-                        MaterialTheme.typography.titleMedium.copy(
-                          color = Color.White,
-                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                        ),
-                    )
-                  }
-                  is ShortcutViewItem -> {
-                    LauncherTile(
-                      data = item.launcherTileData,
-                      modifier = Modifier.animateItemPlacement(),
-                      style =
-                        MaterialTheme.typography.labelMedium.copy(
-                          color = Color.White,
-                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                        ),
-                      onClick = { launchShortcut(it, item.userShortcut) },
-                      onLongClick = { unpinShortcut(item.userShortcut) },
-                    )
-                  }
-                  is ActivityViewItem -> {
-                    LauncherTile(
-                      data = item.launcherTileData,
-                      modifier = Modifier.animateItemPlacement(),
-                      style =
-                        MaterialTheme.typography.labelMedium.copy(
-                          color = Color.White,
-                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                        ),
-                      onClick = { launchActivity(it, item.userActivity) },
-                      onLongClick = {
-                        activityDetailsViewModel.showActivityDetails(item.userActivity)
-                      },
-                      hide = item.userActivity == gestureActivity,
-                      onPlace = {
-                        if (it == null) {
-                          (item.userActivity)
-                          gestureActivityIconStore.clearActivityState(item.userActivity)
-                        } else {
-                          gestureActivityIconStore.setActivityState(
-                            item.userActivity,
-                            item.launcherTileData.launcherIconData,
-                            it,
-                          )
-                        }
-                      },
-                    )
+                    is WidgetViewItem -> {
+                      Widget(
+                        widgetData = item.widgetData,
+                        sizeRange = item.sizeRange,
+                        modifier = Modifier.animateItemPlacement(),
+                        setScrollEnabled = { isScrollEnabled = it },
+                        moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
+                        moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
+                        remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
+                        setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
+                      )
+                    }
+                    is GroupHeaderViewItem -> {
+                      Text(
+                        item.name,
+                        Modifier.padding(8.dp).animateItemPlacement(),
+                        style =
+                          MaterialTheme.typography.titleMedium.copy(
+                            color = Color.White,
+                            shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                          ),
+                      )
+                    }
+                    is ShortcutViewItem -> {
+                      LauncherTile(
+                        data = item.launcherTileData,
+                        modifier = Modifier.animateItemPlacement(),
+                        style =
+                          MaterialTheme.typography.labelMedium.copy(
+                            color = Color.White,
+                            shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                          ),
+                        onClick = { launchShortcut(it, item.userShortcut) },
+                        onLongClick = { unpinShortcut(item.userShortcut) },
+                      )
+                    }
+                    is ActivityViewItem -> {
+                      LauncherTile(
+                        data = item.launcherTileData,
+                        modifier = Modifier.animateItemPlacement(),
+                        style =
+                          MaterialTheme.typography.labelMedium.copy(
+                            color = Color.White,
+                            shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                          ),
+                        onClick = { launchActivity(it, item.userActivity) },
+                        onLongClick = {
+                          activityDetailsViewModel.showActivityDetails(item.userActivity)
+                        },
+                        hide = item.userActivity == gestureActivity,
+                        onPlace = {
+                          if (it == null) {
+                            (item.userActivity)
+                            gestureActivityIconStore.clearActivityState(item.userActivity)
+                          } else {
+                            gestureActivityIconStore.setActivityState(
+                              item.userActivity,
+                              item.launcherTileData.launcherIconData,
+                              it,
+                            )
+                          }
+                        },
+                      )
+                    }
                   }
                 }
-              }
 
-              item(span = { GridItemSpan(maxLineSpan) }) {
-                Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                  Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
+                }
               }
-            }
-          },
-        )
+            },
+          )
 
-        MoreActionsDialog(
-          isShowing = isShowing,
-          actions = bottomBarState.actions,
-          onActionClick = { action, user ->
-            when (action) {
-              BottomBarAction.Type.PIN_SHORTCUT -> {
-                pinShortcutsViewModel.showPinShortcuts(user)
+          MoreActionsDialog(
+            isShowing = isShowing,
+            actions = bottomBarState.actions,
+            onActionClick = { action, user ->
+              when (action) {
+                BottomBarAction.Type.PIN_SHORTCUT -> {
+                  pinShortcutsViewModel.showPinShortcuts(user)
+                }
+                BottomBarAction.Type.PIN_WIDGET -> {
+                  pinWidgetsViewModel.showPinWidgetsDialog(user)
+                }
+                BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
+                  hiddenAppsViewModel.showHiddenApps(user)
+                }
+                BottomBarAction.Type.TOGGLE_MONOCHROME -> {
+                  settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
+                }
               }
-              BottomBarAction.Type.PIN_WIDGET -> {
-                pinWidgetsViewModel.showPinWidgetsDialog(user)
-              }
-              BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
-                hiddenAppsViewModel.showHiddenApps(user)
-              }
-              BottomBarAction.Type.TOGGLE_MONOCHROME -> {
-                useMonochromeIcons = !useMonochromeIcons
-              }
-            }
-          },
-          onDismissRequest = { showMoreActionsDialog.value = false },
-        )
+            },
+            onDismissRequest = { showMoreActionsDialog.value = false },
+          )
 
-        PinShortcutsDialog(
-          isShowing = pinShortcuts != null,
-          viewData = pinShortcuts,
-          onClick = { _, item -> launchShortcutCreator(item) },
-          onDismissRequest = { pinShortcutsViewModel.hidePinShortcuts() },
-        )
+          PinShortcutsDialog(
+            isShowing = pinShortcuts != null,
+            viewData = pinShortcuts,
+            onClick = { _, item -> launchShortcutCreator(item) },
+            onDismissRequest = { pinShortcutsViewModel.hidePinShortcuts() },
+          )
 
-        PinWidgetsDialog(
-          isShowing = pinWidgets != null,
-          viewData = pinWidgets,
-          onClick = { item -> bindWidget(item) },
-          onDismissRequest = { pinWidgetsViewModel.hidePinWidgetsDialog() },
-        )
+          PinWidgetsDialog(
+            isShowing = pinWidgets != null,
+            viewData = pinWidgets,
+            onClick = { item -> bindWidget(item) },
+            onDismissRequest = { pinWidgetsViewModel.hidePinWidgetsDialog() },
+          )
 
-        HiddenAppsDialog(
-          isShowing = hiddenApps != null,
-          viewData = hiddenApps,
-          onClick = { offset, item -> launchActivity(offset, item) },
-          onLongClick = { _, item -> activityDetailsViewModel.showActivityDetails(item) },
-          onDismissRequest = { hiddenAppsViewModel.hideHiddenApps() },
-        )
+          HiddenAppsDialog(
+            isShowing = hiddenApps != null,
+            viewData = hiddenApps,
+            onClick = { offset, item -> launchActivity(offset, item) },
+            onLongClick = { _, item -> activityDetailsViewModel.showActivityDetails(item) },
+            onDismissRequest = { hiddenAppsViewModel.hideHiddenApps() },
+          )
 
-        ActivityDetailsDialog(
-          activityDetailsData,
-          onDismissRequest = { activityDetailsViewModel.hideActivityDetails() },
-          onToggledPinned = { toggleAppPinned(it) },
-          onToggleHidden = { toggleAppHidden(it) },
-          onUninstall = { uninstallApp(it.userActivity) },
-          onSettings = { openAppSettings(it.userActivity) },
-          onShortcutClick = { offset, item -> launchShortcut(offset, item) },
-          onShortcutLongClick = { _, item -> pinShortcut(item) },
-          onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
-          onShortcutCreatorLongClick = { _, _ -> },
-          onWidgetPreviewClick = { bindWidget(it) },
-        )
+          ActivityDetailsDialog(
+            activityDetailsData,
+            onDismissRequest = { activityDetailsViewModel.hideActivityDetails() },
+            onToggledPinned = { toggleAppPinned(it) },
+            onToggleHidden = { toggleAppHidden(it) },
+            onUninstall = { uninstallApp(it.userActivity) },
+            onSettings = { openAppSettings(it.userActivity) },
+            onShortcutClick = { offset, item -> launchShortcut(offset, item) },
+            onShortcutLongClick = { _, item -> pinShortcut(item) },
+            onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
+            onShortcutCreatorLongClick = { _, _ -> },
+            onWidgetPreviewClick = { bindWidget(it) },
+          )
+        }
       }
     }
-
     return view
-  }
-
-  @Composable
-  private fun Wrapper(content: @Composable () -> Unit) {
-    LauncherTheme {
-      CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) { content() }
-    }
   }
 
   override fun onDestroy() {
