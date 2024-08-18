@@ -39,5 +39,5 @@
     <string name="remove">Remove</string>
     <string name="adjust_height">Adjust height</string>
     <string name="done">Done</string>
-    <string name="toggle_monochrome">(Testing) Toggle themed icons</string>
+    <string name="toggle_monochrome">Toggle themed icons</string>
 </resources>

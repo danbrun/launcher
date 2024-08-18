@@ -124,6 +124,15 @@ object BottomBarStateProducer {
       )
     }
 
+    add(
+      BottomBarAction(
+        R.drawable.baseline_style_24,
+        R.string.toggle_monochrome,
+        BottomBarAction.Type.TOGGLE_MONOCHROME,
+        filter.profile,
+      )
+    )
+
     if (activities.any { it.isHidden && it.userActivity.userHandle == filter.profile }) {
       add(
         BottomBarAction(
@@ -134,14 +143,5 @@ object BottomBarStateProducer {
         )
       )
     }
-
-    add(
-      BottomBarAction(
-        R.drawable.ic_baseline_visibility_24,
-        R.string.toggle_monochrome,
-        BottomBarAction.Type.TOGGLE_MONOCHROME,
-        filter.profile,
-      )
-    )
   }
 }
