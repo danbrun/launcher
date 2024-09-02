@@ -85,7 +85,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     // Compose dependencies
-    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation(platform("androidx.compose:compose-bom:2024.08.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
