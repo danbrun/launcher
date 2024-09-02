@@ -207,14 +207,7 @@ class LauncherFragment : Fragment() {
                       else -> GridItemSpan(1)
                     }
                   },
-                  key = { item ->
-                    when (item) {
-                      is WidgetViewItem -> item.widgetData.widgetId
-                      is GroupHeaderViewItem -> item.name
-                      is ActivityViewItem -> item.userActivity
-                      is ShortcutViewItem -> item.userShortcut
-                    }
-                  },
+                  key = { item -> "${item::class.qualifiedName}:${item.key}" },
                 ) { item ->
                   when (item) {
                     is WidgetViewItem -> {

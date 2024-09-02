@@ -38,11 +38,17 @@ import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.widgets.WidgetManager
 
-sealed interface ViewItem
+sealed interface ViewItem {
+  val key: String
+}
 
-data class WidgetViewItem(val widgetData: WidgetData, val sizeRange: IntRange) : ViewItem
+data class WidgetViewItem(val widgetData: WidgetData, val sizeRange: IntRange) : ViewItem {
+  override val key: String = widgetData.widgetId.toString()
+}
 
-data class GroupHeaderViewItem(val name: String) : ViewItem
+data class GroupHeaderViewItem(val name: String) : ViewItem {
+  override val key: String = name
+}
 
 sealed interface IconTileViewItem : ViewItem {
   val launcherTileData: LauncherTileData
@@ -51,12 +57,17 @@ sealed interface IconTileViewItem : ViewItem {
 data class ShortcutViewItem(
   val userShortcut: UserShortcut,
   override val launcherTileData: LauncherTileData,
-) : IconTileViewItem
+) : IconTileViewItem {
+  override val key: String = userShortcut.toString()
+}
 
 data class ActivityViewItem(
   val userActivity: UserActivity,
   override val launcherTileData: LauncherTileData,
-) : IconTileViewItem
+  val isPinned: Boolean
+) : IconTileViewItem {
+  override val key: String = "$userActivity,$isPinned"
+}
 
 @HiltViewModel
 class LauncherViewModel
@@ -153,7 +164,7 @@ constructor(
             activities
               .asFlow()
               .filter { it.isPinned && it.userActivity.userHandle == filter.profile }
-              .map { getActivityTileItem(it) },
+              .map { getActivityTileItem(it, isPinned = true) },
             shortcuts
               .asFlow()
               .filter { it.userHandle == filter.profile }
@@ -184,7 +195,7 @@ constructor(
             is SearchFilter -> true
           }
         }
-        .map { getActivityTileItem(it) }
+        .map { getActivityTileItem(it, isPinned = false) }
         .filter {
           when (filter) {
             is ProfileFilter -> true
@@ -208,10 +219,11 @@ constructor(
     }
   }
 
-  private suspend fun getActivityTileItem(activityData: ActivityData) =
+  private suspend fun getActivityTileItem(activityData: ActivityData, isPinned: Boolean) =
     ActivityViewItem(
       activityData.userActivity,
       launcherResourceProvider.getTileDataWithCache(activityData.userActivity).await(),
+      isPinned
     )
 
   private data class CombinedData(
