@@ -3,7 +3,6 @@ package link.danb.launcher
 import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.os.Build
-import android.os.Process
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +32,7 @@ import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
@@ -64,7 +64,7 @@ data class ShortcutViewItem(
 data class ActivityViewItem(
   val userActivity: UserActivity,
   override val launcherTileData: LauncherTileData,
-  val isPinned: Boolean
+  val isPinned: Boolean,
 ) : IconTileViewItem {
   override val key: String = "$userActivity,$isPinned"
 }
@@ -77,12 +77,12 @@ constructor(
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
-  profileManager: ProfileManager,
+  private val profileManager: ProfileManager,
   shortcutManager: ShortcutManager,
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
-  private val _filter = MutableStateFlow<Filter>(ProfileFilter(Process.myUserHandle()))
+  private val _filter = MutableStateFlow<Filter>(ProfileFilter(Profile.PERSONAL))
 
   val filter: StateFlow<Filter> = _filter.asStateFlow()
 
@@ -111,8 +111,13 @@ constructor(
       )
 
   val bottomBarState: StateFlow<BottomBarState> =
-    combine(activityManager.data, filter, profileManager.profiles) { activities, filter, profiles ->
-        BottomBarStateProducer.getBottomBarState(filter, profiles, activities)
+    combine(activityManager.data, filter, profileManager.profileStates) {
+        activities,
+        filter,
+        profileStates ->
+        BottomBarStateProducer.getBottomBarState(filter, profileStates, activities) {
+          profileManager.getUserHandle(it)!!
+        }
       }
       .stateIn(
         viewModelScope,
@@ -131,7 +136,7 @@ constructor(
     if (filter is ProfileFilter) {
       for (widget in widgets) {
         val providerInfo = appWidgetManager.getAppWidgetInfo(widget.widgetId)
-        if (providerInfo.profile == filter.profile) {
+        if (providerInfo.profile == profileManager.getUserHandle(filter.profile)) {
           val minHeight =
             max(
               providerInfo.minHeight,
@@ -163,11 +168,14 @@ constructor(
         merge(
             activities
               .asFlow()
-              .filter { it.isPinned && it.userActivity.userHandle == filter.profile }
+              .filter {
+                it.isPinned &&
+                  it.userActivity.userHandle == profileManager.getUserHandle(filter.profile)
+              }
               .map { getActivityTileItem(it, isPinned = true) },
             shortcuts
               .asFlow()
-              .filter { it.userHandle == filter.profile }
+              .filter { it.userHandle == profileManager.getUserHandle(filter.profile) }
               .map {
                 ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it).await())
               },
@@ -191,7 +199,9 @@ constructor(
         .asFlow()
         .filter {
           when (filter) {
-            is ProfileFilter -> !it.isHidden && it.userActivity.userHandle == filter.profile
+            is ProfileFilter ->
+              !it.isHidden &&
+                it.userActivity.userHandle == profileManager.getUserHandle(filter.profile)
             is SearchFilter -> true
           }
         }
@@ -223,7 +233,7 @@ constructor(
     ActivityViewItem(
       activityData.userActivity,
       launcherResourceProvider.getTileDataWithCache(activityData.userActivity).await(),
-      isPinned
+      isPinned,
     )
 
   private data class CombinedData(

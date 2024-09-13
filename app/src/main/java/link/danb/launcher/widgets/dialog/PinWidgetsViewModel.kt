@@ -3,7 +3,6 @@ package link.danb.launcher.widgets.dialog
 import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.os.Build
-import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -16,6 +15,8 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserApplication
+import link.danb.launcher.profiles.Profile
+import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
 
@@ -46,20 +47,23 @@ constructor(
   application: Application,
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
+  private val profileManager: ProfileManager,
 ) : AndroidViewModel(application) {
 
-  private val showWidgetsForUser: MutableStateFlow<UserHandle?> = MutableStateFlow(null)
+  private val showWidgetsForUser: MutableStateFlow<Profile?> = MutableStateFlow(null)
 
   val pinWidgetsViewData: Flow<PinWidgetsViewData?> =
-    showWidgetsForUser.transform { user ->
-      if (user != null) {
+    showWidgetsForUser.transform { profile ->
+      if (profile != null) {
         emit(PinWidgetsViewData.Loading)
 
         emit(
           PinWidgetsViewData.Loaded(
             appWidgetManager
-              .getInstalledProvidersForProfile(user)
-              .groupBy { UserApplication(it.provider.packageName, user) }
+              .getInstalledProvidersForProfile(profileManager.getUserHandle(profile))
+              .groupBy {
+                UserApplication(it.provider.packageName, profileManager.getUserHandle(profile)!!)
+              }
               .toSortedMap(compareBy { launcherResourceProvider.getLabel(it) })
               .flatMap { entry ->
                 buildList {
@@ -100,8 +104,8 @@ constructor(
       }
     }
 
-  fun showPinWidgetsDialog(user: UserHandle) {
-    showWidgetsForUser.value = user
+  fun showPinWidgetsDialog(profile: Profile) {
+    showWidgetsForUser.value = profile
   }
 
   fun hidePinWidgetsDialog() {

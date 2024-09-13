@@ -1,7 +1,6 @@
 package link.danb.launcher.activities.hidden
 
 import android.app.Application
-import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -17,6 +16,8 @@ import kotlinx.coroutines.flow.toList
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
+import link.danb.launcher.profiles.Profile
+import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
@@ -26,20 +27,23 @@ constructor(
   application: Application,
   activityManager: ActivityManager,
   private val launcherResourceProvider: LauncherResourceProvider,
+  private val profileManager: ProfileManager,
 ) : AndroidViewModel(application) {
 
-  private val showHiddenApps: MutableStateFlow<UserHandle?> = MutableStateFlow(null)
+  private val showHiddenApps: MutableStateFlow<Profile?> = MutableStateFlow(null)
 
   val hiddenApps: Flow<HiddenAppsViewData?> =
-    combineTransform(showHiddenApps, activityManager.data) { user, data ->
-      if (user != null) {
+    combineTransform(showHiddenApps, activityManager.data) { profile, data ->
+      if (profile != null) {
         emit(HiddenAppsViewData.Loading)
 
         emit(
           HiddenAppsViewData.Loaded(
             data
               .asFlow()
-              .filter { it.isHidden && it.userActivity.userHandle == user }
+              .filter {
+                it.isHidden && it.userActivity.userHandle == profileManager.getUserHandle(profile)
+              }
               .map {
                 ActivityViewData(
                   it.userActivity,
@@ -56,8 +60,8 @@ constructor(
       }
     }
 
-  fun showHiddenApps(userHandle: UserHandle) {
-    showHiddenApps.value = userHandle
+  fun showHiddenApps(profile: Profile) {
+    showHiddenApps.value = profile
   }
 
   fun hideHiddenApps() {

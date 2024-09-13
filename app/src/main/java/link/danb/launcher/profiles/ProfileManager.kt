@@ -22,12 +22,12 @@ class ProfileManager
 @Inject
 constructor(@ApplicationContext context: Context, private val userManager: UserManager) {
 
-  val profiles: StateFlow<Profiles> =
+  val profileStates: StateFlow<List<ProfileState>> =
     callbackFlow {
         val broadcastReceiver =
           object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-              trySend(getProfileStatus())
+              trySend(getProfileStates())
             }
           }
 
@@ -42,37 +42,40 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
         )
         awaitClose { context.unregisterReceiver(broadcastReceiver) }
       }
-      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), initialValue = getProfileStatus())
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), initialValue = getProfileStates())
 
-  fun setWorkProfileEnabled(isEnabled: Boolean) {
-    val currentProfiles = profiles.value
-    if (currentProfiles is PersonalAndWorkProfiles) {
-      userManager.requestQuietModeEnabled(!isEnabled, currentProfiles.workProfile)
+  fun getUserHandle(profile: Profile): UserHandle? =
+    when (profile) {
+      Profile.PERSONAL -> Process.myUserHandle()
+      Profile.WORK -> userManager.userProfiles.firstOrNull { it != Process.myUserHandle() }
+    }
+
+  fun getProfile(userHandle: UserHandle): Profile =
+    when (userHandle) {
+      Process.myUserHandle() -> Profile.PERSONAL
+      else -> Profile.WORK
+    }
+
+  fun setProfileEnabled(profile: Profile, isEnabled: Boolean) {
+    when (profile) {
+      Profile.PERSONAL -> {}
+      Profile.WORK -> {
+        userManager.requestQuietModeEnabled(!isEnabled, getUserHandle(profile)!!)
+      }
     }
   }
 
-  private fun getProfileStatus(): Profiles {
-    val workProfile = userManager.userProfiles.firstOrNull { it != Process.myUserHandle() }
-
-    if (workProfile != null) {
-      val isWorkProfileEnabled =
-        !userManager.isQuietModeEnabled(workProfile) && userManager.isUserUnlocked(workProfile)
-
-      return PersonalAndWorkProfiles(Process.myUserHandle(), workProfile, isWorkProfileEnabled)
+  private fun getProfileStates(): List<ProfileState> =
+    userManager.userProfiles.map {
+      when (getProfile(it)) {
+        Profile.PERSONAL -> ProfileState(Profile.PERSONAL, true)
+        Profile.WORK -> {
+          val isWorkProfileEnabled =
+            !userManager.isQuietModeEnabled(it) && userManager.isUserUnlocked(it)
+          ProfileState(Profile.WORK, isWorkProfileEnabled)
+        }
+      }
     }
-
-    return PersonalProfile(Process.myUserHandle())
-  }
 }
 
-sealed interface Profiles {
-  val personal: UserHandle
-}
-
-data class PersonalProfile(override val personal: UserHandle) : Profiles
-
-data class PersonalAndWorkProfiles(
-  override val personal: UserHandle,
-  val workProfile: UserHandle,
-  val isWorkEnabled: Boolean,
-) : Profiles
+data class ProfileState(val profile: Profile, val isEnabled: Boolean)

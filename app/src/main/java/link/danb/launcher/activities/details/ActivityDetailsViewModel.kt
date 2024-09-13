@@ -21,7 +21,6 @@ import link.danb.launcher.components.UserApplication
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.profiles.PersonalAndWorkProfiles
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
@@ -35,18 +34,19 @@ constructor(
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
-  profileManager: ProfileManager,
+  private val profileManager: ProfileManager,
   private val shortcutManager: ShortcutManager,
 ) : AndroidViewModel(application) {
 
   private val _details: MutableStateFlow<UserActivity?> = MutableStateFlow(null)
 
   private val shortcutsAndWidgets: Flow<ShortcutsAndWidgets?> =
-    combineTransform(_details, profileManager.profiles) { activity, profiles ->
+    combineTransform(_details, profileManager.profileStates) { activity, profiles ->
       if (activity != null) {
         if (
-          activity.userHandle == profiles.personal ||
-            (profiles is PersonalAndWorkProfiles && profiles.isWorkEnabled)
+          profiles
+            .first { activity.userHandle == profileManager.getUserHandle(it.profile) }
+            .isEnabled
         ) {
           emit(ShortcutsAndWidgets.Loading)
 

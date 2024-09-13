@@ -1,6 +1,5 @@
 package link.danb.launcher
 
-import android.os.UserHandle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -11,13 +10,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
 
 @Composable
 fun MoreActionsDialog(
   isShowing: Boolean,
   actions: List<BottomBarAction>,
-  onActionClick: (BottomBarAction.Type, UserHandle) -> Unit,
+  onActionClick: (BottomBarAction.Type, Profile) -> Unit,
   onDismissRequest: () -> Unit,
 ) {
   BottomSheet(isShowing = isShowing, onDismissRequest = onDismissRequest) { dismiss ->
@@ -27,7 +27,7 @@ fun MoreActionsDialog(
         leadingContent = { Icon(painterResource(action.icon), contentDescription = null) },
         modifier =
           Modifier.clickable {
-            onActionClick(action.type, action.user)
+            onActionClick(action.type, action.profile)
             dismiss()
           },
       )

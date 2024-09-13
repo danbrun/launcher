@@ -2,9 +2,8 @@ package link.danb.launcher
 
 import android.os.UserHandle
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.profiles.PersonalAndWorkProfiles
-import link.danb.launcher.profiles.PersonalProfile
-import link.danb.launcher.profiles.Profiles
+import link.danb.launcher.profiles.Profile
+import link.danb.launcher.profiles.ProfileState
 
 data class BottomBarState(
   val filters: List<BottomBarFilter>,
@@ -20,7 +19,7 @@ data class BottomBarFilter(
   val filter: Filter,
 )
 
-data class BottomBarAction(val icon: Int, val name: Int, val type: Type, val user: UserHandle) {
+data class BottomBarAction(val icon: Int, val name: Int, val type: Type, val profile: Profile) {
   enum class Type {
     PIN_SHORTCUT,
     PIN_WIDGET,
@@ -32,57 +31,53 @@ data class BottomBarAction(val icon: Int, val name: Int, val type: Type, val use
 object BottomBarStateProducer {
   fun getBottomBarState(
     filter: Filter,
-    profiles: Profiles,
+    profileStates: List<ProfileState>,
     activities: List<ActivityData>,
+    userHandleProvider: (Profile) -> UserHandle,
   ): BottomBarState =
     BottomBarState(
-      getBottomBarFilters(filter, profiles),
+      getBottomBarFilters(filter, profileStates),
       if (filter is ProfileFilter) {
-        getBottomBarActions(filter, profiles, activities)
+        getBottomBarActions(filter, profileStates, activities, userHandleProvider)
       } else {
         emptyList()
       },
       workProfileToggle =
-        when (profiles) {
-          is PersonalProfile -> null
-          is PersonalAndWorkProfiles ->
-            if (filter is ProfileFilter && filter.profile == profiles.workProfile)
-              profiles.isWorkEnabled
-            else null
+        if (filter is ProfileFilter && filter.profile == Profile.WORK) {
+          profileStates.firstOrNull { it.profile == filter.profile }?.isEnabled
+        } else {
+          null
         },
       isSearching = filter is SearchFilter,
     )
 
-  private fun getBottomBarFilters(filter: Filter, profiles: Profiles) = buildList {
-    when (profiles) {
-      is PersonalProfile -> {
-        add(
-          BottomBarFilter(
-            R.drawable.baseline_apps_24,
-            R.string.show_home,
-            filter is ProfileFilter,
-            ProfileFilter(profiles.personal),
-          )
+  private fun getBottomBarFilters(filter: Filter, profileStates: List<ProfileState>) = buildList {
+    if (profileStates.size == 1) {
+      add(
+        BottomBarFilter(
+          R.drawable.baseline_apps_24,
+          R.string.show_home,
+          filter is ProfileFilter,
+          ProfileFilter(Profile.PERSONAL),
         )
-      }
-      is PersonalAndWorkProfiles -> {
-        add(
-          BottomBarFilter(
-            R.drawable.baseline_person_24,
-            R.string.show_personal,
-            filter is ProfileFilter && filter.profile == profiles.personal,
-            ProfileFilter(profiles.personal),
-          )
+      )
+    } else {
+      add(
+        BottomBarFilter(
+          R.drawable.baseline_person_24,
+          R.string.show_personal,
+          filter is ProfileFilter && filter.profile == Profile.PERSONAL,
+          ProfileFilter(Profile.PERSONAL),
         )
-        add(
-          BottomBarFilter(
-            R.drawable.ic_baseline_work_24,
-            R.string.show_work,
-            filter is ProfileFilter && filter.profile == profiles.workProfile,
-            ProfileFilter(profiles.workProfile),
-          )
+      )
+      add(
+        BottomBarFilter(
+          R.drawable.ic_baseline_work_24,
+          R.string.show_work,
+          filter is ProfileFilter && filter.profile == Profile.WORK,
+          ProfileFilter(Profile.WORK),
         )
-      }
+      )
     }
 
     add(
@@ -97,14 +92,15 @@ object BottomBarStateProducer {
 
   private fun getBottomBarActions(
     filter: ProfileFilter,
-    profiles: Profiles,
+    profileStates: List<ProfileState>,
     activities: List<ActivityData>,
+    userHandleProvider: (Profile) -> UserHandle,
   ) = buildList {
     if (
-      filter.profile == profiles.personal ||
-        (profiles is PersonalAndWorkProfiles &&
-          filter.profile == profiles.workProfile &&
-          profiles.isWorkEnabled)
+      when (filter.profile) {
+        Profile.PERSONAL -> true
+        Profile.WORK -> profileStates.first { it.profile == Profile.WORK }.isEnabled
+      }
     ) {
       add(
         BottomBarAction(
@@ -133,7 +129,11 @@ object BottomBarStateProducer {
       )
     )
 
-    if (activities.any { it.isHidden && it.userActivity.userHandle == filter.profile }) {
+    if (
+      activities.any {
+        it.isHidden && it.userActivity.userHandle == userHandleProvider(filter.profile)
+      }
+    ) {
       add(
         BottomBarAction(
           R.drawable.ic_baseline_visibility_24,

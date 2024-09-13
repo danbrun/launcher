@@ -69,6 +69,7 @@ import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.settings.SettingsViewModel
 import link.danb.launcher.shortcuts.PinShortcutsDialog
@@ -181,7 +182,7 @@ class LauncherFragment : Fragment() {
                 bottomBarState,
                 onChangeFilter = { launcherViewModel.setFilter(it) },
                 onSearchGo = { launchFirstItem() },
-                onWorkProfileToggled = { profileManager.setWorkProfileEnabled(it) },
+                onWorkProfileToggled = { profileManager.setProfileEnabled(Profile.WORK, it) },
                 onMoreActionsClick = { showMoreActionsDialog.value = true },
                 onSearchChange = { launcherViewModel.setFilter(SearchFilter(it)) },
                 onSearchFabClick = { onFabClick() },
@@ -428,7 +429,7 @@ class LauncherFragment : Fragment() {
       )
     }
     if (launcherViewModel.filter.value is SearchFilter) {
-      launcherViewModel.setFilter(ProfileFilter(profileManager.profiles.value.personal))
+      launcherViewModel.setFilter(ProfileFilter(Profile.PERSONAL))
     }
   }
 
