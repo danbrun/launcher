@@ -227,7 +227,7 @@ class LauncherFragment : Fragment() {
                       Widget(
                         widgetData = item.widgetData,
                         sizeRange = item.sizeRange,
-                        modifier = Modifier.animateItemPlacement(),
+                        modifier = Modifier.animateItem(),
                         setScrollEnabled = { isScrollEnabled = it },
                         moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
                         moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
@@ -238,7 +238,7 @@ class LauncherFragment : Fragment() {
                     is GroupHeaderViewItem -> {
                       Text(
                         item.name,
-                        Modifier.padding(8.dp).animateItemPlacement(),
+                        Modifier.padding(8.dp).animateItem(),
                         style =
                           MaterialTheme.typography.titleMedium.copy(
                             color = Color.White,
@@ -249,7 +249,7 @@ class LauncherFragment : Fragment() {
                     is ShortcutViewItem -> {
                       LauncherTile(
                         data = item.launcherTileData,
-                        modifier = Modifier.animateItemPlacement(),
+                        modifier = Modifier.animateItem(),
                         style =
                           MaterialTheme.typography.labelMedium.copy(
                             color = Color.White,
@@ -262,7 +262,7 @@ class LauncherFragment : Fragment() {
                     is ActivityViewItem -> {
                       LauncherTile(
                         data = item.launcherTileData,
-                        modifier = Modifier.animateItemPlacement(),
+                        modifier = Modifier.animateItem(),
                         style =
                           MaterialTheme.typography.labelMedium.copy(
                             color = Color.White,
