@@ -157,8 +157,8 @@ constructor(
 
   private fun infoToUserShortcut(shortcutInfo: ShortcutInfo): UserShortcut =
     UserShortcut(
-      shortcutInfo.id,
       shortcutInfo.`package`,
+      shortcutInfo.id,
       profileManager.getProfile(shortcutInfo.userHandle),
     )
 

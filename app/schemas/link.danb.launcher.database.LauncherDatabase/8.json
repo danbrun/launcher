@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 8,
-    "identityHash": "4c4e6b8f3f434eeb796ae293cb13e8a2",
+    "identityHash": "2d59d8d15df7e246c51b00e50fac1f84",
     "entities": [
       {
         "tableName": "ActivityData",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`isPinned` INTEGER NOT NULL DEFAULT 0, `isHidden` INTEGER NOT NULL, `componentName` TEXT NOT NULL, `profile` TEXT NOT NULL, PRIMARY KEY(`componentName`, `profile`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`isPinned` INTEGER NOT NULL DEFAULT 0, `isHidden` INTEGER NOT NULL, `componentName` TEXT NOT NULL, `profile` INTEGER NOT NULL, PRIMARY KEY(`componentName`, `profile`))",
         "fields": [
           {
             "fieldPath": "isPinned",
@@ -30,7 +30,7 @@
           {
             "fieldPath": "userActivity.profile",
             "columnName": "profile",
-            "affinity": "TEXT",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -80,7 +80,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c4e6b8f3f434eeb796ae293cb13e8a2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2d59d8d15df7e246c51b00e50fac1f84')"
     ]
   }
 }

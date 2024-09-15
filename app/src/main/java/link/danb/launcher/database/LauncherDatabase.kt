@@ -19,7 +19,7 @@ import link.danb.launcher.database.migrations.MigrateUserHandleToProfile
       AutoMigration(from = 6, to = 7, spec = DeleteActivityDataTagsColumn::class),
     ],
 )
-@TypeConverters(ComponentNameConverter::class, StringSetConverter::class)
+@TypeConverters(ComponentNameConverter::class, ProfileConverter::class, StringSetConverter::class)
 abstract class LauncherDatabase : RoomDatabase() {
 
   abstract fun activityData(): ActivityData.DataAccessObject

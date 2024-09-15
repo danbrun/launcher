@@ -21,14 +21,14 @@ class MigrateUserHandleToProfile(private val application: Application) : Migrati
       */
 
       // Get values not currently used in the table
-      val cursor = query("SELECT userHandle FROM ActivityData")
-      val userHandleColumn = cursor.getColumnIndex("ActivityData")
+      val cursor = db.query("SELECT userHandle FROM ActivityData")
+      val userHandleColumn = cursor.getColumnIndex("userHandle")
       val userHandles = mutableSetOf<Int>()
       cursor.use {
         if (it.moveToFirst()) {
-          while (cursor.moveToNext()) {
+          do {
             userHandles.add(cursor.getInt(userHandleColumn))
-          }
+          } while (cursor.moveToNext())
         }
       }
       val safePersonalValue = userHandles.max() + 1
@@ -36,12 +36,12 @@ class MigrateUserHandleToProfile(private val application: Application) : Migrati
 
       // Migrate to safe values
       execSQL(
-        "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-        arrayOf(safePersonalValue, personalUserHandle),
-      )
-      execSQL(
         "UPDATE ActivityData SET userHandle = ? WHERE userHandle != ?",
         arrayOf(safeWorkValue, personalUserHandle),
+      )
+      execSQL(
+        "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
+        arrayOf(safePersonalValue, personalUserHandle),
       )
 
       // Migrate to final values
