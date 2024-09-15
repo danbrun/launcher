@@ -115,7 +115,8 @@ class LauncherFragment : Fragment() {
 
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
-    val gestureContract = GestureContract.fromIntent(intent) ?: return@Consumer
+    val gestureContract =
+      GestureContract.fromIntent(intent) { profileManager.getProfile(it) } ?: return@Consumer
 
     val data =
       gestureActivityIconStore.getActivityIconState(gestureContract.userActivity) ?: return@Consumer
@@ -391,7 +392,7 @@ class LauncherFragment : Fragment() {
     startActivity(
       Intent(Intent.ACTION_DELETE)
         .setData(Uri.parse("package:${userActivity.componentName.packageName}"))
-        .putExtra(Intent.EXTRA_USER, userActivity.userHandle)
+        .putExtra(Intent.EXTRA_USER, profileManager.getUserHandle(userActivity.profile))
     )
   }
 

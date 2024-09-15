@@ -1,6 +1,6 @@
 package link.danb.launcher.components
 
-import android.os.UserHandle
+import link.danb.launcher.profiles.Profile
 
-data class UserApplication(override val packageName: String, override val userHandle: UserHandle) :
+data class UserApplication(override val packageName: String, override val profile: Profile) :
   UserComponent

@@ -168,14 +168,11 @@ constructor(
         merge(
             activities
               .asFlow()
-              .filter {
-                it.isPinned &&
-                  it.userActivity.userHandle == profileManager.getUserHandle(filter.profile)
-              }
+              .filter { it.isPinned && it.userActivity.profile == filter.profile }
               .map { getActivityTileItem(it, isPinned = true) },
             shortcuts
               .asFlow()
-              .filter { it.userHandle == profileManager.getUserHandle(filter.profile) }
+              .filter { it.profile == filter.profile }
               .map {
                 ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it).await())
               },
@@ -199,9 +196,7 @@ constructor(
         .asFlow()
         .filter {
           when (filter) {
-            is ProfileFilter ->
-              !it.isHidden &&
-                it.userActivity.userHandle == profileManager.getUserHandle(filter.profile)
+            is ProfileFilter -> !it.isHidden && it.userActivity.profile == filter.profile
             is SearchFilter -> true
           }
         }

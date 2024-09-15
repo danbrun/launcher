@@ -17,7 +17,6 @@ import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.profiles.Profile
-import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
@@ -27,7 +26,6 @@ constructor(
   application: Application,
   activityManager: ActivityManager,
   private val launcherResourceProvider: LauncherResourceProvider,
-  private val profileManager: ProfileManager,
 ) : AndroidViewModel(application) {
 
   private val showHiddenApps: MutableStateFlow<Profile?> = MutableStateFlow(null)
@@ -41,9 +39,7 @@ constructor(
           HiddenAppsViewData.Loaded(
             data
               .asFlow()
-              .filter {
-                it.isHidden && it.userActivity.userHandle == profileManager.getUserHandle(profile)
-              }
+              .filter { it.isHidden && it.userActivity.profile == profile }
               .map {
                 ActivityViewData(
                   it.userActivity,

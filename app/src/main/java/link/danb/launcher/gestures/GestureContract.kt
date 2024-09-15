@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.extensions.getParcelableCompat
+import link.danb.launcher.profiles.Profile
 
 @RequiresApi(Build.VERSION_CODES.Q)
 data class GestureContract(val userActivity: UserActivity, val message: Message) {
@@ -33,7 +34,7 @@ data class GestureContract(val userActivity: UserActivity, val message: Message)
     private const val EXTRA_REMOTE_CALLBACK = "android.intent.extra.REMOTE_CALLBACK"
     private const val EXTRA_ON_FINISH_CALLBACK = "gesture_nav_contract_finish_callback"
 
-    fun fromIntent(intent: Intent): GestureContract? {
+    fun fromIntent(intent: Intent, userHandleToProfile: (UserHandle) -> Profile): GestureContract? {
       val extras = intent.getBundleExtra(EXTRA_GESTURE_CONTRACT) ?: return null
       intent.removeExtra(EXTRA_GESTURE_CONTRACT)
 
@@ -42,7 +43,7 @@ data class GestureContract(val userActivity: UserActivity, val message: Message)
       val message: Message? = extras.getParcelableCompat(EXTRA_REMOTE_CALLBACK)
 
       if (component != null && user != null && message != null && message.replyTo != null) {
-        return GestureContract(UserActivity(component, user), message)
+        return GestureContract(UserActivity(component, userHandleToProfile(user)), message)
       }
       return null
     }

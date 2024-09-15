@@ -129,11 +129,7 @@ object BottomBarStateProducer {
       )
     )
 
-    if (
-      activities.any {
-        it.isHidden && it.userActivity.userHandle == userHandleProvider(filter.profile)
-      }
-    ) {
+    if (activities.any { it.isHidden && it.userActivity.profile == filter.profile }) {
       add(
         BottomBarAction(
           R.drawable.ic_baseline_visibility_24,

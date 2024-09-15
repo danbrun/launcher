@@ -19,7 +19,6 @@ import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.profiles.Profile
-import link.danb.launcher.profiles.ProfileManager
 
 @HiltViewModel
 class PinShortcutsViewModel
@@ -29,7 +28,6 @@ constructor(
   activityManager: ActivityManager,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val shortcutManager: ShortcutManager,
-  private val profileManager: ProfileManager,
 ) : AndroidViewModel(application) {
 
   private val showPinShortcuts: MutableStateFlow<Profile?> = MutableStateFlow(null)
@@ -43,7 +41,7 @@ constructor(
           PinShortcutsViewData.Loaded(
             data
               .asFlow()
-              .filter { it.userActivity.userHandle == profileManager.getUserHandle(profile) }
+              .filter { it.userActivity.profile == profile }
               .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
               .map {
                 ActivityDetailsViewModel.ShortcutCreatorViewData(

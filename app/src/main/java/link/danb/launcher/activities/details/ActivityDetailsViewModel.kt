@@ -43,11 +43,7 @@ constructor(
   private val shortcutsAndWidgets: Flow<ShortcutsAndWidgets?> =
     combineTransform(_details, profileManager.profileStates) { activity, profiles ->
       if (activity != null) {
-        if (
-          profiles
-            .first { activity.userHandle == profileManager.getUserHandle(it.profile) }
-            .isEnabled
-        ) {
+        if (profiles.first { activity.profile == it.profile }.isEnabled) {
           emit(ShortcutsAndWidgets.Loading)
 
           emit(
@@ -110,14 +106,14 @@ constructor(
     appWidgetManager
       .getInstalledProvidersForPackage(
         userActivity.componentName.packageName,
-        userActivity.userHandle,
+        profileManager.getUserHandle(userActivity.profile),
       )
       .map {
         WidgetPreviewData(
           it,
           withContext(Dispatchers.IO) { it.loadPreviewImage(application, 0) }
             ?: launcherResourceProvider.getIcon(
-              UserApplication(it.provider.packageName, it.profile)
+              UserApplication(it.provider.packageName, profileManager.getProfile(it.profile))
             ),
           it.loadLabel(application.packageManager),
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

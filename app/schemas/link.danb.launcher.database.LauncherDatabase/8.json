@@ -1,0 +1,86 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 8,
+    "identityHash": "4c4e6b8f3f434eeb796ae293cb13e8a2",
+    "entities": [
+      {
+        "tableName": "ActivityData",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`isPinned` INTEGER NOT NULL DEFAULT 0, `isHidden` INTEGER NOT NULL, `componentName` TEXT NOT NULL, `profile` TEXT NOT NULL, PRIMARY KEY(`componentName`, `profile`))",
+        "fields": [
+          {
+            "fieldPath": "isPinned",
+            "columnName": "isPinned",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isHidden",
+            "columnName": "isHidden",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userActivity.componentName",
+            "columnName": "componentName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userActivity.profile",
+            "columnName": "profile",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "componentName",
+            "profile"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "WidgetData",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`widgetId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `height` INTEGER NOT NULL, PRIMARY KEY(`widgetId`))",
+        "fields": [
+          {
+            "fieldPath": "widgetId",
+            "columnName": "widgetId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "widgetId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c4e6b8f3f434eeb796ae293cb13e8a2')"
+    ]
+  }
+}

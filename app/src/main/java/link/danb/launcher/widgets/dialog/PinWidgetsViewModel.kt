@@ -61,9 +61,7 @@ constructor(
           PinWidgetsViewData.Loaded(
             appWidgetManager
               .getInstalledProvidersForProfile(profileManager.getUserHandle(profile))
-              .groupBy {
-                UserApplication(it.provider.packageName, profileManager.getUserHandle(profile)!!)
-              }
+              .groupBy { UserApplication(it.provider.packageName, profile) }
               .toSortedMap(compareBy { launcherResourceProvider.getLabel(it) })
               .flatMap { entry ->
                 buildList {
@@ -82,7 +80,10 @@ constructor(
                           widget,
                           withContext(Dispatchers.IO) { widget.loadPreviewImage(application, 0) }
                             ?: launcherResourceProvider.getIcon(
-                              UserApplication(widget.provider.packageName, widget.profile)
+                              UserApplication(
+                                widget.provider.packageName,
+                                profileManager.getProfile(widget.profile),
+                              )
                             ),
                           widget.loadLabel(application.packageManager),
                           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

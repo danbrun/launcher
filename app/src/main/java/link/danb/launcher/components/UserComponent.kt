@@ -1,8 +1,8 @@
 package link.danb.launcher.components
 
-import android.os.UserHandle
+import link.danb.launcher.profiles.Profile
 
 sealed interface UserComponent {
   val packageName: String
-  val userHandle: UserHandle
+  val profile: Profile
 }

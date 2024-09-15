@@ -19,11 +19,16 @@ import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
+import link.danb.launcher.profiles.ProfileManager
 
 @Singleton
 class ActivityManager
 @Inject
-constructor(@ApplicationContext context: Context, launcherDatabase: LauncherDatabase) {
+constructor(
+  @ApplicationContext context: Context,
+  launcherDatabase: LauncherDatabase,
+  private val profileManager: ProfileManager,
+) {
 
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
@@ -33,7 +38,7 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
           launcherApps.profiles
             .flatMap { launcherApps.getActivityList(null, it) }
             .filter { it.componentName.packageName != context.packageName }
-            .map { UserActivity(it.componentName, it.user) }
+            .map { UserActivity(it.componentName, profileManager.getProfile(it.user)) }
         trySend(components)
 
         val callback = LauncherAppsCallback { packageNames, userHandle ->
@@ -41,14 +46,15 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
             components = buildList {
               addAll(
                 components.filter {
-                  it.componentName.packageName !in packageNames || it.userHandle != userHandle
+                  it.componentName.packageName !in packageNames ||
+                    it.profile != profileManager.getProfile(userHandle)
                 }
               )
               addAll(
                 packageNames
                   .flatMap { launcherApps.getActivityList(it, userHandle) }
                   .filter { it.componentName.packageName != context.packageName }
-                  .map { UserActivity(it.componentName, it.user) }
+                  .map { UserActivity(it.componentName, profileManager.getProfile(it.user)) }
               )
             }
             trySend(components)
@@ -74,7 +80,7 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
   fun launchActivity(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
     launcherApps.startMainActivity(
       userActivity.componentName,
-      userActivity.userHandle,
+      profileManager.getUserHandle(userActivity.profile),
       sourceBounds,
       opts,
     )
@@ -83,7 +89,7 @@ constructor(@ApplicationContext context: Context, launcherDatabase: LauncherData
   fun launchAppDetails(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
     launcherApps.startAppDetailsActivity(
       userActivity.componentName,
-      userActivity.userHandle,
+      profileManager.getUserHandle(userActivity.profile),
       sourceBounds,
       opts,
     )
