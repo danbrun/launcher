@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -15,14 +16,12 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,53 +36,70 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import link.danb.launcher.profiles.Profile
+import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.ui.TabButton
 import link.danb.launcher.ui.TabButtonGroup
 
 @Composable
 fun LauncherBottomBar(
-  bottomBarState: BottomBarState,
-  onChangeFilter: (Filter) -> Unit,
+  profile: Profile,
+  profileStates: List<ProfileState>,
+  bottomBarActions: List<BottomBarAction>,
+  onChangeProfile: (Profile) -> Unit,
+  searchQuery: String?,
   onSearchChange: (String) -> Unit,
   onSearchGo: () -> Unit,
-  onWorkProfileToggled: (Boolean) -> Unit,
+  onSearchCancel: () -> Unit,
   onMoreActionsClick: () -> Unit,
   onSearchFabClick: () -> Unit,
 ) {
-  Row(
-    modifier =
-      Modifier.fillMaxWidth()
-        .consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-        .safeDrawingPadding()
-        .padding(8.dp),
-    horizontalArrangement = Arrangement.Center,
+  Column(
+    Modifier.consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+      .safeDrawingPadding()
+      .padding(8.dp)
   ) {
-    FiltersTabGroup(bottomBarState.filters, onChangeFilter)
+    AnimatedVisibility(visible = searchQuery == null) {
+      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        ProfilesTabGroup(profile, profileStates, onChangeProfile)
 
-    SearchBar(visible = bottomBarState.isSearching, onSearchChange, onSearchGo)
+        MoreActionsTabGroup({ onSearchChange("") }, bottomBarActions, onMoreActionsClick)
 
-    MoreActionsTabGroup(
-      bottomBarState.workProfileToggle,
-      bottomBarState.actions,
-      onWorkProfileToggled,
-      onMoreActionsClick,
-    )
+        SearchFab(onSearchFabClick)
+      }
+    }
 
-    SearchFab(visible = !bottomBarState.isSearching, onSearchFabClick)
+    AnimatedVisibility(visible = searchQuery != null) {
+      SearchBar(onSearchChange, onSearchGo, onSearchCancel)
+    }
   }
 }
 
 @Composable
-private fun FiltersTabGroup(filters: List<BottomBarFilter>, onChangeFilter: (Filter) -> Unit) {
-  ExpandingAnimatedVisibility(visible = filters.isNotEmpty()) {
+private fun ProfilesTabGroup(
+  profile: Profile,
+  profileStates: List<ProfileState>,
+  onChangeProfile: (Profile) -> Unit,
+) {
+  ExpandingAnimatedVisibility(visible = profileStates.size > 1) {
     TabButtonGroup {
-      for (filter in filters) {
+      for (profileState in profileStates) {
+        val (icon, name) =
+          when (profileState.profile) {
+            Profile.PERSONAL -> Pair(R.drawable.baseline_person_24, R.string.show_personal)
+            Profile.WORK ->
+              Pair(
+                if (profileState.isEnabled) R.drawable.ic_baseline_work_24
+                else R.drawable.ic_baseline_work_off_24,
+                R.string.show_work,
+              )
+          }
         TabButton(
-          painterResource(filter.icon),
-          stringResource(filter.name),
-          isChecked = filter.isChecked,
+          painterResource(icon),
+          stringResource(name),
+          isChecked = profile == profileState.profile,
         ) {
-          onChangeFilter(filter.filter)
+          onChangeProfile(profileState.profile)
         }
       }
     }
@@ -91,82 +107,59 @@ private fun FiltersTabGroup(filters: List<BottomBarFilter>, onChangeFilter: (Fil
 }
 
 @Composable
-private fun SearchBar(visible: Boolean, onValueChange: (String) -> Unit, onGo: () -> Unit) {
-  ExpandingAnimatedVisibility(visible) {
-    val focusRequester = FocusRequester()
-    var query: String by remember { mutableStateOf("") }
+private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCancel: () -> Unit) {
+  val focusRequester = FocusRequester()
+  var query: String by remember { mutableStateOf("") }
 
-    TextField(
-      value = query,
-      onValueChange = {
-        query = it
-        onValueChange(query)
-      },
-      keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-      keyboardActions = KeyboardActions(onGo = { onGo() }),
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).focusRequester(focusRequester),
-    )
+  TextField(
+    value = query,
+    onValueChange = {
+      query = it
+      onValueChange(query)
+    },
+    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+    keyboardActions = KeyboardActions(onGo = { onGo() }),
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).focusRequester(focusRequester),
+    trailingIcon = {
+      IconButton(onCancel) {
+        Icon(painterResource(R.drawable.baseline_close_24), stringResource(R.string.cancel))
+      }
+    },
+  )
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-  }
+  LaunchedEffect(Unit) { focusRequester.requestFocus() }
 }
 
 @Composable
 private fun MoreActionsTabGroup(
-  workProfileToggle: Boolean?,
+  onSearchClick: () -> Unit,
   actions: List<BottomBarAction>,
-  onWorkProfileToggled: (Boolean) -> Unit,
   onMoreActionsClick: () -> Unit,
 ) {
-  ExpandingAnimatedVisibility(visible = workProfileToggle != null || actions.isNotEmpty()) {
-    TabButtonGroup {
-      WorkProfileToggle(workProfileToggle, onWorkProfileToggled)
+  TabButtonGroup {
+    TabButton(
+      painterResource(R.drawable.ic_baseline_search_24),
+      stringResource(R.string.search),
+      isChecked = false,
+      onSearchClick,
+    )
 
+    ExpandingAnimatedVisibility(visible = actions.isNotEmpty()) {
       MoreActionsTabButton(visible = actions.isNotEmpty(), onMoreActionsClick)
     }
   }
 }
 
 @Composable
-private fun SearchFab(visible: Boolean, onClick: () -> Unit) {
-  ExpandingAnimatedVisibility(visible) {
-    FloatingActionButton(
-      onClick = onClick,
-      modifier = Modifier.padding(horizontal = 4.dp),
-      containerColor = MaterialTheme.colorScheme.primary,
-    ) {
-      Icon(
-        painter = painterResource(id = R.drawable.travel_explore_24),
-        contentDescription = stringResource(id = R.string.search),
-      )
-    }
-  }
-}
-
-@Composable
-private fun WorkProfileToggle(
-  workProfileToggle: Boolean?,
-  onWorkProfileToggled: (Boolean) -> Unit,
-) {
-  ExpandingAnimatedVisibility(visible = workProfileToggle != null) {
-    Switch(
-      checked = workProfileToggle == true,
-      onCheckedChange = onWorkProfileToggled,
-      thumbContent = {
-        Icon(
-          painter =
-            painterResource(
-              if (workProfileToggle == true) {
-                R.drawable.ic_baseline_work_24
-              } else {
-                R.drawable.ic_baseline_work_off_24
-              }
-            ),
-          contentDescription = null,
-          modifier = Modifier.size(SwitchDefaults.IconSize),
-        )
-      },
-      modifier = Modifier.padding(horizontal = 8.dp),
+private fun SearchFab(onClick: () -> Unit) {
+  FloatingActionButton(
+    onClick = onClick,
+    modifier = Modifier.padding(horizontal = 4.dp),
+    containerColor = MaterialTheme.colorScheme.primary,
+  ) {
+    Icon(
+      painter = painterResource(id = R.drawable.travel_explore_24),
+      contentDescription = stringResource(id = R.string.search),
     )
   }
 }

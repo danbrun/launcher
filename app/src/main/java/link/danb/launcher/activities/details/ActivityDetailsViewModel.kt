@@ -43,7 +43,7 @@ constructor(
   private val shortcutsAndWidgets: Flow<ShortcutsAndWidgets?> =
     combineTransform(_details, profileManager.profileStates) { activity, profiles ->
       if (activity != null) {
-        if (profiles.first { activity.profile == it.profile }.isEnabled) {
+        if (profiles.first { it.profile == activity.profile }.isEnabled) {
           emit(ShortcutsAndWidgets.Loading)
 
           emit(

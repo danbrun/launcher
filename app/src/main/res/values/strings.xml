@@ -40,4 +40,5 @@
     <string name="adjust_height">Adjust height</string>
     <string name="done">Done</string>
     <string name="toggle_monochrome">Toggle themed icons</string>
+    <string name="cancel">Cancel</string>
 </resources>

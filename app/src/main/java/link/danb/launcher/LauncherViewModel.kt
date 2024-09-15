@@ -82,9 +82,11 @@ constructor(
   widgetManager: WidgetManager,
 ) : AndroidViewModel(application) {
 
-  private val _filter = MutableStateFlow<Filter>(ProfileFilter(Profile.PERSONAL))
+  private val _searchQuery = MutableStateFlow<String?>(null)
+  private val _profile = MutableStateFlow(Profile.PERSONAL)
 
-  val filter: StateFlow<Filter> = _filter.asStateFlow()
+  val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
+  val profile: StateFlow<Profile> = _profile.asStateFlow()
 
   @OptIn(FlowPreview::class)
   val viewItems: StateFlow<ImmutableList<ViewItem>> =
@@ -92,15 +94,18 @@ constructor(
         activityManager.data,
         shortcutManager.shortcuts,
         widgetManager.data,
-        filter,
+        searchQuery,
+        profile,
         ::CombinedData,
       )
       .debounce(100)
       .map {
         buildList {
-            addWidgetListViewItems(it.widgets, it.filter)
-            addPinnedListViewItems(it.activities, it.shortcuts, it.filter)
-            addAppListViewItems(it.activities, it.filter)
+            if (it.searchQuery == null) {
+              addWidgetListViewItems(it.widgets, it.profile)
+              addPinnedListViewItems(it.activities, it.shortcuts, it.profile)
+            }
+            addAppListViewItems(it.activities, it.searchQuery, it.profile)
           }
           .toImmutableList()
       }
@@ -110,50 +115,47 @@ constructor(
         persistentListOf(),
       )
 
-  val bottomBarState: StateFlow<BottomBarState> =
-    combine(activityManager.data, filter, profileManager.profileStates) {
-        activities,
-        filter,
-        profileStates ->
-        BottomBarStateProducer.getBottomBarState(filter, profileStates, activities) {
-          profileManager.getUserHandle(it)!!
-        }
+  val bottomBarActions: StateFlow<List<BottomBarAction>> =
+    combine(activityManager.data, profile, profileManager.profileStates) { activities, profile, profiles
+        ->
+        BottomBarStateProducer.getBottomBarActions(
+          profiles.first { it.profile == profile },
+          activities,
+        )
       }
-      .stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(),
-        BottomBarState(emptyList(), emptyList(), workProfileToggle = null, isSearching = false),
-      )
+      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
-  fun setFilter(filter: Filter) {
-    _filter.value = filter
+  fun setSearchQuery(value: String?) {
+    _searchQuery.value = value
+  }
+
+  fun setProfile(profile: Profile) {
+    _profile.value = profile
   }
 
   private fun MutableList<ViewItem>.addWidgetListViewItems(
     widgets: List<WidgetData>,
-    filter: Filter,
+    profile: Profile,
   ) {
-    if (filter is ProfileFilter) {
-      for (widget in widgets) {
-        val providerInfo = appWidgetManager.getAppWidgetInfo(widget.widgetId)
-        if (providerInfo.profile == profileManager.getUserHandle(filter.profile)) {
-          val minHeight =
-            max(
-              providerInfo.minHeight,
-              application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
-            )
-          val maxHeight =
-            max(
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                providerInfo.maxResizeHeight
-              } else {
-                0
-              },
-              application.resources.getDimensionPixelSize(R.dimen.widget_max_height),
-            )
+    for (widget in widgets) {
+      val providerInfo = appWidgetManager.getAppWidgetInfo(widget.widgetId)
+      if (providerInfo.profile == profileManager.getUserHandle(profile)) {
+        val minHeight =
+          max(
+            providerInfo.minHeight,
+            application.resources.getDimensionPixelSize(R.dimen.widget_min_height),
+          )
+        val maxHeight =
+          max(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+              providerInfo.maxResizeHeight
+            } else {
+              0
+            },
+            application.resources.getDimensionPixelSize(R.dimen.widget_max_height),
+          )
 
-          add(WidgetViewItem(widget, minHeight..maxHeight))
-        }
+        add(WidgetViewItem(widget, minHeight..maxHeight))
       }
     }
   }
@@ -161,51 +163,49 @@ constructor(
   private suspend fun MutableList<ViewItem>.addPinnedListViewItems(
     activities: List<ActivityData>,
     shortcuts: List<UserShortcut>,
-    filter: Filter,
+    profile: Profile,
   ) {
-    if (filter is ProfileFilter) {
-      val pinnedItems =
-        merge(
-            activities
-              .asFlow()
-              .filter { it.isPinned && it.userActivity.profile == filter.profile }
-              .map { getActivityTileItem(it, isPinned = true) },
-            shortcuts
-              .asFlow()
-              .filter { it.profile == filter.profile }
-              .map {
-                ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it).await())
-              },
-          )
-          .toList()
-          .sortedBy { it.launcherTileData.name.lowercase() }
+    val pinnedItems =
+      merge(
+          activities
+            .asFlow()
+            .filter { it.isPinned && it.userActivity.profile == profile }
+            .map { getActivityTileItem(it, isPinned = true) },
+          shortcuts
+            .asFlow()
+            .filter { it.profile == profile }
+            .map { ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it).await()) },
+        )
+        .toList()
+        .sortedBy { it.launcherTileData.name.lowercase() }
 
-      if (pinnedItems.isNotEmpty()) {
-        add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
-        addAll(pinnedItems)
-      }
+    if (pinnedItems.isNotEmpty()) {
+      add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
+      addAll(pinnedItems)
     }
   }
 
   private suspend fun MutableList<ViewItem>.addAppListViewItems(
     activities: List<ActivityData>,
-    filter: Filter,
+    searchQuery: String?,
+    profile: Profile,
   ) {
     val (alphabetical, miscellaneous) =
       activities
         .asFlow()
         .filter {
-          when (filter) {
-            is ProfileFilter -> !it.isHidden && it.userActivity.profile == filter.profile
-            is SearchFilter -> true
+          if (searchQuery == null) {
+            !it.isHidden && it.userActivity.profile == profile
+          } else {
+            true
           }
         }
         .map { getActivityTileItem(it, isPinned = false) }
         .filter {
-          when (filter) {
-            is ProfileFilter -> true
-            is SearchFilter ->
-              it.launcherTileData.name.lowercase().contains(filter.query.lowercase().trim())
+          if (searchQuery != null) {
+            it.launcherTileData.name.lowercase().contains(searchQuery.lowercase().trim())
+          } else {
+            true
           }
         }
         .toList()
@@ -235,6 +235,7 @@ constructor(
     val activities: List<ActivityData>,
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
-    val filter: Filter,
+    val searchQuery: String?,
+    val profile: Profile,
   )
 }

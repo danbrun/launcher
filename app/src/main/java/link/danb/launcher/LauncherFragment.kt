@@ -69,7 +69,6 @@ import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
-import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.settings.SettingsViewModel
 import link.danb.launcher.shortcuts.PinShortcutsDialog
@@ -167,7 +166,7 @@ class LauncherFragment : Fragment() {
       LauncherTheme {
         val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
         CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) {
-          val bottomBarState by launcherViewModel.bottomBarState.collectAsStateWithLifecycle()
+          val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
           val activityDetailsData by
             activityDetailsViewModel.activityDetails.collectAsStateWithLifecycle(null)
           val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsStateWithLifecycle(null)
@@ -176,16 +175,28 @@ class LauncherFragment : Fragment() {
           val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsStateWithLifecycle(null)
           val isShowing by showMoreActionsDialog.collectAsStateWithLifecycle()
           val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
+          val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+          val profileStates by profileManager.profileStates.collectAsStateWithLifecycle(emptyList())
+          val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
 
           Scaffold(
             bottomBar = {
               LauncherBottomBar(
-                bottomBarState,
-                onChangeFilter = { launcherViewModel.setFilter(it) },
+                profile,
+                profileStates,
+                bottomBarActions,
+                onChangeProfile = {
+                  if (profile == it) {
+                    profileManager.toggleProfileEnabled(it)
+                  } else {
+                    launcherViewModel.setProfile(it)
+                  }
+                },
+                searchQuery = searchQuery,
                 onSearchGo = { launchFirstItem() },
-                onWorkProfileToggled = { profileManager.setProfileEnabled(Profile.WORK, it) },
                 onMoreActionsClick = { showMoreActionsDialog.value = true },
-                onSearchChange = { launcherViewModel.setFilter(SearchFilter(it)) },
+                onSearchChange = { launcherViewModel.setSearchQuery(it) },
+                onSearchCancel = { launcherViewModel.setSearchQuery(null) },
                 onSearchFabClick = { onFabClick() },
               )
             },
@@ -288,17 +299,17 @@ class LauncherFragment : Fragment() {
 
           MoreActionsDialog(
             isShowing = isShowing,
-            actions = bottomBarState.actions,
-            onActionClick = { action, user ->
+            actions = bottomBarActions,
+            onActionClick = { action, profile ->
               when (action) {
                 BottomBarAction.Type.PIN_SHORTCUT -> {
-                  pinShortcutsViewModel.showPinShortcuts(user)
+                  pinShortcutsViewModel.showPinShortcuts(profile)
                 }
                 BottomBarAction.Type.PIN_WIDGET -> {
-                  pinWidgetsViewModel.showPinWidgetsDialog(user)
+                  pinWidgetsViewModel.showPinWidgetsDialog(profile)
                 }
                 BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
-                  hiddenAppsViewModel.showHiddenApps(user)
+                  hiddenAppsViewModel.showHiddenApps(profile)
                 }
                 BottomBarAction.Type.TOGGLE_MONOCHROME -> {
                   settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
@@ -429,8 +440,8 @@ class LauncherFragment : Fragment() {
         makeScaleUpAnimation().toBundle(),
       )
     }
-    if (launcherViewModel.filter.value is SearchFilter) {
-      launcherViewModel.setFilter(ProfileFilter(Profile.PERSONAL))
+    if (launcherViewModel.searchQuery.value != null) {
+      launcherViewModel.setSearchQuery(null)
     }
   }
 

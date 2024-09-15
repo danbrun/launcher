@@ -12,22 +12,23 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @Singleton
 class ProfileManager
 @Inject
 constructor(@ApplicationContext context: Context, private val userManager: UserManager) {
 
-  val profileStates: StateFlow<List<ProfileState>> =
+  val profileStates: Flow<List<ProfileState>> =
     callbackFlow {
         val broadcastReceiver =
           object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-              trySend(getProfileStates())
+              MainScope().launch { send(getProfiles()) }
             }
           }
 
@@ -42,7 +43,7 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
         )
         awaitClose { context.unregisterReceiver(broadcastReceiver) }
       }
-      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), initialValue = getProfileStates())
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), getProfiles())
 
   fun getUserHandle(profile: Profile): UserHandle? =
     when (profile) {
@@ -56,26 +57,29 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
       else -> Profile.WORK
     }
 
-  fun setProfileEnabled(profile: Profile, isEnabled: Boolean) {
+  fun toggleProfileEnabled(profile: Profile) {
     when (profile) {
       Profile.PERSONAL -> {}
       Profile.WORK -> {
-        userManager.requestQuietModeEnabled(!isEnabled, getUserHandle(profile)!!)
+        val userHandle = getUserHandle(profile)
+        if (userHandle != null) {
+          userManager.requestQuietModeEnabled(isEnabled(userHandle), userHandle)
+        }
       }
     }
   }
 
-  private fun getProfileStates(): List<ProfileState> =
-    userManager.userProfiles.map {
-      when (getProfile(it)) {
-        Profile.PERSONAL -> ProfileState(Profile.PERSONAL, true)
-        Profile.WORK -> {
-          val isWorkProfileEnabled =
-            !userManager.isQuietModeEnabled(it) && userManager.isUserUnlocked(it)
-          ProfileState(Profile.WORK, isWorkProfileEnabled)
-        }
-      }
+  private fun getProfiles(): List<ProfileState> =
+    userManager.userProfiles.map { getProfileState(it) }
+
+  private fun getProfileState(userHandle: UserHandle): ProfileState =
+    when (getProfile(userHandle)) {
+      Profile.PERSONAL -> ProfileState(Profile.PERSONAL, isEnabled = true)
+      Profile.WORK -> ProfileState(Profile.WORK, isEnabled(userHandle))
     }
+
+  private fun isEnabled(userHandle: UserHandle) =
+    !userManager.isQuietModeEnabled(userHandle) && userManager.isUserUnlocked(userHandle)
 }
 
-data class ProfileState(val profile: Profile, val isEnabled: Boolean)
+class ProfileState(val profile: Profile, val isEnabled: Boolean)
