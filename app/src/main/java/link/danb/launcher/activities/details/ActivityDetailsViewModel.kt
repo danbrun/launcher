@@ -22,6 +22,7 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
@@ -41,20 +42,26 @@ constructor(
   private val _details: MutableStateFlow<UserActivity?> = MutableStateFlow(null)
 
   private val shortcutsAndWidgets: Flow<ShortcutsAndWidgets?> =
-    combineTransform(_details, profileManager.profileStates) { activity, profiles ->
+    combineTransform(_details, profileManager.profiles) { activity, profiles ->
       if (activity != null) {
-        if (profiles.first { it.profile == activity.profile }.isEnabled) {
-          emit(ShortcutsAndWidgets.Loading)
+        when (profiles[activity.profile]) {
+          ProfileState.ENABLED -> {
+            emit(ShortcutsAndWidgets.Loading)
 
-          emit(
-            ShortcutsAndWidgets.Loaded(
-              getShortcuts(activity),
-              getShortcutCreators(activity),
-              getWidgets(activity),
+            emit(
+              ShortcutsAndWidgets.Loaded(
+                getShortcuts(activity),
+                getShortcutCreators(activity),
+                getWidgets(activity),
+              )
             )
-          )
-        } else {
-          emit(ShortcutsAndWidgets.ProfileDisabled)
+          }
+          ProfileState.DISABLED -> {
+            emit(ShortcutsAndWidgets.ProfileDisabled)
+          }
+          null -> {
+            emit(null)
+          }
         }
       } else {
         emit(null)

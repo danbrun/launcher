@@ -22,7 +22,7 @@ class ProfileManager
 @Inject
 constructor(@ApplicationContext context: Context, private val userManager: UserManager) {
 
-  val profileStates: Flow<List<ProfileState>> =
+  val profiles: Flow<Map<Profile, ProfileState>> =
     callbackFlow {
         send(getProfiles())
 
@@ -72,17 +72,20 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
     }
   }
 
-  private fun getProfiles(): List<ProfileState> =
-    userManager.userProfiles.map { getProfileState(it) }
+  private fun getProfiles(): Map<Profile, ProfileState> =
+    userManager.userProfiles.associate { Pair(getProfile(it), getProfileState(it)) }
 
   private fun getProfileState(userHandle: UserHandle): ProfileState =
     when (getProfile(userHandle)) {
-      Profile.PERSONAL -> ProfileState(Profile.PERSONAL, isEnabled = true)
-      Profile.WORK -> ProfileState(Profile.WORK, isEnabled(userHandle))
+      Profile.PERSONAL -> ProfileState.ENABLED
+      Profile.WORK ->
+        if (isEnabled(userHandle)) {
+          ProfileState.ENABLED
+        } else {
+          ProfileState.DISABLED
+        }
     }
 
   private fun isEnabled(userHandle: UserHandle) =
     !userManager.isQuietModeEnabled(userHandle) && userManager.isUserUnlocked(userHandle)
 }
-
-class ProfileState(val profile: Profile, val isEnabled: Boolean)

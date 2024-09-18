@@ -1,6 +1,7 @@
 package link.danb.launcher
 
 import link.danb.launcher.database.ActivityData
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
 
 data class BottomBarAction(val icon: Int, val name: Int, val type: Type) {
@@ -13,8 +14,12 @@ data class BottomBarAction(val icon: Int, val name: Int, val type: Type) {
 }
 
 object BottomBarStateProducer {
-  fun getBottomBarActions(profileState: ProfileState, activities: List<ActivityData>) = buildList {
-    if (profileState.isEnabled) {
+  fun getBottomBarActions(
+    profile: Profile,
+    profileState: ProfileState,
+    activities: List<ActivityData>,
+  ) = buildList {
+    if (profileState == ProfileState.ENABLED) {
       add(
         BottomBarAction(
           R.drawable.baseline_shortcut_24,
@@ -39,7 +44,7 @@ object BottomBarStateProducer {
       )
     )
 
-    if (activities.any { it.isHidden && it.userActivity.profile == profileState.profile }) {
+    if (activities.any { it.isHidden && it.userActivity.profile == profile }) {
       add(
         BottomBarAction(
           R.drawable.ic_baseline_visibility_24,

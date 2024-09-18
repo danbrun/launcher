@@ -4,3 +4,8 @@ enum class Profile {
   PERSONAL,
   WORK,
 }
+
+enum class ProfileState {
+  ENABLED,
+  DISABLED,
+}

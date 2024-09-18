@@ -174,14 +174,14 @@ class LauncherFragment : Fragment() {
           val isShowing by showMoreActionsDialog.collectAsStateWithLifecycle()
           val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
           val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
-          val profileStates by profileManager.profileStates.collectAsStateWithLifecycle(emptyList())
+          val profiles by profileManager.profiles.collectAsStateWithLifecycle(emptyMap())
           val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
 
           Scaffold(
             bottomBar = {
               LauncherBottomBar(
                 profile,
-                profileStates,
+                profiles,
                 bottomBarActions,
                 onChangeProfile = {
                   if (profile == it) {

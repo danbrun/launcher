@@ -116,12 +116,9 @@ constructor(
       )
 
   val bottomBarActions: StateFlow<List<BottomBarAction>> =
-    combine(activityManager.data, profile, profileManager.profileStates) { activities, profile, profiles
+    combine(activityManager.data, profile, profileManager.profiles) { activities, profile, profiles
         ->
-        BottomBarStateProducer.getBottomBarActions(
-          profiles.first { it.profile == profile },
-          activities,
-        )
+        BottomBarStateProducer.getBottomBarActions(profile, profiles.getValue(profile), activities)
       }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 

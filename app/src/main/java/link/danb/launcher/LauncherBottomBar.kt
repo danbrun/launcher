@@ -44,7 +44,7 @@ import link.danb.launcher.ui.TabButtonGroup
 @Composable
 fun LauncherBottomBar(
   profile: Profile,
-  profileStates: List<ProfileState>,
+  profiles: Map<Profile, ProfileState>,
   bottomBarActions: List<BottomBarAction>,
   onChangeProfile: (Profile) -> Unit,
   searchQuery: String?,
@@ -61,7 +61,7 @@ fun LauncherBottomBar(
   ) {
     AnimatedVisibility(visible = searchQuery == null) {
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-        ProfilesTabGroup(profile, profileStates, onChangeProfile)
+        ProfilesTabGroup(profile, profiles, onChangeProfile)
 
         MoreActionsTabGroup({ onSearchChange("") }, bottomBarActions, onMoreActionsClick)
 
@@ -77,29 +77,31 @@ fun LauncherBottomBar(
 
 @Composable
 private fun ProfilesTabGroup(
-  profile: Profile,
-  profileStates: List<ProfileState>,
+  activeProfile: Profile,
+  availableProfiles: Map<Profile, ProfileState>,
   onChangeProfile: (Profile) -> Unit,
 ) {
-  ExpandingAnimatedVisibility(visible = profileStates.size > 1) {
+  ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
     TabButtonGroup {
-      for (profileState in profileStates) {
+      for ((profile, state) in availableProfiles) {
         val (icon, name) =
-          when (profileState.profile) {
+          when (profile) {
             Profile.PERSONAL -> Pair(R.drawable.baseline_person_24, R.string.show_personal)
             Profile.WORK ->
               Pair(
-                if (profileState.isEnabled) R.drawable.ic_baseline_work_24
-                else R.drawable.ic_baseline_work_off_24,
+                when (state) {
+                  ProfileState.ENABLED -> R.drawable.ic_baseline_work_24
+                  ProfileState.DISABLED -> R.drawable.ic_baseline_work_off_24
+                },
                 R.string.show_work,
               )
           }
         TabButton(
           painterResource(icon),
           stringResource(name),
-          isChecked = profile == profileState.profile,
+          isChecked = activeProfile == profile,
         ) {
-          onChangeProfile(profileState.profile)
+          onChangeProfile(profile)
         }
       }
     }
