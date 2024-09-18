@@ -3,10 +3,8 @@ package link.danb.launcher.activities.details
 import android.appwidget.AppWidgetProviderInfo
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -16,12 +14,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -94,7 +94,8 @@ fun ActivityDetailsDialog(
                   stringResource(R.string.enable_work_profile),
                   style = MaterialTheme.typography.labelMedium,
                 )
-              }
+              },
+              colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             )
           }
         }
@@ -156,8 +157,6 @@ fun ActivityDetailsDialog(
           }
         }
       }
-
-      item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.safeDrawingPadding()) }
     }
   }
 }
@@ -172,6 +171,7 @@ private fun ActivityHeader(data: LauncherTileData) {
         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
       )
     },
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
   )
 }
 
@@ -191,6 +191,7 @@ private fun PinActivityListItem(isPinned: Boolean, onClick: () -> Unit) {
       )
     },
     modifier = Modifier.clickable(onClick = onClick),
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
   )
 }
 
@@ -211,6 +212,7 @@ private fun HideActivityListItem(isHidden: Boolean, onClick: () -> Unit) {
       )
     },
     modifier = Modifier.clickable(onClick = onClick),
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
   )
 }
 
@@ -225,6 +227,7 @@ private fun UninstallActivityListItem(onClick: () -> Unit) {
       )
     },
     modifier = Modifier.clickable(onClick = onClick),
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
   )
 }
 
@@ -236,10 +239,14 @@ private fun OpenActivitySettingsListItem(onClick: () -> Unit) {
       Icon(painter = painterResource(R.drawable.ic_baseline_settings_24), contentDescription = null)
     },
     modifier = Modifier.clickable(onClick = onClick),
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
   )
 }
 
 @Composable
 private fun SectionHeader(text: String) {
-  ListItem(headlineContent = { Text(text, style = MaterialTheme.typography.titleMedium) })
+  ListItem(
+    headlineContent = { Text(text, style = MaterialTheme.typography.titleMedium) },
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+  )
 }

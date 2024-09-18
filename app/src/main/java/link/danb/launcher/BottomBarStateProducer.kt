@@ -1,10 +1,9 @@
 package link.danb.launcher
 
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
 
-data class BottomBarAction(val icon: Int, val name: Int, val type: Type, val profile: Profile) {
+data class BottomBarAction(val icon: Int, val name: Int, val type: Type) {
   enum class Type {
     PIN_SHORTCUT,
     PIN_WIDGET,
@@ -21,7 +20,6 @@ object BottomBarStateProducer {
           R.drawable.baseline_shortcut_24,
           R.string.pin_shortcut,
           BottomBarAction.Type.PIN_SHORTCUT,
-          profileState.profile,
         )
       )
       add(
@@ -29,7 +27,6 @@ object BottomBarStateProducer {
           R.drawable.ic_baseline_widgets_24,
           R.string.pin_widget,
           BottomBarAction.Type.PIN_WIDGET,
-          profileState.profile,
         )
       )
     }
@@ -39,7 +36,6 @@ object BottomBarStateProducer {
         R.drawable.baseline_style_24,
         R.string.toggle_monochrome,
         BottomBarAction.Type.TOGGLE_MONOCHROME,
-        profileState.profile,
       )
     )
 
@@ -49,7 +45,6 @@ object BottomBarStateProducer {
           R.drawable.ic_baseline_visibility_24,
           R.string.show_hidden,
           BottomBarAction.Type.SHOW_HIDDEN_APPS,
-          profileState.profile,
         )
       )
     }

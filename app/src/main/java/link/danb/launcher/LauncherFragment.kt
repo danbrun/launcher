@@ -16,7 +16,6 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -73,7 +72,6 @@ import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.settings.SettingsViewModel
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.PinShortcutsViewModel
-import link.danb.launcher.shortcuts.PinWidgetsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
@@ -82,6 +80,7 @@ import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetsViewModel
+import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
 val LocalUseMonochromeIcons: ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
@@ -146,7 +145,6 @@ class LauncherFragment : Fragment() {
     }
   }
 
-  @OptIn(ExperimentalFoundationApi::class)
   override fun onCreateView(
     inflater: LayoutInflater,
     container: ViewGroup?,
@@ -300,7 +298,7 @@ class LauncherFragment : Fragment() {
           MoreActionsDialog(
             isShowing = isShowing,
             actions = bottomBarActions,
-            onActionClick = { action, profile ->
+            onActionClick = { action ->
               when (action) {
                 BottomBarAction.Type.PIN_SHORTCUT -> {
                   pinShortcutsViewModel.showPinShortcuts(profile)
@@ -381,7 +379,7 @@ class LauncherFragment : Fragment() {
 
   private fun launchFirstItem() {
     val firstActivity =
-      launcherViewModel.viewItems.value.filterIsInstance(ActivityViewItem::class.java).firstOrNull()
+      launcherViewModel.viewItems.value.filterIsInstance<ActivityViewItem>().firstOrNull()
     if (firstActivity != null) {
       launchActivity(Offset.Zero, firstActivity.userActivity)
     }
