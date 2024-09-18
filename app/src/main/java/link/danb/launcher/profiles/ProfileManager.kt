@@ -86,6 +86,6 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
         }
     }
 
-  private fun isEnabled(userHandle: UserHandle) =
+  fun isEnabled(userHandle: UserHandle) =
     !userManager.isQuietModeEnabled(userHandle) && userManager.isUserUnlocked(userHandle)
 }

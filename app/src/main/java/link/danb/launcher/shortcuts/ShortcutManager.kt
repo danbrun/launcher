@@ -76,6 +76,7 @@ constructor(
 
   private fun getPinnedShortcuts(): List<UserShortcut> =
     launcherApps.profiles
+      .filter { profileManager.isEnabled(it) }
       .flatMap {
         try {
           launcherApps.getShortcuts(it) { setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED) }
