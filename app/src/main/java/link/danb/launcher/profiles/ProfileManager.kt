@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 @Singleton
 class ProfileManager
@@ -25,10 +24,12 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
 
   val profileStates: Flow<List<ProfileState>> =
     callbackFlow {
+        send(getProfiles())
+
         val broadcastReceiver =
           object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-              MainScope().launch { send(getProfiles()) }
+              trySend(getProfiles())
             }
           }
 
@@ -37,10 +38,12 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
           IntentFilter().apply {
             addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
             addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+            addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
             addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
             addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
           },
         )
+
         awaitClose { context.unregisterReceiver(broadcastReceiver) }
       }
       .stateIn(MainScope(), SharingStarted.WhileSubscribed(), getProfiles())
