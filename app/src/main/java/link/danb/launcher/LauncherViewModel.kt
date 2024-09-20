@@ -42,7 +42,11 @@ sealed interface ViewItem {
   val key: String
 }
 
-data class WidgetViewItem(val widgetData: WidgetData, val sizeRange: IntRange) : ViewItem {
+data class WidgetViewItem(
+  val widgetData: WidgetData,
+  val sizeRange: IntRange,
+  val isConfigurable: Boolean,
+) : ViewItem {
   override val key: String = widgetData.widgetId.toString()
 }
 
@@ -152,7 +156,7 @@ constructor(
             application.resources.getDimensionPixelSize(R.dimen.widget_max_height),
           )
 
-        add(WidgetViewItem(widget, minHeight..maxHeight))
+        add(WidgetViewItem(widget, minHeight..maxHeight, providerInfo.configure != null))
       }
     }
   }

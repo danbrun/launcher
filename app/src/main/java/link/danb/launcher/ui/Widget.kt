@@ -44,12 +44,14 @@ import link.danb.launcher.widgets.WidgetFrameView
 fun Widget(
   widgetData: WidgetData,
   sizeRange: IntRange,
+  isConfigurable: Boolean,
   modifier: Modifier = Modifier,
   setScrollEnabled: (Boolean) -> Unit,
   moveUp: () -> Unit,
   moveDown: () -> Unit,
   remove: () -> Unit,
   setHeight: (Int) -> Unit,
+  configure: (View) -> Unit,
 ) {
   var height by remember { mutableIntStateOf(widgetData.height) }
   var isEditing by remember { mutableStateOf(false) }
@@ -93,21 +95,18 @@ fun Widget(
             }
           },
       onReset = {},
-      onRelease = { it.clearAppWidget() },
-      update = { it.setAppWidget(widgetData.widgetId) },
+      onRelease = {
+        widgetFrame = null
+        it.clearAppWidget()
+      },
+      update = {
+        widgetFrame = it
+        it.setAppWidget(widgetData.widgetId)
+      },
     )
 
     AnimatedVisibility(visible = isEditing) {
       Row {
-        TabButtonGroup {
-          TabButton(
-            painterResource(R.drawable.baseline_check_24),
-            stringResource(R.string.done),
-            isChecked = false,
-            onClick = { isEditing = false },
-          )
-        }
-
         TabButtonGroup {
           TabButton(
             painterResource(R.drawable.baseline_arrow_downward_24),
@@ -136,11 +135,28 @@ fun Widget(
         }
 
         TabButtonGroup {
+          if (isConfigurable && widgetFrame != null) {
+            TabButton(
+              painterResource(R.drawable.ic_baseline_settings_24),
+              stringResource(R.string.configure_widget),
+              isChecked = false,
+              onClick = { configure(widgetFrame!!) },
+            )
+          }
           TabButton(
             painterResource(R.drawable.ic_baseline_delete_forever_24),
             stringResource(R.string.remove),
             isChecked = false,
             onClick = remove,
+          )
+        }
+
+        TabButtonGroup {
+          TabButton(
+            painterResource(R.drawable.baseline_check_24),
+            stringResource(R.string.done),
+            isChecked = false,
+            onClick = { isEditing = false },
           )
         }
       }
