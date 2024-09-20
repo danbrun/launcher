@@ -65,7 +65,7 @@ dependencies {
     // AndroidX dependencies
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.collection:collection-ktx:1.4.3")
+    implementation("androidx.collection:collection-ktx:1.4.4")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.fragment:fragment-ktx:1.8.3")
     implementation("androidx.palette:palette-ktx:1.0.0")
@@ -85,7 +85,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     // Compose dependencies
-    implementation(platform("androidx.compose:compose-bom:2024.09.01"))
+    implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -102,7 +102,7 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:$daggerVersion")
 
     // Lifecycle dependencies
-    val lifecycleVersion = "2.8.5"
+    val lifecycleVersion = "2.8.6"
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-reactivestreams-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
@@ -111,7 +111,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
 
     // Navigation dependencies
-    val navigationVersion = "2.8.0"
+    val navigationVersion = "2.8.1"
     implementation("androidx.navigation:navigation-fragment-ktx:$navigationVersion")
     implementation("androidx.navigation:navigation-runtime-ktx:$navigationVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navigationVersion")
