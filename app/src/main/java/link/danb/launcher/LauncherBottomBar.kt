@@ -83,25 +83,35 @@ private fun ProfilesTabGroup(
 ) {
   ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
     TabButtonGroup {
-      for ((profile, state) in availableProfiles) {
-        val (icon, name) =
-          when (profile) {
-            Profile.PERSONAL -> Pair(R.drawable.baseline_person_24, R.string.show_personal)
-            Profile.WORK ->
-              Pair(
-                when (state) {
-                  ProfileState.ENABLED -> R.drawable.ic_baseline_work_24
-                  ProfileState.DISABLED -> R.drawable.ic_baseline_work_off_24
-                },
-                R.string.show_work,
-              )
-          }
+      TabButton(
+        painterResource(R.drawable.baseline_person_24),
+        stringResource(R.string.show_personal),
+        isChecked = activeProfile == Profile.PERSONAL,
+      ) {
+        onChangeProfile(Profile.PERSONAL)
+      }
+
+      val isWorkProfileActive = activeProfile == Profile.WORK
+
+      val isWorkProfileDisabled = availableProfiles[Profile.WORK] == ProfileState.DISABLED
+      ExpandingAnimatedVisibility(isWorkProfileActive || isWorkProfileDisabled) {
         TabButton(
-          painterResource(icon),
-          stringResource(name),
-          isChecked = activeProfile == profile,
+          painterResource(R.drawable.ic_baseline_work_off_24),
+          stringResource(R.string.show_work),
+          isChecked = isWorkProfileActive && isWorkProfileDisabled,
         ) {
-          onChangeProfile(profile)
+          onChangeProfile(Profile.WORK)
+        }
+      }
+
+      val isWorkProfileEnabled = availableProfiles[Profile.WORK] == ProfileState.ENABLED
+      ExpandingAnimatedVisibility(isWorkProfileActive || isWorkProfileEnabled) {
+        TabButton(
+          painterResource(R.drawable.ic_baseline_work_24),
+          stringResource(R.string.show_work),
+          isChecked = isWorkProfileActive && isWorkProfileEnabled,
+        ) {
+          onChangeProfile(Profile.WORK)
         }
       }
     }
