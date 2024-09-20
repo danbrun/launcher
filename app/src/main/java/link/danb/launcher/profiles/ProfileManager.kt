@@ -60,13 +60,19 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
       else -> Profile.WORK
     }
 
-  fun toggleProfileEnabled(profile: Profile) {
+  fun setProfileState(profile: Profile, profileState: ProfileState) {
     when (profile) {
       Profile.PERSONAL -> {}
       Profile.WORK -> {
         val userHandle = getUserHandle(profile)
         if (userHandle != null) {
-          userManager.requestQuietModeEnabled(isEnabled(userHandle), userHandle)
+          userManager.requestQuietModeEnabled(
+            when (profileState) {
+              ProfileState.ENABLED -> false
+              ProfileState.DISABLED -> true
+            },
+            userHandle,
+          )
         }
       }
     }

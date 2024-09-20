@@ -183,12 +183,9 @@ class LauncherFragment : Fragment() {
                 profile,
                 profiles,
                 bottomBarActions,
-                onChangeProfile = {
-                  if (profile == it) {
-                    profileManager.toggleProfileEnabled(it)
-                  } else {
-                    launcherViewModel.setProfile(it)
-                  }
+                onChangeProfile = { profile, profileState ->
+                  profileManager.setProfileState(profile, profileState)
+                  launcherViewModel.setProfile(profile)
                 },
                 searchQuery = searchQuery,
                 onSearchGo = { launchFirstItem() },

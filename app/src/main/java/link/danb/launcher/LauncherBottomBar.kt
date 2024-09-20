@@ -46,7 +46,7 @@ fun LauncherBottomBar(
   profile: Profile,
   profiles: Map<Profile, ProfileState>,
   bottomBarActions: List<BottomBarAction>,
-  onChangeProfile: (Profile) -> Unit,
+  onChangeProfile: (Profile, ProfileState) -> Unit,
   searchQuery: String?,
   onSearchChange: (String) -> Unit,
   onSearchGo: () -> Unit,
@@ -79,7 +79,7 @@ fun LauncherBottomBar(
 private fun ProfilesTabGroup(
   activeProfile: Profile,
   availableProfiles: Map<Profile, ProfileState>,
-  onChangeProfile: (Profile) -> Unit,
+  onChangeProfile: (Profile, ProfileState) -> Unit,
 ) {
   ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
     TabButtonGroup {
@@ -88,7 +88,7 @@ private fun ProfilesTabGroup(
         stringResource(R.string.show_personal),
         isChecked = activeProfile == Profile.PERSONAL,
       ) {
-        onChangeProfile(Profile.PERSONAL)
+        onChangeProfile(Profile.PERSONAL, ProfileState.ENABLED)
       }
 
       val isWorkProfileActive = activeProfile == Profile.WORK
@@ -100,7 +100,7 @@ private fun ProfilesTabGroup(
           stringResource(R.string.show_work),
           isChecked = isWorkProfileActive && isWorkProfileDisabled,
         ) {
-          onChangeProfile(Profile.WORK)
+          onChangeProfile(Profile.WORK, ProfileState.DISABLED)
         }
       }
 
@@ -111,7 +111,7 @@ private fun ProfilesTabGroup(
           stringResource(R.string.show_work),
           isChecked = isWorkProfileActive && isWorkProfileEnabled,
         ) {
-          onChangeProfile(Profile.WORK)
+          onChangeProfile(Profile.WORK, ProfileState.ENABLED)
         }
       }
     }
