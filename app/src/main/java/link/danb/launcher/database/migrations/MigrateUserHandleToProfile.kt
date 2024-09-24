@@ -31,28 +31,31 @@ class MigrateUserHandleToProfile(private val application: Application) : Migrati
           } while (cursor.moveToNext())
         }
       }
-      val safePersonalValue = userHandles.max() + 1
-      val safeWorkValue = safePersonalValue + 1
 
-      // Migrate to safe values
-      execSQL(
-        "UPDATE ActivityData SET userHandle = ? WHERE userHandle != ?",
-        arrayOf(safeWorkValue, personalUserHandle),
-      )
-      execSQL(
-        "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-        arrayOf(safePersonalValue, personalUserHandle),
-      )
+      if (userHandles.isNotEmpty()) {
+        val safePersonalValue = userHandles.max() + 1
+        val safeWorkValue = safePersonalValue + 1
 
-      // Migrate to final values
-      execSQL(
-        "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-        arrayOf(1, safePersonalValue),
-      )
-      execSQL(
-        "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-        arrayOf(2, safeWorkValue),
-      )
+        // Migrate to safe values
+        execSQL(
+          "UPDATE ActivityData SET userHandle = ? WHERE userHandle != ?",
+          arrayOf(safeWorkValue, personalUserHandle),
+        )
+        execSQL(
+          "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
+          arrayOf(safePersonalValue, personalUserHandle),
+        )
+
+        // Migrate to final values
+        execSQL(
+          "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
+          arrayOf(1, safePersonalValue),
+        )
+        execSQL(
+          "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
+          arrayOf(2, safeWorkValue),
+        )
+      }
 
       // Rename the column
       execSQL("ALTER TABLE ActivityData RENAME userHandle TO profile")
