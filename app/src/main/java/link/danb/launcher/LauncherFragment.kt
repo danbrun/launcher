@@ -157,7 +157,7 @@ class LauncherFragment : Fragment() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       gestureIconView = GestureIconView(view.context)
       gestureIconView.onFinishGestureAnimation = { gestureActivity = null }
-      view.addView(gestureIconView)
+      view.addView(gestureIconView, 0)
     }
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
