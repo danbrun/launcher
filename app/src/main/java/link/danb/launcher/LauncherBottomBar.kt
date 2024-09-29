@@ -1,15 +1,11 @@
 package link.danb.launcher
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,36 +16,29 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
+import link.danb.launcher.ui.FilledIconSelector
 import link.danb.launcher.ui.TabButton
 import link.danb.launcher.ui.TabButtonGroup
 
@@ -103,70 +92,26 @@ private fun ProfilesTabGroup(
         onChangeProfile(Profile.PERSONAL, ProfileState.ENABLED)
       }
 
-      ProfileToggleButton(
-        activeProfile,
-        Profile.WORK,
-        availableProfiles.getValue(Profile.WORK),
-        { onChangeProfile(Profile.WORK, it) },
-      ) {
-        when (it) {
-          ProfileState.DISABLED ->
-            Icon(
-              painterResource(R.drawable.ic_baseline_work_off_24),
-              stringResource(R.string.show_work),
-            )
-          ProfileState.ENABLED ->
-            Icon(
-              painterResource(R.drawable.ic_baseline_work_24),
-              stringResource(R.string.show_work),
-            )
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun ProfileToggleButton(
-  activeProfile: Profile,
-  targetProfile: Profile,
-  currentState: ProfileState,
-  onChangeState: (ProfileState) -> Unit,
-  icon: @Composable (ProfileState) -> Unit,
-) {
-  val isActive = activeProfile == targetProfile
-
-  val groupBackground by
-    animateColorAsState(
-      if (isActive) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent,
-      label = "group_background",
-    )
-  Row(Modifier.padding(4.dp).clip(RoundedCornerShape(20.dp)).background(groupBackground)) {
-    for (profileState in listOf(ProfileState.DISABLED, ProfileState.ENABLED)) {
-      val isCurrentState = currentState == profileState
-      ExpandingAnimatedVisibility(isActive || isCurrentState) {
-        val iconBackground by
-          animateColorAsState(
-            if (isActive && isCurrentState)
-              IconButtonDefaults.filledIconToggleButtonColors().checkedContainerColor
-            else Color.Transparent,
-            label = "icon_background",
-          )
-        Box(
-          Modifier.size(40.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(iconBackground)
-            .clickable { onChangeState(profileState) },
-          contentAlignment = Alignment.Center,
+      val workProfileStatus = availableProfiles[Profile.WORK]
+      if (workProfileStatus != null) {
+        FilledIconSelector(
+          items = listOf(ProfileState.DISABLED, ProfileState.ENABLED),
+          selected = workProfileStatus,
+          isChecked = activeProfile == Profile.WORK,
+          onClick = { onChangeProfile(Profile.WORK, it) },
         ) {
-          val iconForeground by
-            animateColorAsState(
-              if (isActive && isCurrentState)
-                IconButtonDefaults.filledIconToggleButtonColors().checkedContentColor
-              else IconButtonDefaults.filledIconToggleButtonColors().contentColor,
-              label = "icon_foreground",
-            )
-          CompositionLocalProvider(LocalContentColor provides iconForeground) { icon(profileState) }
+          when (it) {
+            ProfileState.DISABLED ->
+              Icon(
+                painterResource(R.drawable.ic_baseline_work_off_24),
+                stringResource(R.string.show_work),
+              )
+            ProfileState.ENABLED ->
+              Icon(
+                painterResource(R.drawable.ic_baseline_work_24),
+                stringResource(R.string.show_work),
+              )
+          }
         }
       }
     }
