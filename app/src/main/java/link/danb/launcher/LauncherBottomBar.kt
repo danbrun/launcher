@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,8 +40,7 @@ import androidx.compose.ui.unit.dp
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.ui.FilledIconSelector
-import link.danb.launcher.ui.TabButton
-import link.danb.launcher.ui.TabButtonGroup
+import link.danb.launcher.ui.IconButtonGroup
 
 @Composable
 fun LauncherBottomBar(
@@ -83,13 +83,12 @@ private fun ProfilesTabGroup(
   onChangeProfile: (Profile, ProfileState) -> Unit,
 ) {
   ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
-    TabButtonGroup {
-      TabButton(
-        painterResource(R.drawable.baseline_person_24),
-        stringResource(R.string.show_personal),
-        isChecked = activeProfile == Profile.PERSONAL,
+    IconButtonGroup {
+      FilledIconToggleButton(
+        activeProfile == Profile.PERSONAL,
+        { onChangeProfile(Profile.PERSONAL, ProfileState.ENABLED) },
       ) {
-        onChangeProfile(Profile.PERSONAL, ProfileState.ENABLED)
+        Icon(painterResource(R.drawable.baseline_person_24), stringResource(R.string.show_personal))
       }
 
       val workProfileStatus = availableProfiles[Profile.WORK]
@@ -148,16 +147,20 @@ private fun MoreActionsTabGroup(
   actions: List<BottomBarAction>,
   onMoreActionsClick: () -> Unit,
 ) {
-  TabButtonGroup {
-    TabButton(
-      painterResource(R.drawable.ic_baseline_search_24),
-      stringResource(R.string.search),
-      isChecked = false,
-      onSearchClick,
-    )
+  IconButtonGroup {
+    IconButton(onSearchClick) {
+      Icon(painterResource(R.drawable.ic_baseline_search_24), stringResource(R.string.search))
+    }
 
     ExpandingAnimatedVisibility(visible = actions.isNotEmpty()) {
-      MoreActionsTabButton(visible = actions.isNotEmpty(), onMoreActionsClick)
+      ExpandingAnimatedVisibility(actions.isNotEmpty()) {
+        IconButton(onMoreActionsClick) {
+          Icon(
+            painterResource(R.drawable.baseline_more_horiz_24),
+            stringResource(R.string.more_actions),
+          )
+        }
+      }
     }
   }
 }
@@ -170,20 +173,8 @@ private fun SearchFab(onClick: () -> Unit) {
     containerColor = MaterialTheme.colorScheme.primary,
   ) {
     Icon(
-      painter = painterResource(id = R.drawable.travel_explore_24),
-      contentDescription = stringResource(id = R.string.search),
-    )
-  }
-}
-
-@Composable
-private fun MoreActionsTabButton(visible: Boolean, onClick: () -> Unit) {
-  ExpandingAnimatedVisibility(visible) {
-    TabButton(
-      icon = painterResource(id = R.drawable.baseline_more_horiz_24),
-      name = stringResource(id = R.string.more_actions),
-      isChecked = false,
-      onClick = onClick,
+      painter = painterResource(R.drawable.travel_explore_24),
+      contentDescription = stringResource(R.string.search),
     )
   }
 }

@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -107,13 +107,13 @@ fun Widget(
 
     AnimatedVisibility(visible = isEditing) {
       Row {
-        TabButtonGroup {
-          TabButton(
-            painterResource(R.drawable.baseline_arrow_downward_24),
-            stringResource(R.string.move_down),
-            isChecked = false,
-            onClick = moveDown,
-          )
+        IconButtonGroup {
+          IconButton(moveDown) {
+            Icon(
+              painterResource(R.drawable.baseline_arrow_downward_24),
+              stringResource(R.string.move_down),
+            )
+          }
           Icon(
             painterResource(R.drawable.baseline_drag_handle_24),
             stringResource(R.string.adjust_height),
@@ -124,40 +124,36 @@ fun Widget(
                   onDragStopped = { setHeight(height) },
                 )
                 .padding(4.dp),
-            tint = MaterialTheme.colorScheme.primary,
           )
-          TabButton(
-            painterResource(R.drawable.baseline_arrow_upward_24),
-            stringResource(R.string.move_up),
-            isChecked = false,
-            onClick = moveUp,
-          )
-        }
-
-        TabButtonGroup {
-          if (isConfigurable && widgetFrame != null) {
-            TabButton(
-              painterResource(R.drawable.ic_baseline_settings_24),
-              stringResource(R.string.configure_widget),
-              isChecked = false,
-              onClick = { configure(widgetFrame!!) },
+          IconButton(moveUp) {
+            Icon(
+              painterResource(R.drawable.baseline_arrow_upward_24),
+              stringResource(R.string.move_up),
             )
           }
-          TabButton(
-            painterResource(R.drawable.ic_baseline_delete_forever_24),
-            stringResource(R.string.remove),
-            isChecked = false,
-            onClick = remove,
-          )
         }
 
-        TabButtonGroup {
-          TabButton(
-            painterResource(R.drawable.baseline_check_24),
-            stringResource(R.string.done),
-            isChecked = false,
-            onClick = { isEditing = false },
-          )
+        IconButtonGroup {
+          if (isConfigurable && widgetFrame != null) {
+            IconButton({ configure(widgetFrame!!) }) {
+              Icon(
+                painterResource(R.drawable.ic_baseline_settings_24),
+                stringResource(R.string.configure_widget),
+              )
+            }
+          }
+          IconButton(remove) {
+            Icon(
+              painterResource(R.drawable.ic_baseline_delete_forever_24),
+              stringResource(R.string.remove),
+            )
+          }
+        }
+
+        IconButtonGroup {
+          IconButton({ isEditing = false }) {
+            Icon(painterResource(R.drawable.baseline_check_24), stringResource(R.string.done))
+          }
         }
       }
     }
