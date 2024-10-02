@@ -7,6 +7,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 
 @Composable
@@ -23,7 +24,11 @@ fun BottomSheet(
   }
 
   if (isShowing) {
-    ModalBottomSheet(onDismissRequest = onDismissRequest, sheetState = sheetState) {
+    ModalBottomSheet(
+      onDismissRequest = onDismissRequest,
+      sheetState = sheetState,
+      scrimColor = Color.Transparent,
+    ) {
       content(dismiss)
     }
   }

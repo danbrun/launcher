@@ -104,6 +104,12 @@ val LocalUseMonochromeIcons: ProvidableCompositionLocal<Boolean> = compositionLo
 
 @Serializable data class ActivityDetails(val userActivity: UserActivity)
 
+@Serializable data class PinShortcuts(val profile: Profile)
+
+@Serializable data class PinWidgets(val profile: Profile)
+
+@Serializable data class HiddenApps(val profile: Profile)
+
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
@@ -182,10 +188,6 @@ class LauncherFragment : Fragment() {
         val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
         CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) {
           val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
-          val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsStateWithLifecycle(null)
-          val pinShortcuts by
-            pinShortcutsViewModel.pinShortcutsViewData.collectAsStateWithLifecycle(null)
-          val pinWidgets by pinWidgetsViewModel.pinWidgetsViewData.collectAsStateWithLifecycle(null)
           val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
           val profiles by profileManager.profiles.collectAsStateWithLifecycle(emptyMap())
           val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
@@ -335,13 +337,16 @@ class LauncherFragment : Fragment() {
                 onActionClick = { action ->
                   when (action) {
                     BottomBarAction.Type.PIN_SHORTCUT -> {
-                      pinShortcutsViewModel.showPinShortcuts(profile)
+                      navController.navigateUp()
+                      navController.navigate(PinShortcuts(profile))
                     }
                     BottomBarAction.Type.PIN_WIDGET -> {
-                      pinWidgetsViewModel.showPinWidgetsDialog(profile)
+                      navController.navigateUp()
+                      navController.navigate(PinWidgets(profile))
                     }
                     BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
-                      hiddenAppsViewModel.showHiddenApps(profile)
+                      navController.navigateUp()
+                      navController.navigate(HiddenApps(profile))
                     }
                     BottomBarAction.Type.TOGGLE_MONOCHROME -> {
                       settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
@@ -374,29 +379,53 @@ class LauncherFragment : Fragment() {
                 onWidgetPreviewClick = { bindWidget(it) },
               )
             }
+
+            dialog<HiddenApps> { backStackEntry ->
+              val profile = backStackEntry.toRoute<HiddenApps>().profile
+              val viewData by
+                remember { hiddenAppsViewModel.getHiddenApps(profile) }
+                  .collectAsStateWithLifecycle(null)
+
+              HiddenAppsDialog(
+                isShowing = true,
+                viewData = viewData,
+                onClick = { offset, item -> launchActivity(offset, item) },
+                onLongClick = { _, item ->
+                  navController.navigateUp()
+                  navController.navigate(ActivityDetails(item))
+                },
+                onDismissRequest = { navController.navigateUp() },
+              )
+            }
+
+            dialog<PinShortcuts> { backStackEntry ->
+              val profile = backStackEntry.toRoute<PinShortcuts>().profile
+              val viewData by
+                remember { pinShortcutsViewModel.getPinShortcutsViewData(profile) }
+                  .collectAsStateWithLifecycle(null)
+
+              PinShortcutsDialog(
+                isShowing = true,
+                viewData = viewData,
+                onClick = { _, item -> launchShortcutCreator(item) },
+                onDismissRequest = { navController.navigateUp() },
+              )
+            }
+
+            dialog<PinWidgets> { backStackEntry ->
+              val profile = backStackEntry.toRoute<PinWidgets>().profile
+              val viewData by
+                remember { pinWidgetsViewModel.getPinWidgetsViewData(profile) }
+                  .collectAsStateWithLifecycle(null)
+
+              PinWidgetsDialog(
+                isShowing = true,
+                viewData = viewData,
+                onClick = { item -> bindWidget(item) },
+                onDismissRequest = { navController.navigateUp() },
+              )
+            }
           }
-
-          PinShortcutsDialog(
-            isShowing = pinShortcuts != null,
-            viewData = pinShortcuts,
-            onClick = { _, item -> launchShortcutCreator(item) },
-            onDismissRequest = { pinShortcutsViewModel.hidePinShortcuts() },
-          )
-
-          PinWidgetsDialog(
-            isShowing = pinWidgets != null,
-            viewData = pinWidgets,
-            onClick = { item -> bindWidget(item) },
-            onDismissRequest = { pinWidgetsViewModel.hidePinWidgetsDialog() },
-          )
-
-          HiddenAppsDialog(
-            isShowing = hiddenApps != null,
-            viewData = hiddenApps,
-            onClick = { offset, item -> launchActivity(offset, item) },
-            onLongClick = { _, item -> navController.navigate(ActivityDetails(item)) },
-            onDismissRequest = { hiddenAppsViewModel.hideHiddenApps() },
-          )
         }
       }
     }

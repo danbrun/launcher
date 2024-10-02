@@ -74,10 +74,7 @@ fun HiddenAppsDialog(
                   onClick(it, app.userActivity)
                   dismiss()
                 },
-                onLongClick = {
-                  onLongClick(it, app.userActivity)
-                  dismiss()
-                },
+                onLongClick = { onLongClick(it, app.userActivity) },
               )
             }
           }

@@ -24,11 +24,7 @@ fun MoreActionsDialog(
       ListItem(
         headlineContent = { Text(stringResource(action.name)) },
         leadingContent = { Icon(painterResource(action.icon), contentDescription = null) },
-        modifier =
-          Modifier.clickable {
-            onActionClick(action.type)
-            dismiss()
-          },
+        modifier = Modifier.clickable { onActionClick(action.type) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
       )
     }

@@ -10,8 +10,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserApplication
@@ -44,72 +43,57 @@ sealed interface PinWidgetsViewData {
 class PinWidgetsViewModel
 @Inject
 constructor(
-  application: Application,
+  private val application: Application,
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val profileManager: ProfileManager,
 ) : AndroidViewModel(application) {
 
-  private val showWidgetsForUser: MutableStateFlow<Profile?> = MutableStateFlow(null)
+  fun getPinWidgetsViewData(profile: Profile): Flow<PinWidgetsViewData?> = flow {
+    emit(PinWidgetsViewData.Loading)
 
-  val pinWidgetsViewData: Flow<PinWidgetsViewData?> =
-    showWidgetsForUser.transform { profile ->
-      if (profile != null) {
-        emit(PinWidgetsViewData.Loading)
+    emit(
+      PinWidgetsViewData.Loaded(
+        appWidgetManager
+          .getInstalledProvidersForProfile(profileManager.getUserHandle(profile))
+          .groupBy { UserApplication(it.provider.packageName, profile) }
+          .toSortedMap(compareBy { launcherResourceProvider.getLabel(it) })
+          .flatMap { entry ->
+            buildList {
+              add(
+                PinWidgetsViewData.PinWidgetViewItem.PinWidgetHeader(
+                  entry.key,
+                  launcherResourceProvider.getTileData(entry.key),
+                )
+              )
 
-        emit(
-          PinWidgetsViewData.Loaded(
-            appWidgetManager
-              .getInstalledProvidersForProfile(profileManager.getUserHandle(profile))
-              .groupBy { UserApplication(it.provider.packageName, profile) }
-              .toSortedMap(compareBy { launcherResourceProvider.getLabel(it) })
-              .flatMap { entry ->
-                buildList {
-                  add(
-                    PinWidgetsViewData.PinWidgetViewItem.PinWidgetHeader(
-                      entry.key,
-                      launcherResourceProvider.getTileData(entry.key),
-                    )
-                  )
-
-                  for (widget in entry.value) {
-                    add(
-                      PinWidgetsViewData.PinWidgetViewItem.PinWidgetEntry(
-                        entry.key,
-                        WidgetPreviewData(
-                          widget,
-                          withContext(Dispatchers.IO) { widget.loadPreviewImage(application, 0) }
-                            ?: launcherResourceProvider.getIcon(
-                              UserApplication(
-                                widget.provider.packageName,
-                                profileManager.getProfile(widget.profile),
-                              )
-                            ),
-                          widget.loadLabel(application.packageManager),
-                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            widget.loadDescription(application)?.toString()
-                          } else {
-                            null
-                          },
+              for (widget in entry.value) {
+                add(
+                  PinWidgetsViewData.PinWidgetViewItem.PinWidgetEntry(
+                    entry.key,
+                    WidgetPreviewData(
+                      widget,
+                      withContext(Dispatchers.IO) { widget.loadPreviewImage(application, 0) }
+                        ?: launcherResourceProvider.getIcon(
+                          UserApplication(
+                            widget.provider.packageName,
+                            profileManager.getProfile(widget.profile),
+                          )
                         ),
-                      )
-                    )
-                  }
-                }
+                      widget.loadLabel(application.packageManager),
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        widget.loadDescription(application)?.toString()
+                      } else {
+                        null
+                      },
+                    ),
+                  )
+                )
               }
-              .toImmutableList()
-          )
-        )
-      } else {
-        emit(null)
-      }
-    }
-
-  fun showPinWidgetsDialog(profile: Profile) {
-    showWidgetsForUser.value = profile
-  }
-
-  fun hidePinWidgetsDialog() {
-    showWidgetsForUser.value = null
+            }
+          }
+          .toImmutableList()
+      )
+    )
   }
 }

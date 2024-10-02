@@ -7,9 +7,7 @@ import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -25,47 +23,33 @@ class PinShortcutsViewModel
 @Inject
 constructor(
   application: Application,
-  activityManager: ActivityManager,
+  private val activityManager: ActivityManager,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val shortcutManager: ShortcutManager,
 ) : AndroidViewModel(application) {
 
-  private val showPinShortcuts: MutableStateFlow<Profile?> = MutableStateFlow(null)
+  fun getPinShortcutsViewData(profile: Profile): Flow<PinShortcutsViewData?> =
+    activityManager.data.transform { data ->
+      emit(PinShortcutsViewData.Loading)
 
-  val pinShortcutsViewData: Flow<PinShortcutsViewData?> =
-    combineTransform(showPinShortcuts, activityManager.data) { profile, data ->
-      if (profile != null) {
-        emit(PinShortcutsViewData.Loading)
-
-        emit(
-          PinShortcutsViewData.Loaded(
-            data
-              .asFlow()
-              .filter { it.userActivity.profile == profile }
-              .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
-              .map {
-                ActivityDetailsViewModel.ShortcutCreatorViewData(
-                  it,
-                  launcherResourceProvider.getTileData(it),
-                )
-              }
-              .toList()
-              .sortedBy { it.launcherTileData.name.lowercase() }
-              .toImmutableList()
-          )
+      emit(
+        PinShortcutsViewData.Loaded(
+          data
+            .asFlow()
+            .filter { it.userActivity.profile == profile }
+            .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
+            .map {
+              ActivityDetailsViewModel.ShortcutCreatorViewData(
+                it,
+                launcherResourceProvider.getTileData(it),
+              )
+            }
+            .toList()
+            .sortedBy { it.launcherTileData.name.lowercase() }
+            .toImmutableList()
         )
-      } else {
-        emit(null)
-      }
+      )
     }
-
-  fun showPinShortcuts(profile: Profile) {
-    showPinShortcuts.value = profile
-  }
-
-  fun hidePinShortcuts() {
-    showPinShortcuts.value = null
-  }
 
   sealed interface PinShortcutsViewData {
 
