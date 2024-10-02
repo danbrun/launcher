@@ -17,8 +17,13 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -200,6 +205,10 @@ class LauncherFragment : Fragment() {
               var isScrollEnabled by remember { mutableStateOf(true) }
               LazyVerticalGrid(
                 columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
+                modifier =
+                  Modifier.windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                  ),
                 userScrollEnabled = isScrollEnabled,
               ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
