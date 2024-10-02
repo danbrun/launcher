@@ -38,7 +38,7 @@ import link.danb.launcher.ui.WidgetPreview
 
 @Composable
 fun ActivityDetailsDialog(
-  activityDetailsData: ActivityDetailsViewModel.ActivityDetails?,
+  activityDetailsData: ActivityDetailsViewModel.ActivityDetailsData?,
   onDismissRequest: () -> Unit,
   onToggledPinned: (ActivityData) -> Unit,
   onToggleHidden: (ActivityData) -> Unit,

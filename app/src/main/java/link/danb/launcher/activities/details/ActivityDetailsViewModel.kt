@@ -10,9 +10,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.combineTransform
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
@@ -31,7 +30,7 @@ import link.danb.launcher.ui.WidgetPreviewData
 class ActivityDetailsViewModel
 @Inject
 constructor(
-  activityManager: ActivityManager,
+  private val activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
@@ -39,43 +38,13 @@ constructor(
   private val shortcutManager: ShortcutManager,
 ) : AndroidViewModel(application) {
 
-  private val _details: MutableStateFlow<UserActivity?> = MutableStateFlow(null)
-
-  private val shortcutsAndWidgets: Flow<ShortcutsAndWidgets?> =
-    combineTransform(_details, profileManager.profiles) { activity, profiles ->
-      if (activity != null) {
-        when (profiles[activity.profile]) {
-          ProfileState.ENABLED -> {
-            emit(ShortcutsAndWidgets.Loading)
-
-            emit(
-              ShortcutsAndWidgets.Loaded(
-                getShortcuts(activity),
-                getShortcutCreators(activity),
-                getWidgets(activity),
-              )
-            )
-          }
-          ProfileState.DISABLED -> {
-            emit(ShortcutsAndWidgets.ProfileDisabled)
-          }
-          null -> {
-            emit(null)
-          }
-        }
-      } else {
-        emit(null)
-      }
-    }
-
-  val activityDetails: Flow<ActivityDetails?> =
-    combine(_details, activityManager.data, shortcutsAndWidgets) {
-      activity,
-      activityDataList,
-      shortcutsAndWidgets ->
-      val activityData = activityDataList.firstOrNull { it.userActivity == activity }
-      if (activity != null && activityData != null && shortcutsAndWidgets != null) {
-        ActivityDetails(
+  fun getActivityDetails(userActivity: UserActivity): Flow<ActivityDetailsData?> =
+    combine(activityManager.data, getShortcutsAndWidgets(userActivity)) {
+        activityDataList,
+        shortcutsAndWidgets ->
+      val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
+      if (activityData != null && shortcutsAndWidgets != null) {
+        ActivityDetailsData(
           activityData,
           launcherResourceProvider.getTileData(activityData.userActivity),
           shortcutsAndWidgets,
@@ -85,13 +54,28 @@ constructor(
       }
     }
 
-  fun showActivityDetails(activity: UserActivity) {
-    _details.value = activity
-  }
+  private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets?> =
+    profileManager.profiles.transform { profiles ->
+      when (profiles[userActivity.profile]) {
+        ProfileState.ENABLED -> {
+          emit(ShortcutsAndWidgets.Loading)
 
-  fun hideActivityDetails() {
-    _details.value = null
-  }
+          emit(
+            ShortcutsAndWidgets.Loaded(
+              getShortcuts(userActivity),
+              getShortcutCreators(userActivity),
+              getWidgets(userActivity),
+            )
+          )
+        }
+        ProfileState.DISABLED -> {
+          emit(ShortcutsAndWidgets.ProfileDisabled)
+        }
+        null -> {
+          emit(null)
+        }
+      }
+    }
 
   private suspend fun getShortcuts(userActivity: UserActivity): ImmutableList<ShortcutViewData> =
     shortcutManager
@@ -132,7 +116,7 @@ constructor(
       }
       .toImmutableList()
 
-  data class ActivityDetails(
+  data class ActivityDetailsData(
     val activityData: ActivityData,
     val launcherTileData: LauncherTileData,
     val shortcutsAndWidgets: ShortcutsAndWidgets,

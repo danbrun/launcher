@@ -61,6 +61,7 @@ import androidx.navigation.toRoute
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.reflect.typeOf
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.serialization.Serializable
 import link.danb.launcher.activities.ActivitiesViewModel
@@ -70,6 +71,7 @@ import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsViewModel
 import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserActivityNavType
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
@@ -99,6 +101,8 @@ val LocalUseMonochromeIcons: ProvidableCompositionLocal<Boolean> = compositionLo
 @Serializable data class Home(val profile: Profile)
 
 @Serializable data class MoreActions(val profile: Profile)
+
+@Serializable data class ActivityDetails(val userActivity: UserActivity)
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
@@ -178,8 +182,6 @@ class LauncherFragment : Fragment() {
         val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
         CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) {
           val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
-          val activityDetailsData by
-            activityDetailsViewModel.activityDetails.collectAsStateWithLifecycle(null)
           val hiddenApps by hiddenAppsViewModel.hiddenApps.collectAsStateWithLifecycle(null)
           val pinShortcuts by
             pinShortcutsViewModel.pinShortcutsViewData.collectAsStateWithLifecycle(null)
@@ -296,7 +298,7 @@ class LauncherFragment : Fragment() {
                               ),
                             onClick = { launchActivity(it, item.userActivity) },
                             onLongClick = {
-                              activityDetailsViewModel.showActivityDetails(item.userActivity)
+                              navController.navigate(ActivityDetails(item.userActivity))
                             },
                             hide = item.userActivity == gestureActivity,
                             onPlace = {
@@ -349,6 +351,29 @@ class LauncherFragment : Fragment() {
                 onDismissRequest = { navController.navigateUp() },
               )
             }
+
+            dialog<ActivityDetails>(
+              typeMap = mapOf(typeOf<UserActivity>() to UserActivityNavType)
+            ) { backStackEntry ->
+              val userActivity = backStackEntry.toRoute<ActivityDetails>().userActivity
+              val activityDetails by
+                remember { activityDetailsViewModel.getActivityDetails(userActivity) }
+                  .collectAsStateWithLifecycle(null)
+
+              ActivityDetailsDialog(
+                activityDetails,
+                onDismissRequest = { navController.navigateUp() },
+                onToggledPinned = { toggleAppPinned(it) },
+                onToggleHidden = { toggleAppHidden(it) },
+                onUninstall = { uninstallApp(it.userActivity) },
+                onSettings = { openAppSettings(it.userActivity) },
+                onShortcutClick = { offset, item -> launchShortcut(offset, item) },
+                onShortcutLongClick = { _, item -> pinShortcut(item) },
+                onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
+                onShortcutCreatorLongClick = { _, _ -> },
+                onWidgetPreviewClick = { bindWidget(it) },
+              )
+            }
           }
 
           PinShortcutsDialog(
@@ -369,22 +394,8 @@ class LauncherFragment : Fragment() {
             isShowing = hiddenApps != null,
             viewData = hiddenApps,
             onClick = { offset, item -> launchActivity(offset, item) },
-            onLongClick = { _, item -> activityDetailsViewModel.showActivityDetails(item) },
+            onLongClick = { _, item -> navController.navigate(ActivityDetails(item)) },
             onDismissRequest = { hiddenAppsViewModel.hideHiddenApps() },
-          )
-
-          ActivityDetailsDialog(
-            activityDetailsData,
-            onDismissRequest = { activityDetailsViewModel.hideActivityDetails() },
-            onToggledPinned = { toggleAppPinned(it) },
-            onToggleHidden = { toggleAppHidden(it) },
-            onUninstall = { uninstallApp(it.userActivity) },
-            onSettings = { openAppSettings(it.userActivity) },
-            onShortcutClick = { offset, item -> launchShortcut(offset, item) },
-            onShortcutLongClick = { _, item -> pinShortcut(item) },
-            onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
-            onShortcutCreatorLongClick = { _, _ -> },
-            onWidgetPreviewClick = { bindWidget(it) },
           )
         }
       }
