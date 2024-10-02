@@ -98,7 +98,7 @@ import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
 val LocalUseMonochromeIcons: ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
 
-@Serializable data class Home(val profile: Profile)
+@Serializable data object Home
 
 @Serializable data class MoreActions(val profile: Profile)
 
@@ -194,19 +194,18 @@ class LauncherFragment : Fragment() {
 
           val navController = rememberNavController()
 
-          NavHost(navController, startDestination = Home(Profile.PERSONAL)) {
-            composable<Home> { backStackEntry ->
-              val profile = backStackEntry.toRoute<Home>().profile
+          NavHost(navController, startDestination = Home) {
+            composable<Home> {
+              val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
               Scaffold(
                 bottomBar = {
                   LauncherBottomBar(
                     profile,
                     profiles,
                     bottomBarActions,
-                    onChangeProfile = { profile, profileState ->
-                      profileManager.setProfileState(profile, profileState)
-                      navController.navigate(Home(profile))
-                      launcherViewModel.setProfile(profile)
+                    onChangeProfile = { newProfile, profileState ->
+                      profileManager.setProfileState(newProfile, profileState)
+                      launcherViewModel.setProfile(newProfile)
                     },
                     searchQuery = searchQuery,
                     onSearchGo = { launchFirstItem() },
