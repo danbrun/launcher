@@ -3,6 +3,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("kotlin-parcelize")
 }
 
@@ -79,7 +80,7 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
 
     // Jetbrains dependencies
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.8")
 
     // JUnit dependencies
     testImplementation("junit:junit:4.13.2")
@@ -95,7 +96,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     // Dagger/Hilt dependencies
-    val daggerVersion = "2.51"
+    val daggerVersion = "2.52"
     implementation("com.google.dagger:dagger:$daggerVersion")
     implementation("com.google.dagger:hilt-android:$daggerVersion")
     ksp("com.google.dagger:dagger-compiler:$daggerVersion")

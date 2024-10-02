@@ -18,7 +18,7 @@ fun BottomSheet(
 ) {
   val sheetState = rememberModalBottomSheetState()
   val coroutineScope = rememberCoroutineScope()
-  val dismiss = remember {
+  val dismiss: () -> Unit = remember {
     { coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() } }
   }
 
