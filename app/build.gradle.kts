@@ -69,7 +69,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.collection:collection-ktx:1.4.4")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-    implementation("androidx.fragment:fragment-ktx:1.8.3")
+    implementation("androidx.fragment:fragment-ktx:1.8.4")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
@@ -88,7 +88,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     // Compose dependencies
-    implementation(platform("androidx.compose:compose-bom:2024.09.02"))
+    implementation(platform("androidx.compose:compose-bom:2024.09.03"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -114,7 +114,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
 
     // Navigation dependencies
-    val navigationVersion = "2.8.1"
+    val navigationVersion = "2.8.2"
     implementation("androidx.navigation:navigation-compose:$navigationVersion")
     implementation("androidx.navigation:navigation-fragment-ktx:$navigationVersion")
     implementation("androidx.navigation:navigation-runtime-ktx:$navigationVersion")
