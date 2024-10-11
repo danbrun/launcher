@@ -188,17 +188,16 @@ class LauncherFragment : Fragment() {
         val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
         CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) {
           val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
-          val items by launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
-          val profiles by profileManager.profiles.collectAsStateWithLifecycle(emptyMap())
-          val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
 
           val navController = rememberNavController()
 
           NavHost(navController, startDestination = Home) {
             composable<Home> {
-              val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
               Scaffold(
                 bottomBar = {
+                  val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+                  val profiles by profileManager.profiles.collectAsStateWithLifecycle(emptyMap())
+                  val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
                   LauncherBottomBar(
                     profile,
                     profiles,
@@ -218,6 +217,8 @@ class LauncherFragment : Fragment() {
                 containerColor = Color.Transparent,
                 content = { paddingValues ->
                   var isScrollEnabled by remember { mutableStateOf(true) }
+                  val items by
+                    launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
                   LazyVerticalGrid(
                     columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
                     modifier =
