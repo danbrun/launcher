@@ -1,6 +1,5 @@
 package link.danb.launcher.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -9,13 +8,14 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
+import link.danb.launcher.ui.MonochromeIconTheme
 
-private val DarkColorScheme = darkColorScheme(
+private val DarkColorScheme =
+  darkColorScheme(
     primary = md_theme_dark_primary,
     onPrimary = md_theme_dark_onPrimary,
     primaryContainer = md_theme_dark_primaryContainer,
@@ -45,9 +45,10 @@ private val DarkColorScheme = darkColorScheme(
     surfaceTint = md_theme_dark_surfaceTint,
     outlineVariant = md_theme_dark_outlineVariant,
     scrim = md_theme_dark_scrim,
-)
+  )
 
-private val LightColorScheme = lightColorScheme(
+private val LightColorScheme =
+  lightColorScheme(
     primary = md_theme_light_primary,
     onPrimary = md_theme_light_onPrimary,
     primaryContainer = md_theme_light_primaryContainer,
@@ -77,16 +78,20 @@ private val LightColorScheme = lightColorScheme(
     surfaceTint = md_theme_light_surfaceTint,
     outlineVariant = md_theme_light_outlineVariant,
     scrim = md_theme_light_scrim,
-)
+  )
+
+val LocalIconTheme: ProvidableCompositionLocal<MonochromeIconTheme?> = compositionLocalOf { null }
 
 @Composable
 fun LauncherTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+  darkTheme: Boolean = isSystemInDarkTheme(),
+  useMonochromeIcons: Boolean = false,
+  // Dynamic color is available on Android 12+
+  dynamicColor: Boolean = true,
+  content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
+  val colorScheme =
+    when {
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
         val context = LocalContext.current
         if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -94,18 +99,26 @@ fun LauncherTheme(
       darkTheme -> DarkColorScheme
       else -> LightColorScheme
     }
-//    val view = LocalView.current
-//    if (!view.isInEditMode) {
-//      SideEffect {
-//        val window = (view.context as Activity).window
-//        window.statusBarColor = colorScheme.primary.toArgb()
-//        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
-//      }
-//    }
+  //    val view = LocalView.current
+  //    if (!view.isInEditMode) {
+  //      SideEffect {
+  //        val window = (view.context as Activity).window
+  //        window.statusBarColor = colorScheme.primary.toArgb()
+  //        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+  //      }
+  //    }
 
-    MaterialTheme(
-      colorScheme = colorScheme,
-      typography = Typography,
-      content = content
-    )
+  MaterialTheme(
+    colorScheme = colorScheme,
+    typography = Typography,
+    content = {
+      val iconTheme =
+        if (useMonochromeIcons) {
+          MonochromeIconTheme.theme
+        } else {
+          null
+        }
+      CompositionLocalProvider(LocalIconTheme provides iconTheme) { content() }
+    },
+  )
 }

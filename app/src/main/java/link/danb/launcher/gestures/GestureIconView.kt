@@ -106,8 +106,11 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
     ) {
       drawLauncherIcon(
         data.launcherIconData,
-        MonochromeIconTheme.fromContext(context),
-        useMonochromeIcons = data.useMonochromeIcons,
+        if (data.useMonochromeIcons) {
+          MonochromeIconTheme.fromContext(context)
+        } else {
+          null
+        },
       )
     }
     surfaceView.holder.unlockCanvasAndPost(canvas)
