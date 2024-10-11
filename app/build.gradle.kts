@@ -16,8 +16,8 @@ android {
         applicationId = "link.danb.launcher"
         minSdk = 28
         targetSdk = 34
-        versionCode = 23
-        versionName = "1.23"
+        versionCode = 24
+        versionName = "1.24"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
