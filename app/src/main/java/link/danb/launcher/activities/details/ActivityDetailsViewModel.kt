@@ -4,14 +4,19 @@ import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
@@ -38,21 +43,22 @@ constructor(
   private val shortcutManager: ShortcutManager,
 ) : AndroidViewModel(application) {
 
-  fun getActivityDetails(userActivity: UserActivity): Flow<ActivityDetailsData?> =
+  fun getActivityDetails(userActivity: UserActivity): StateFlow<ActivityDetailsData?> =
     combine(activityManager.data, getShortcutsAndWidgets(userActivity)) {
         activityDataList,
         shortcutsAndWidgets ->
-      val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
-      if (activityData != null && shortcutsAndWidgets != null) {
-        ActivityDetailsData(
-          activityData,
-          launcherResourceProvider.getTileData(activityData.userActivity),
-          shortcutsAndWidgets,
-        )
-      } else {
-        null
+        val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
+        if (activityData != null && shortcutsAndWidgets != null) {
+          ActivityDetailsData(
+            activityData,
+            launcherResourceProvider.getTileData(activityData.userActivity),
+            shortcutsAndWidgets,
+          )
+        } else {
+          null
+        }
       }
-    }
+      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), null)
 
   private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets?> =
     profileManager.profiles.transform { profiles ->

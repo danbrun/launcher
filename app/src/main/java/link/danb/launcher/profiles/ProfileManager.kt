@@ -10,6 +10,8 @@ import android.os.UserManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +24,7 @@ class ProfileManager
 @Inject
 constructor(@ApplicationContext context: Context, private val userManager: UserManager) {
 
-  val profiles: Flow<Map<Profile, ProfileState>> =
+  val profiles: Flow<ImmutableMap<Profile, ProfileState>> =
     callbackFlow {
         send(getProfiles())
 
@@ -78,8 +80,10 @@ constructor(@ApplicationContext context: Context, private val userManager: UserM
     }
   }
 
-  private fun getProfiles(): Map<Profile, ProfileState> =
-    userManager.userProfiles.associate { Pair(getProfile(it), getProfileState(it)) }
+  private fun getProfiles(): ImmutableMap<Profile, ProfileState> =
+    userManager.userProfiles
+      .associate { Pair(getProfile(it), getProfileState(it)) }
+      .toImmutableMap()
 
   private fun getProfileState(userHandle: UserHandle): ProfileState =
     when (getProfile(userHandle)) {

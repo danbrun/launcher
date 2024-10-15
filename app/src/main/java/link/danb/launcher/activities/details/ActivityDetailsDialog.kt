@@ -50,8 +50,7 @@ fun ActivityDetailsDialog(
   onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
   onWidgetPreviewClick: (AppWidgetProviderInfo) -> Unit,
 ) {
-  BottomSheet(isShowing = activityDetailsData != null, onDismissRequest = onDismissRequest) {
-    dismiss ->
+  BottomSheet(isShowing = true, onDismissRequest = onDismissRequest) { dismiss ->
     LazyVerticalGrid(columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
       val activityData = checkNotNull(activityDetailsData).activityData
 

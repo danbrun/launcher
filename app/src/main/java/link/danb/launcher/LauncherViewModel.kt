@@ -9,7 +9,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.math.max
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -34,6 +36,7 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.widgets.WidgetManager
@@ -91,6 +94,13 @@ constructor(
 
   val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
   val profile: StateFlow<Profile> = _profile.asStateFlow()
+
+  val profiles: StateFlow<ImmutableMap<Profile, ProfileState>> =
+    profileManager.profiles.stateIn(
+      viewModelScope + Dispatchers.IO,
+      SharingStarted.WhileSubscribed(),
+      persistentMapOf(),
+    )
 
   @OptIn(FlowPreview::class)
   val viewItems: StateFlow<ImmutableList<ViewItem>> =

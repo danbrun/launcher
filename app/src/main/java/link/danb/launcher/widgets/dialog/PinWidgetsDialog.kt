@@ -34,7 +34,7 @@ import link.danb.launcher.ui.WidgetPreview
 @Composable
 fun PinWidgetsDialog(
   isShowing: Boolean,
-  viewData: PinWidgetsViewData?,
+  viewData: PinWidgetsViewData,
   onClick: (AppWidgetProviderInfo) -> Unit,
   onDismissRequest: () -> Unit,
 ) {
@@ -118,7 +118,6 @@ fun PinWidgetsDialog(
             }
           }
         }
-        null -> {}
       }
     }
   }

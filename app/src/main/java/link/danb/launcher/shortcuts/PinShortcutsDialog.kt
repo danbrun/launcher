@@ -32,7 +32,7 @@ import link.danb.launcher.ui.LauncherTile
 @Composable
 fun PinShortcutsDialog(
   isShowing: Boolean,
-  viewData: PinShortcutsViewModel.PinShortcutsViewData?,
+  viewData: PinShortcutsViewModel.PinShortcutsViewData,
   onClick: (Offset, UserShortcutCreator) -> Unit,
   onDismissRequest: () -> Unit,
 ) {
@@ -78,7 +78,6 @@ fun PinShortcutsDialog(
             }
           }
         }
-        null -> {}
       }
     }
   }

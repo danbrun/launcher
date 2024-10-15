@@ -32,7 +32,7 @@ import link.danb.launcher.ui.LauncherTile
 @Composable
 fun HiddenAppsDialog(
   isShowing: Boolean,
-  viewData: HiddenAppsViewModel.HiddenAppsViewData?,
+  viewData: HiddenAppsViewModel.HiddenAppsViewData,
   onClick: (Offset, UserActivity) -> Unit,
   onLongClick: (Offset, UserActivity) -> Unit,
   onDismissRequest: () -> Unit,
@@ -79,7 +79,6 @@ fun HiddenAppsDialog(
             }
           }
         }
-        null -> {}
       }
     }
   }

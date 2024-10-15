@@ -59,7 +59,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.reflect.typeOf
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.serialization.Serializable
 import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityManager
@@ -190,7 +189,7 @@ class LauncherFragment : Fragment() {
             Scaffold(
               bottomBar = {
                 val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
-                val profiles by profileManager.profiles.collectAsStateWithLifecycle(emptyMap())
+                val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
                 val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
                 LauncherBottomBar(
                   profile,
@@ -211,8 +210,7 @@ class LauncherFragment : Fragment() {
               containerColor = Color.Transparent,
               content = { paddingValues ->
                 var isScrollEnabled by remember { mutableStateOf(true) }
-                val items by
-                  launcherViewModel.viewItems.collectAsStateWithLifecycle(persistentListOf())
+                val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
                 LazyVerticalGrid(
                   columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
                   modifier =
@@ -354,7 +352,7 @@ class LauncherFragment : Fragment() {
             val userActivity = backStackEntry.toRoute<ActivityDetails>().userActivity
             val activityDetails by
               remember { activityDetailsViewModel.getActivityDetails(userActivity) }
-                .collectAsStateWithLifecycle(null)
+                .collectAsStateWithLifecycle()
 
             ActivityDetailsDialog(
               activityDetails,
@@ -374,8 +372,7 @@ class LauncherFragment : Fragment() {
           dialog<HiddenApps> { backStackEntry ->
             val profile = backStackEntry.toRoute<HiddenApps>().profile
             val viewData by
-              remember { hiddenAppsViewModel.getHiddenApps(profile) }
-                .collectAsStateWithLifecycle(null)
+              remember { hiddenAppsViewModel.getHiddenApps(profile) }.collectAsStateWithLifecycle()
 
             HiddenAppsDialog(
               isShowing = true,
@@ -393,7 +390,7 @@ class LauncherFragment : Fragment() {
             val profile = backStackEntry.toRoute<PinShortcuts>().profile
             val viewData by
               remember { pinShortcutsViewModel.getPinShortcutsViewData(profile) }
-                .collectAsStateWithLifecycle(null)
+                .collectAsStateWithLifecycle()
 
             PinShortcutsDialog(
               isShowing = true,
@@ -407,7 +404,7 @@ class LauncherFragment : Fragment() {
             val profile = backStackEntry.toRoute<PinWidgets>().profile
             val viewData by
               remember { pinWidgetsViewModel.getPinWidgetsViewData(profile) }
-                .collectAsStateWithLifecycle(null)
+                .collectAsStateWithLifecycle()
 
             PinWidgetsDialog(
               isShowing = true,
