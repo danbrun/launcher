@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,9 +21,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.stateIn
 
 @Singleton
-class ProfileManager
-@Inject
-constructor(@ApplicationContext context: Context, private val userManager: UserManager) {
+class ProfileManager @Inject constructor(@ApplicationContext context: Context) {
+
+  private val userManager: UserManager = checkNotNull(context.getSystemService())
 
   val profiles: Flow<ImmutableMap<Profile, ProfileState>> =
     callbackFlow {
