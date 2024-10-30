@@ -43,22 +43,22 @@ constructor(
   private val shortcutManager: ShortcutManager,
 ) : AndroidViewModel(application) {
 
-  fun getActivityDetails(userActivity: UserActivity): StateFlow<ActivityDetailsData?> =
+  fun getActivityDetails(userActivity: UserActivity): StateFlow<ActivityDetailsData> =
     combine(activityManager.data, getShortcutsAndWidgets(userActivity)) {
         activityDataList,
         shortcutsAndWidgets ->
         val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
         if (activityData != null && shortcutsAndWidgets != null) {
-          ActivityDetailsData(
+          Loaded(
             activityData,
             launcherResourceProvider.getTileData(activityData.userActivity),
             shortcutsAndWidgets,
           )
         } else {
-          null
+          Missing
         }
       }
-      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), null)
+      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), Loading)
 
   private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets?> =
     profileManager.profiles.transform { profiles ->
@@ -122,11 +122,17 @@ constructor(
       }
       .toImmutableList()
 
-  data class ActivityDetailsData(
+  sealed interface ActivityDetailsData
+
+  data object Loading : ActivityDetailsData
+
+  data object Missing : ActivityDetailsData
+
+  data class Loaded(
     val activityData: ActivityData,
     val launcherTileData: LauncherTileData,
     val shortcutsAndWidgets: ShortcutsAndWidgets,
-  )
+  ) : ActivityDetailsData
 
   sealed interface ShortcutsAndWidgets {
     data object Loading : ShortcutsAndWidgets

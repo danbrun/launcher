@@ -18,6 +18,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -38,7 +39,7 @@ import link.danb.launcher.ui.WidgetPreview
 
 @Composable
 fun ActivityDetailsDialog(
-  activityDetailsData: ActivityDetailsViewModel.ActivityDetailsData?,
+  activityDetailsData: ActivityDetailsViewModel.ActivityDetailsData,
   onDismissRequest: () -> Unit,
   onToggledPinned: (ActivityData) -> Unit,
   onToggleHidden: (ActivityData) -> Unit,
@@ -50,9 +51,17 @@ fun ActivityDetailsDialog(
   onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
   onWidgetPreviewClick: (AppWidgetProviderInfo) -> Unit,
 ) {
+  if (activityDetailsData is ActivityDetailsViewModel.Missing) {
+    LaunchedEffect(activityDetailsData) {
+      onDismissRequest()
+    }
+  }
+
+  if (activityDetailsData !is ActivityDetailsViewModel.Loaded) return
+
   BottomSheet(isShowing = true, onDismissRequest = onDismissRequest) { dismiss ->
     LazyVerticalGrid(columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
-      val activityData = checkNotNull(activityDetailsData).activityData
+      val activityData = activityDetailsData.activityData
 
       item(span = { GridItemSpan(maxLineSpan) }) {
         ActivityHeader(activityDetailsData.launcherTileData)
