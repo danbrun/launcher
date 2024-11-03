@@ -60,7 +60,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.reflect.typeOf
 import kotlinx.serialization.Serializable
-import link.danb.launcher.activities.ActivitiesViewModel
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.details.ActivityDetailsViewModel
@@ -107,7 +106,6 @@ import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
-  private val activitiesViewModel: ActivitiesViewModel by activityViewModels()
   private val activityDetailsViewModel: ActivityDetailsViewModel by activityViewModels()
   private val hiddenAppsViewModel: HiddenAppsViewModel by activityViewModels()
   private val launcherViewModel: LauncherViewModel by activityViewModels()
@@ -475,11 +473,11 @@ class LauncherFragment : Fragment() {
   }
 
   private fun toggleAppPinned(activityData: ActivityData) {
-    activitiesViewModel.setMetadata(activityData.copy(isPinned = !activityData.isPinned))
+    launcherViewModel.setMetadata(activityData.copy(isPinned = !activityData.isPinned))
   }
 
   private fun toggleAppHidden(activityData: ActivityData) {
-    activitiesViewModel.setMetadata(activityData.copy(isHidden = !activityData.isHidden))
+    launcherViewModel.setMetadata(activityData.copy(isHidden = !activityData.isHidden))
   }
 
   private fun launchWithIconView(offset: Offset, onView: View.() -> Unit) {

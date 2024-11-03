@@ -27,12 +27,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
+import link.danb.launcher.database.LauncherDatabase
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
@@ -83,6 +85,7 @@ constructor(
   activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
+  private val launcherDatabase: LauncherDatabase,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val profileManager: ProfileManager,
   shortcutManager: ShortcutManager,
@@ -143,6 +146,9 @@ constructor(
   fun setProfile(profile: Profile) {
     _profile.value = profile
   }
+
+  fun setMetadata(activityMetadata: ActivityData) =
+    viewModelScope.launch(Dispatchers.IO) { launcherDatabase.activityData().put(activityMetadata) }
 
   private fun MutableList<ViewItem>.addWidgetListViewItems(
     widgets: List<WidgetData>,
