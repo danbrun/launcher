@@ -26,7 +26,6 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.profiles.ProfileManager
-import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
@@ -62,8 +61,8 @@ constructor(
 
   private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets?> =
     profileManager.profiles.transform { profiles ->
-      when (profiles[userActivity.profile]) {
-        ProfileState.ENABLED -> {
+      when (profiles[userActivity.profile]?.isEnabled) {
+        true -> {
           emit(ShortcutsAndWidgets.Loading)
 
           emit(
@@ -74,7 +73,7 @@ constructor(
             )
           )
         }
-        ProfileState.DISABLED -> {
+        false -> {
           emit(ShortcutsAndWidgets.ProfileDisabled)
         }
         null -> {

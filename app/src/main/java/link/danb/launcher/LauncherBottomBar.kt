@@ -47,7 +47,7 @@ fun LauncherBottomBar(
   profile: Profile,
   profiles: Map<Profile, ProfileState>,
   bottomBarActions: List<BottomBarAction>,
-  onChangeProfile: (Profile, ProfileState) -> Unit,
+  onChangeProfile: (Profile, Boolean) -> Unit,
   searchQuery: String?,
   onSearchChange: (String) -> Unit,
   onSearchGo: () -> Unit,
@@ -80,13 +80,13 @@ fun LauncherBottomBar(
 private fun ProfilesTabGroup(
   activeProfile: Profile,
   availableProfiles: Map<Profile, ProfileState>,
-  onChangeProfile: (Profile, ProfileState) -> Unit,
+  onChangeProfile: (Profile, Boolean) -> Unit,
 ) {
   ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
     IconButtonGroup {
       FilledIconToggleButton(
         activeProfile == Profile.PERSONAL,
-        { onChangeProfile(Profile.PERSONAL, ProfileState.ENABLED) },
+        { onChangeProfile(Profile.PERSONAL, true) },
       ) {
         Icon(painterResource(R.drawable.baseline_person_24), stringResource(R.string.show_personal))
       }
@@ -94,18 +94,23 @@ private fun ProfilesTabGroup(
       val workProfileStatus = availableProfiles[Profile.WORK]
       if (workProfileStatus != null) {
         FilledIconSelector(
-          items = listOf(ProfileState.DISABLED, ProfileState.ENABLED),
-          selected = workProfileStatus,
+          items =
+            if (workProfileStatus.canToggle) {
+              listOf(false, true)
+            } else {
+              listOf(workProfileStatus.isEnabled)
+            },
+          selected = workProfileStatus.isEnabled,
           isChecked = activeProfile == Profile.WORK,
           onClick = { onChangeProfile(Profile.WORK, it) },
         ) {
           when (it) {
-            ProfileState.DISABLED ->
+            false ->
               Icon(
                 painterResource(R.drawable.ic_baseline_work_off_24),
                 stringResource(R.string.show_work),
               )
-            ProfileState.ENABLED ->
+            true ->
               Icon(
                 painterResource(R.drawable.ic_baseline_work_24),
                 stringResource(R.string.show_work),

@@ -5,7 +5,4 @@ enum class Profile {
   WORK,
 }
 
-enum class ProfileState {
-  ENABLED,
-  DISABLED,
-}
+data class ProfileState(val isEnabled: Boolean, val canToggle: Boolean)

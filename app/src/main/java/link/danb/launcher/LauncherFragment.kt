@@ -193,8 +193,8 @@ class LauncherFragment : Fragment() {
                   profile,
                   profiles,
                   bottomBarActions,
-                  onChangeProfile = { newProfile, profileState ->
-                    profileManager.setProfileState(newProfile, profileState)
+                  onChangeProfile = { newProfile, isEnabled ->
+                    profileManager.setProfileEnabled(newProfile, isEnabled)
                     launcherViewModel.setProfile(newProfile)
                   },
                   searchQuery = searchQuery,

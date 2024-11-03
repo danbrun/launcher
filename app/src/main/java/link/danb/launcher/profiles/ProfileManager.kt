@@ -1,9 +1,11 @@
 package link.danb.launcher.profiles
 
+import android.app.role.RoleManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 class ProfileManager @Inject constructor(@ApplicationContext context: Context) {
 
   private val userManager: UserManager = checkNotNull(context.getSystemService())
+  private val roleManager: RoleManager = checkNotNull(context.getSystemService())
 
   val profiles: Flow<ImmutableMap<Profile, ProfileState>> =
     callbackFlow {
@@ -63,19 +66,13 @@ class ProfileManager @Inject constructor(@ApplicationContext context: Context) {
       else -> Profile.WORK
     }
 
-  fun setProfileState(profile: Profile, profileState: ProfileState) {
+  fun setProfileEnabled(profile: Profile, isEnabled: Boolean) {
     when (profile) {
       Profile.PERSONAL -> {}
       Profile.WORK -> {
         val userHandle = getUserHandle(profile)
-        if (userHandle != null) {
-          userManager.requestQuietModeEnabled(
-            when (profileState) {
-              ProfileState.ENABLED -> false
-              ProfileState.DISABLED -> true
-            },
-            userHandle,
-          )
+        if (userHandle != null && isEnabled(userHandle) != isEnabled) {
+          userManager.requestQuietModeEnabled(!isEnabled, userHandle)
         }
       }
     }
@@ -88,13 +85,13 @@ class ProfileManager @Inject constructor(@ApplicationContext context: Context) {
 
   private fun getProfileState(userHandle: UserHandle): ProfileState =
     when (getProfile(userHandle)) {
-      Profile.PERSONAL -> ProfileState.ENABLED
+      Profile.PERSONAL -> ProfileState(isEnabled = true, canToggle = false)
       Profile.WORK ->
-        if (isEnabled(userHandle)) {
-          ProfileState.ENABLED
-        } else {
-          ProfileState.DISABLED
-        }
+        ProfileState(
+          isEnabled(userHandle),
+          Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            roleManager.isRoleHeld(RoleManager.ROLE_HOME),
+        )
     }
 
   fun isEnabled(userHandle: UserHandle) =

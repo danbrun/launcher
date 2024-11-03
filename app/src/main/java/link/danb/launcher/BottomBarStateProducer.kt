@@ -19,7 +19,7 @@ object BottomBarStateProducer {
     profileState: ProfileState,
     activities: List<ActivityData>,
   ) = buildList {
-    if (profileState == ProfileState.ENABLED) {
+    if (profileState.isEnabled) {
       add(
         BottomBarAction(
           R.drawable.baseline_shortcut_24,
