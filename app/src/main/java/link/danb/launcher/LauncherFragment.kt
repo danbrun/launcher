@@ -360,7 +360,11 @@ class LauncherFragment : Fragment() {
                     settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
                   }
                   BottomBarAction.Type.REQUEST_HOME_ROLE -> {
-                    requestHomeRole()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                      setHomeActivityResultLauncher.launch(
+                        roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
+                      )
+                    }
                   }
                 }
               },
@@ -566,20 +570,5 @@ class LauncherFragment : Fragment() {
         providerInfo.profile,
       )
     )
-  }
-
-  private fun requestHomeRole() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-      throw IllegalStateException()
-    }
-
-    if (
-      roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
-        !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
-    ) {
-      setHomeActivityResultLauncher.launch(
-        roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
-      )
-    }
   }
 }
