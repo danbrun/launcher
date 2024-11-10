@@ -70,6 +70,7 @@ dependencies {
     implementation("androidx.collection:collection-ktx:1.4.5")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")

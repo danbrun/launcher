@@ -92,7 +92,6 @@ import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
-import link.danb.launcher.widgets.dialog.PinWidgetsViewModel
 
 @Serializable data object Home
 
@@ -113,7 +112,6 @@ class LauncherFragment : Fragment() {
   private val hiddenAppsViewModel: HiddenAppsViewModel by activityViewModels()
   private val launcherViewModel: LauncherViewModel by activityViewModels()
   private val pinShortcutsViewModel: PinShortcutsViewModel by activityViewModels()
-  private val pinWidgetsViewModel: PinWidgetsViewModel by activityViewModels()
   private val settingsViewModel: SettingsViewModel by activityViewModels()
   private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
@@ -426,17 +424,9 @@ class LauncherFragment : Fragment() {
           }
 
           dialog<PinWidgets> { backStackEntry ->
-            val profile = backStackEntry.toRoute<PinWidgets>().profile
-            val viewData by
-              remember { pinWidgetsViewModel.getPinWidgetsViewData(profile) }
-                .collectAsStateWithLifecycle()
-
-            PinWidgetsDialog(
-              isShowing = true,
-              viewData = viewData,
-              onClick = { item -> bindWidget(item) },
-              onDismissRequest = { navController.navigateUp() },
-            )
+            PinWidgetsDialog(backStackEntry.toRoute<PinWidgets>().profile) {
+              navController.navigateUp()
+            }
           }
         }
       }

@@ -1,7 +1,6 @@
 package link.danb.launcher.widgets.dialog
 
-import android.appwidget.AppWidgetProviderInfo
-import androidx.compose.animation.AnimatedVisibility
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +15,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,100 +24,127 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
 import link.danb.launcher.components.UserApplication
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.WidgetPreview
+import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 
 @Composable
 fun PinWidgetsDialog(
-  isShowing: Boolean,
-  viewData: PinWidgetsViewData,
-  onClick: (AppWidgetProviderInfo) -> Unit,
-  onDismissRequest: () -> Unit,
+  profile: Profile,
+  pinWidgetsViewModel: PinWidgetsViewModel = hiltViewModel(),
+  dismiss: () -> Unit,
 ) {
-  BottomSheet(isShowing, onDismissRequest) {
-    val expandedApplications = remember { mutableStateListOf<UserApplication>() }
+  BottomSheet(isShowing = true, dismiss) {
+    val state by
+      remember(profile) { pinWidgetsViewModel.getState(profile) }.collectAsStateWithLifecycle()
 
-    LazyColumn {
-      item {
-        ListItem(
-          headlineContent = {
-            Text(
-              stringResource(R.string.pin_widget),
-              style = MaterialTheme.typography.headlineMedium,
-            )
-          },
-          leadingContent = {
-            Icon(
-              painter = painterResource(R.drawable.ic_baseline_widgets_24),
-              contentDescription = null,
-            )
-          },
-          colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        )
-      }
+    PinWidgetsContent(state) { pinWidgetsViewModel.toggle(it) }
+  }
+}
 
-      when (viewData) {
-        is PinWidgetsViewData.Loading -> {
-          item {
-            Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-              CircularProgressIndicator(Modifier.size(64.dp))
-            }
+@Composable
+private fun PinWidgetsContent(state: PinWidgetsViewModel.State, toggle: (UserApplication) -> Unit) {
+  val bindWidgetActivityLauncher =
+    rememberLauncherForActivityResult(AppWidgetSetupActivityResultContract()) {}
+
+  LazyColumn {
+    item {
+      ListItem(
+        headlineContent = {
+          Text(stringResource(R.string.pin_widget), style = MaterialTheme.typography.headlineMedium)
+        },
+        leadingContent = {
+          Icon(
+            painter = painterResource(R.drawable.ic_baseline_widgets_24),
+            contentDescription = null,
+          )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+      )
+    }
+
+    when (state) {
+      is PinWidgetsViewModel.State.Loading -> {
+        item {
+          Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(Modifier.size(64.dp))
           }
         }
-        is PinWidgetsViewData.Loaded -> {
-          items(items = viewData.viewItems) { item ->
+      }
+      is PinWidgetsViewModel.State.Loaded -> {
+        items(
+          items = state.items,
+          key = { item ->
             when (item) {
-              is PinWidgetsViewData.PinWidgetViewItem.PinWidgetHeader -> {
-                ListItem(
-                  headlineContent = {
-                    Text(
-                      item.launcherTileData.name,
-                      style = MaterialTheme.typography.headlineMedium,
-                    )
-                  },
-                  Modifier.clickable {
-                    if (expandedApplications.contains(item.userApplication)) {
-                      expandedApplications.remove(item.userApplication)
-                    } else {
-                      expandedApplications.add(item.userApplication)
-                    }
-                  },
-                  leadingContent = {
-                    LauncherIcon(
-                      item.launcherTileData.launcherIconData,
-                      Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-                    )
-                  },
-                  trailingContent = {
-                    Icon(
-                      painterResource(
-                        if (expandedApplications.contains(item.userApplication)) {
-                          R.drawable.baseline_expand_less_24
-                        } else {
-                          R.drawable.baseline_expand_more_24
-                        }
-                      ),
-                      contentDescription = null,
-                    )
-                  },
-                  colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                )
+              is PinWidgetsViewModel.State.Item.Header -> {
+                item.userApplication.packageName
               }
-              is PinWidgetsViewData.PinWidgetViewItem.PinWidgetEntry -> {
-                AnimatedVisibility(visible = expandedApplications.contains(item.userApplication)) {
-                  WidgetPreview(
-                    item.widgetPreviewData,
-                    onClick = { onClick(item.widgetPreviewData.providerInfo) },
+              is PinWidgetsViewModel.State.Item.Entry -> {
+                item.widgetPreviewData.providerInfo.provider
+              }
+            }
+          },
+        ) { item ->
+          when (item) {
+            is PinWidgetsViewModel.State.Item.Header -> {
+              Header(item) { toggle(it) }
+            }
+            is PinWidgetsViewModel.State.Item.Entry -> {
+              WidgetPreview(
+                item.widgetPreviewData,
+                modifier = Modifier.animateItem(),
+                onClick = {
+                  val info = item.widgetPreviewData.providerInfo
+                  bindWidgetActivityLauncher.launch(
+                    AppWidgetSetupActivityResultContract.AppWidgetSetupInput(
+                      info.provider,
+                      info.profile,
+                    )
                   )
-                }
-              }
+                },
+              )
             }
           }
         }
       }
     }
   }
+}
+
+@Composable
+private fun Header(
+  header: PinWidgetsViewModel.State.Item.Header,
+  toggle: (UserApplication) -> Unit,
+) {
+  ListItem(
+    headlineContent = {
+      Text(header.launcherTileData.name, style = MaterialTheme.typography.headlineMedium)
+    },
+    Modifier.clickable { toggle(header.userApplication) },
+    leadingContent = {
+      LauncherIcon(
+        header.launcherTileData.launcherIconData,
+        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+      )
+    },
+    trailingContent = {
+      Icon(
+        painterResource(
+          if (header.isExpanded) {
+            R.drawable.baseline_expand_less_24
+          } else {
+            R.drawable.baseline_expand_more_24
+          }
+        ),
+        contentDescription = null,
+      )
+    },
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+  )
 }

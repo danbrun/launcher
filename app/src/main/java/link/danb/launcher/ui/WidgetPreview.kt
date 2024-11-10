@@ -32,8 +32,8 @@ data class WidgetPreviewData(
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun WidgetPreview(item: WidgetPreviewData, onClick: () -> Unit) {
-  Card(Modifier.padding(4.dp).clip(CardDefaults.shape).combinedClickable(onClick = onClick)) {
+fun WidgetPreview(item: WidgetPreviewData, modifier: Modifier = Modifier, onClick: () -> Unit) {
+  Card(modifier.padding(4.dp).clip(CardDefaults.shape).combinedClickable(onClick = onClick)) {
     if (
       Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
         item.providerInfo.previewLayout != Resources.ID_NULL
