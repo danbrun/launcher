@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -61,6 +63,7 @@ import androidx.navigation.toRoute
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.getValue
 import kotlin.reflect.typeOf
 import kotlinx.serialization.Serializable
 import link.danb.launcher.activities.ActivityManager
@@ -108,12 +111,8 @@ import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
-  private val activityDetailsViewModel: ActivityDetailsViewModel by activityViewModels()
-  private val hiddenAppsViewModel: HiddenAppsViewModel by activityViewModels()
   private val launcherViewModel: LauncherViewModel by activityViewModels()
-  private val pinShortcutsViewModel: PinShortcutsViewModel by activityViewModels()
   private val settingsViewModel: SettingsViewModel by activityViewModels()
-  private val widgetsViewModel: WidgetsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var gestureActivityIconStore: GestureActivityIconStore
@@ -194,242 +193,48 @@ class LauncherFragment : Fragment() {
     }
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
-      val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
-      LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
-        val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
-
-        val navController = rememberNavController()
-
-        NavHost(navController, startDestination = Home) {
-          composable<Home> {
-            Scaffold(
-              bottomBar = {
-                val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
-                val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
-                val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
-                LauncherBottomBar(
-                  profile,
-                  profiles,
-                  bottomBarActions,
-                  onChangeProfile = { newProfile, isEnabled ->
-                    profileManager.setProfileEnabled(newProfile, isEnabled)
-                    launcherViewModel.setProfile(newProfile)
-                  },
-                  searchQuery = searchQuery,
-                  onSearchGo = { launchFirstItem() },
-                  onMoreActionsClick = { navController.navigate(MoreActions(profile)) },
-                  onSearchChange = { launcherViewModel.setSearchQuery(it) },
-                  onSearchCancel = { launcherViewModel.setSearchQuery(null) },
-                  onSearchFabClick = { onFabClick() },
-                )
-              },
-              containerColor = Color.Transparent,
-              content = { paddingValues ->
-                var isScrollEnabled by remember { mutableStateOf(true) }
-                val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
-                LazyVerticalGrid(
-                  columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
-                  modifier =
-                    Modifier.windowInsetsPadding(
-                      WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
-                    ),
-                  userScrollEnabled = isScrollEnabled,
-                ) {
-                  item(span = { GridItemSpan(maxLineSpan) }) {
-                    Spacer(Modifier.height(paddingValues.calculateTopPadding()))
-                  }
-
-                  items(
-                    items,
-                    span = { item ->
-                      when (item) {
-                        is WidgetViewItem,
-                        is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
-                        else -> GridItemSpan(1)
-                      }
-                    },
-                    key = { item -> "${item::class.qualifiedName}:${item.key}" },
-                  ) { item ->
-                    when (item) {
-                      is WidgetViewItem -> {
-                        Widget(
-                          widgetData = item.widgetData,
-                          sizeRange = item.sizeRange,
-                          isConfigurable = item.isConfigurable,
-                          modifier = Modifier.animateItem(),
-                          setScrollEnabled = { isScrollEnabled = it },
-                          moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
-                          moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
-                          remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
-                          setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
-                          configure = {
-                            widgetManager.startConfigurationActivity(
-                              requireActivity(),
-                              it,
-                              item.widgetData.widgetId,
-                            )
-                          },
-                        )
-                      }
-                      is GroupHeaderViewItem -> {
-                        Text(
-                          item.name,
-                          Modifier.padding(8.dp).animateItem(),
-                          style =
-                            MaterialTheme.typography.titleMedium.copy(
-                              color = Color.White,
-                              shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                            ),
-                        )
-                      }
-                      is ShortcutViewItem -> {
-                        LauncherTile(
-                          data = item.launcherTileData,
-                          modifier = Modifier.animateItem(),
-                          style =
-                            MaterialTheme.typography.labelMedium.copy(
-                              color = Color.White,
-                              shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                            ),
-                          onClick = { launchShortcut(it, item.userShortcut) },
-                          onLongClick = { unpinShortcut(item.userShortcut) },
-                        )
-                      }
-                      is ActivityViewItem -> {
-                        LauncherTile(
-                          data = item.launcherTileData,
-                          modifier = Modifier.animateItem(),
-                          style =
-                            MaterialTheme.typography.labelMedium.copy(
-                              color = Color.White,
-                              shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                            ),
-                          onClick = { launchActivity(it, item.userActivity) },
-                          onLongClick = {
-                            navController.navigate(ActivityDetails(item.userActivity))
-                          },
-                          hide = item.userActivity == gestureActivity,
-                          onPlace = {
-                            if (it == null) {
-                              (item.userActivity)
-                              gestureActivityIconStore.clearActivityState(item.userActivity)
-                            } else {
-                              gestureActivityIconStore.setActivityState(
-                                item.userActivity,
-                                item.launcherTileData.launcherIconData,
-                                it,
-                              )
-                            }
-                          },
-                        )
-                      }
-                    }
-                  }
-
-                  item(span = { GridItemSpan(maxLineSpan) }) {
-                    Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
-                  }
-                }
-              },
+      Launcher(
+        launcherViewModel = launcherViewModel,
+        settingsViewModel = settingsViewModel,
+        changeProfile = { newProfile, isEnabled ->
+          profileManager.setProfileEnabled(newProfile, isEnabled)
+          launcherViewModel.setProfile(newProfile)
+        },
+        configureWidget = { view, widgetId ->
+          widgetManager.startConfigurationActivity(requireActivity(), view, widgetId)
+        },
+        launchFirstItem = this::launchFirstItem,
+        onFabClick = this::onFabClick,
+        launchShortcut = this::launchShortcut,
+        unpinShortcut = this::unpinShortcut,
+        launchActivity = this::launchActivity,
+        onPlaceTile = { rect, item ->
+          if (rect == null) {
+            gestureActivityIconStore.clearActivityState(item.userActivity)
+          } else {
+            gestureActivityIconStore.setActivityState(
+              item.userActivity,
+              item.launcherTileData.launcherIconData,
+              rect,
             )
           }
-
-          dialog<MoreActions> { backStackEntry ->
-            val profile = backStackEntry.toRoute<MoreActions>().profile
-
-            MoreActionsDialog(
-              isShowing = true,
-              actions = bottomBarActions,
-              onActionClick = { action ->
-                when (action) {
-                  BottomBarAction.Type.PIN_SHORTCUT -> {
-                    navController.navigateUp()
-                    navController.navigate(PinShortcuts(profile))
-                  }
-                  BottomBarAction.Type.PIN_WIDGET -> {
-                    navController.navigateUp()
-                    navController.navigate(PinWidgets(profile))
-                  }
-                  BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
-                    navController.navigateUp()
-                    navController.navigate(HiddenApps(profile))
-                  }
-                  BottomBarAction.Type.TOGGLE_MONOCHROME -> {
-                    settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
-                  }
-                  BottomBarAction.Type.REQUEST_HOME_ROLE -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                      setHomeActivityResultLauncher.launch(
-                        roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
-                      )
-                    }
-                  }
-                }
-              },
-              onDismissRequest = { navController.navigateUp() },
+        },
+        requestHomeRole = {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            setHomeActivityResultLauncher.launch(
+              roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
             )
           }
-
-          dialog<ActivityDetails>(typeMap = mapOf(typeOf<UserActivity>() to UserActivityNavType)) {
-            backStackEntry ->
-            val userActivity = backStackEntry.toRoute<ActivityDetails>().userActivity
-            val activityDetails by
-              remember { activityDetailsViewModel.getActivityDetails(userActivity) }
-                .collectAsStateWithLifecycle()
-
-            ActivityDetailsDialog(
-              activityDetails,
-              onDismissRequest = { navController.navigateUp() },
-              onToggledPinned = { toggleAppPinned(it) },
-              onToggleHidden = { toggleAppHidden(it) },
-              onUninstall = { uninstallApp(it.userActivity) },
-              onSettings = { openAppSettings(it.userActivity) },
-              onShortcutClick = { offset, item -> launchShortcut(offset, item) },
-              onShortcutLongClick = { _, item -> pinShortcut(item) },
-              onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
-              onShortcutCreatorLongClick = { _, _ -> },
-              onWidgetPreviewClick = { bindWidget(it) },
-            )
-          }
-
-          dialog<HiddenApps> { backStackEntry ->
-            val profile = backStackEntry.toRoute<HiddenApps>().profile
-            val viewData by
-              remember { hiddenAppsViewModel.getHiddenApps(profile) }.collectAsStateWithLifecycle()
-
-            HiddenAppsDialog(
-              isShowing = true,
-              viewData = viewData,
-              onClick = { offset, item -> launchActivity(offset, item) },
-              onLongClick = { _, item ->
-                navController.navigateUp()
-                navController.navigate(ActivityDetails(item))
-              },
-              onDismissRequest = { navController.navigateUp() },
-            )
-          }
-
-          dialog<PinShortcuts> { backStackEntry ->
-            val profile = backStackEntry.toRoute<PinShortcuts>().profile
-            val viewData by
-              remember { pinShortcutsViewModel.getPinShortcutsViewData(profile) }
-                .collectAsStateWithLifecycle()
-
-            PinShortcutsDialog(
-              isShowing = true,
-              viewData = viewData,
-              onClick = { _, item -> launchShortcutCreator(item) },
-              onDismissRequest = { navController.navigateUp() },
-            )
-          }
-
-          dialog<PinWidgets> { backStackEntry ->
-            PinWidgetsDialog(backStackEntry.toRoute<PinWidgets>().profile) {
-              navController.navigateUp()
-            }
-          }
-        }
-      }
+        },
+        toggleAppPinned = this::toggleAppPinned,
+        toggleAppHidden = this::toggleAppHidden,
+        uninstallApp = this::uninstallApp,
+        openAppSettings = this::openAppSettings,
+        pinShortcut = this::pinShortcut,
+        launchShortcutCreator = this::launchShortcutCreator,
+        bindWidget = this::bindWidget,
+        gestureActivity = gestureActivity,
+      )
     }
     return view
   }
@@ -560,5 +365,243 @@ class LauncherFragment : Fragment() {
         providerInfo.profile,
       )
     )
+  }
+}
+
+@Composable
+private fun Launcher(
+  activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
+  hiddenAppsViewModel: HiddenAppsViewModel = hiltViewModel(),
+  launcherViewModel: LauncherViewModel = hiltViewModel(),
+  pinShortcutsViewModel: PinShortcutsViewModel = hiltViewModel(),
+  settingsViewModel: SettingsViewModel = hiltViewModel(),
+  widgetsViewModel: WidgetsViewModel = hiltViewModel(),
+  changeProfile: (Profile, Boolean) -> Unit,
+  configureWidget: (View, Int) -> Unit,
+  launchFirstItem: () -> Unit,
+  onFabClick: () -> Unit,
+  launchShortcut: (Offset, UserShortcut) -> Unit,
+  unpinShortcut: (UserShortcut) -> Unit,
+  launchActivity: (Offset, UserActivity) -> Unit,
+  onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
+  requestHomeRole: () -> Unit,
+  toggleAppPinned: (ActivityData) -> Unit,
+  toggleAppHidden: (ActivityData) -> Unit,
+  uninstallApp: (UserActivity) -> Unit,
+  openAppSettings: (UserActivity) -> Unit,
+  pinShortcut: (UserShortcut) -> Unit,
+  launchShortcutCreator: (UserShortcutCreator) -> Unit,
+  bindWidget: (AppWidgetProviderInfo) -> Unit,
+  gestureActivity: UserActivity?,
+) {
+  val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
+  LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
+    val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
+
+    val navController = rememberNavController()
+
+    NavHost(navController, startDestination = Home) {
+      composable<Home> {
+        Scaffold(
+          bottomBar = {
+            val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+            val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
+            val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
+            LauncherBottomBar(
+              profile,
+              profiles,
+              bottomBarActions,
+              onChangeProfile = changeProfile,
+              searchQuery = searchQuery,
+              onSearchGo = { launchFirstItem() },
+              onMoreActionsClick = { navController.navigate(MoreActions(profile)) },
+              onSearchChange = { launcherViewModel.setSearchQuery(it) },
+              onSearchCancel = { launcherViewModel.setSearchQuery(null) },
+              onSearchFabClick = { onFabClick() },
+            )
+          },
+          containerColor = Color.Transparent,
+          content = { paddingValues ->
+            var isScrollEnabled by remember { mutableStateOf(true) }
+            val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
+            LazyVerticalGrid(
+              columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
+              modifier =
+                Modifier.windowInsetsPadding(
+                  WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                ),
+              userScrollEnabled = isScrollEnabled,
+            ) {
+              item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(Modifier.height(paddingValues.calculateTopPadding()))
+              }
+
+              items(
+                items,
+                span = { item ->
+                  when (item) {
+                    is WidgetViewItem,
+                    is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
+                    else -> GridItemSpan(1)
+                  }
+                },
+                key = { item -> "${item::class.qualifiedName}:${item.key}" },
+              ) { item ->
+                when (item) {
+                  is WidgetViewItem -> {
+                    Widget(
+                      widgetData = item.widgetData,
+                      sizeRange = item.sizeRange,
+                      isConfigurable = item.isConfigurable,
+                      modifier = Modifier.animateItem(),
+                      setScrollEnabled = { isScrollEnabled = it },
+                      moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
+                      moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
+                      remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
+                      setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
+                      configure = { configureWidget(it, item.widgetData.widgetId) },
+                    )
+                  }
+                  is GroupHeaderViewItem -> {
+                    Text(
+                      item.name,
+                      Modifier.padding(8.dp).animateItem(),
+                      style =
+                        MaterialTheme.typography.titleMedium.copy(
+                          color = Color.White,
+                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                        ),
+                    )
+                  }
+                  is ShortcutViewItem -> {
+                    LauncherTile(
+                      data = item.launcherTileData,
+                      modifier = Modifier.animateItem(),
+                      style =
+                        MaterialTheme.typography.labelMedium.copy(
+                          color = Color.White,
+                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                        ),
+                      onClick = { launchShortcut(it, item.userShortcut) },
+                      onLongClick = { unpinShortcut(item.userShortcut) },
+                    )
+                  }
+                  is ActivityViewItem -> {
+                    LauncherTile(
+                      data = item.launcherTileData,
+                      modifier = Modifier.animateItem(),
+                      style =
+                        MaterialTheme.typography.labelMedium.copy(
+                          color = Color.White,
+                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                        ),
+                      onClick = { launchActivity(it, item.userActivity) },
+                      onLongClick = { navController.navigate(ActivityDetails(item.userActivity)) },
+                      hide = item.userActivity == gestureActivity,
+                      onPlace = { onPlaceTile(it, item) },
+                    )
+                  }
+                }
+              }
+
+              item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
+              }
+            }
+          },
+        )
+      }
+
+      dialog<MoreActions> { backStackEntry ->
+        val profile = backStackEntry.toRoute<MoreActions>().profile
+
+        MoreActionsDialog(
+          isShowing = true,
+          actions = bottomBarActions,
+          onActionClick = { action ->
+            when (action) {
+              BottomBarAction.Type.PIN_SHORTCUT -> {
+                navController.navigateUp()
+                navController.navigate(PinShortcuts(profile))
+              }
+              BottomBarAction.Type.PIN_WIDGET -> {
+                navController.navigateUp()
+                navController.navigate(PinWidgets(profile))
+              }
+              BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
+                navController.navigateUp()
+                navController.navigate(HiddenApps(profile))
+              }
+              BottomBarAction.Type.TOGGLE_MONOCHROME -> {
+                settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
+              }
+              BottomBarAction.Type.REQUEST_HOME_ROLE -> {
+                requestHomeRole()
+              }
+            }
+          },
+          onDismissRequest = { navController.navigateUp() },
+        )
+      }
+
+      dialog<ActivityDetails>(typeMap = mapOf(typeOf<UserActivity>() to UserActivityNavType)) {
+        backStackEntry ->
+        val userActivity = backStackEntry.toRoute<ActivityDetails>().userActivity
+        val activityDetails by
+          remember { activityDetailsViewModel.getActivityDetails(userActivity) }
+            .collectAsStateWithLifecycle()
+
+        ActivityDetailsDialog(
+          activityDetails,
+          onDismissRequest = { navController.navigateUp() },
+          onToggledPinned = { toggleAppPinned(it) },
+          onToggleHidden = { toggleAppHidden(it) },
+          onUninstall = { uninstallApp(it.userActivity) },
+          onSettings = { openAppSettings(it.userActivity) },
+          onShortcutClick = { offset, item -> launchShortcut(offset, item) },
+          onShortcutLongClick = { _, item -> pinShortcut(item) },
+          onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
+          onShortcutCreatorLongClick = { _, _ -> },
+          onWidgetPreviewClick = { bindWidget(it) },
+        )
+      }
+
+      dialog<HiddenApps> { backStackEntry ->
+        val profile = backStackEntry.toRoute<HiddenApps>().profile
+        val viewData by
+          remember { hiddenAppsViewModel.getHiddenApps(profile) }.collectAsStateWithLifecycle()
+
+        HiddenAppsDialog(
+          isShowing = true,
+          viewData = viewData,
+          onClick = { offset, item -> launchActivity(offset, item) },
+          onLongClick = { _, item ->
+            navController.navigateUp()
+            navController.navigate(ActivityDetails(item))
+          },
+          onDismissRequest = { navController.navigateUp() },
+        )
+      }
+
+      dialog<PinShortcuts> { backStackEntry ->
+        val profile = backStackEntry.toRoute<PinShortcuts>().profile
+        val viewData by
+          remember { pinShortcutsViewModel.getPinShortcutsViewData(profile) }
+            .collectAsStateWithLifecycle()
+
+        PinShortcutsDialog(
+          isShowing = true,
+          viewData = viewData,
+          onClick = { _, item -> launchShortcutCreator(item) },
+          onDismissRequest = { navController.navigateUp() },
+        )
+      }
+
+      dialog<PinWidgets> { backStackEntry ->
+        PinWidgetsDialog(backStackEntry.toRoute<PinWidgets>().profile) {
+          navController.navigateUp()
+        }
+      }
+    }
   }
 }
