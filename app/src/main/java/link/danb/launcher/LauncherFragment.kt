@@ -1,6 +1,5 @@
 package link.danb.launcher
 
-import android.app.Activity
 import android.app.ActivityOptions
 import android.app.SearchManager
 import android.app.role.RoleManager
@@ -162,10 +161,16 @@ class LauncherFragment : Fragment() {
 
   private val setHomeActivityResultLauncher =
     registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-      if (it.resultCode == Activity.RESULT_CANCELED) {
+      if (canRequestHomeRole) {
         startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
       }
     }
+
+  private val canRequestHomeRole: Boolean
+    get() =
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+        roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
+        !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -438,11 +443,7 @@ class LauncherFragment : Fragment() {
   override fun onResume() {
     super.onResume()
 
-    launcherViewModel.setCanRequestHomeRole(
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-        roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
-        !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
-    )
+    launcherViewModel.setCanRequestHomeRole(canRequestHomeRole)
   }
 
   override fun onDestroy() {
