@@ -1,6 +1,8 @@
 package link.danb.launcher
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -20,13 +22,15 @@ fun MoreActionsDialog(
   onDismissRequest: () -> Unit,
 ) {
   BottomSheet(isShowing = isShowing, onDismissRequest = onDismissRequest) { dismiss ->
-    for (action in actions) {
-      ListItem(
-        headlineContent = { Text(stringResource(action.name)) },
-        leadingContent = { Icon(painterResource(action.icon), contentDescription = null) },
-        modifier = Modifier.clickable { onActionClick(action.type) },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-      )
+    LazyColumn {
+      items(actions) { action ->
+        ListItem(
+          headlineContent = { Text(stringResource(action.name)) },
+          leadingContent = { Icon(painterResource(action.icon), contentDescription = null) },
+          modifier = Modifier.clickable { onActionClick(action.type) }.animateItem(),
+          colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        )
+      }
     }
   }
 }

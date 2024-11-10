@@ -94,6 +94,7 @@ constructor(
 
   private val _searchQuery = MutableStateFlow<String?>(null)
   private val _profile = MutableStateFlow(Profile.PERSONAL)
+  private val _canRequestHomeRole = MutableStateFlow(false)
 
   val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
   val profile: StateFlow<Profile> = _profile.asStateFlow()
@@ -133,9 +134,17 @@ constructor(
       )
 
   val bottomBarActions: StateFlow<List<BottomBarAction>> =
-    combine(activityManager.data, profile, profileManager.profiles) { activities, profile, profiles
-        ->
-        BottomBarStateProducer.getBottomBarActions(profile, profiles.getValue(profile), activities)
+    combine(activityManager.data, profile, profileManager.profiles, _canRequestHomeRole) {
+        activities,
+        profile,
+        profiles,
+        canRequestHomeRole ->
+        BottomBarStateProducer.getBottomBarActions(
+          profile,
+          profiles.getValue(profile),
+          activities,
+          canRequestHomeRole,
+        )
       }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
@@ -145,6 +154,10 @@ constructor(
 
   fun setProfile(profile: Profile) {
     _profile.value = profile
+  }
+
+  fun setCanRequestHomeRole(canRequestHomeRole: Boolean) {
+    _canRequestHomeRole.value = canRequestHomeRole
   }
 
   fun setMetadata(activityMetadata: ActivityData) =

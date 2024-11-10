@@ -42,4 +42,5 @@
     <string name="toggle_monochrome">Toggle themed icons</string>
     <string name="cancel">Cancel</string>
     <string name="configure_widget">Configure widget</string>
+    <string name="request_home_role">Set as default home app</string>
 </resources>

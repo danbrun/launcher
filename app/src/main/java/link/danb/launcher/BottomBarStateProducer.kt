@@ -10,6 +10,7 @@ data class BottomBarAction(val icon: Int, val name: Int, val type: Type) {
     PIN_WIDGET,
     SHOW_HIDDEN_APPS,
     TOGGLE_MONOCHROME,
+    REQUEST_HOME_ROLE,
   }
 }
 
@@ -18,6 +19,7 @@ object BottomBarStateProducer {
     profile: Profile,
     profileState: ProfileState,
     activities: List<ActivityData>,
+    canRequestHomeRole: Boolean,
   ) = buildList {
     if (profileState.isEnabled) {
       add(
@@ -50,6 +52,16 @@ object BottomBarStateProducer {
           R.drawable.ic_baseline_visibility_24,
           R.string.show_hidden,
           BottomBarAction.Type.SHOW_HIDDEN_APPS,
+        )
+      )
+    }
+
+    if (canRequestHomeRole) {
+      add(
+        BottomBarAction(
+          R.drawable.baseline_home_filled_24,
+          R.string.request_home_role,
+          BottomBarAction.Type.REQUEST_HOME_ROLE,
         )
       )
     }
