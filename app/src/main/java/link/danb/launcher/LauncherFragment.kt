@@ -101,8 +101,6 @@ import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
 @Serializable data class ActivityDetails(val userActivity: UserActivity)
 
-@Serializable data class PinWidgets(val profile: Profile)
-
 @Serializable data class HiddenApps(val profile: Profile)
 
 @AndroidEntryPoint
@@ -395,7 +393,9 @@ private fun Launcher(
     val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
 
     val navController = rememberNavController()
+
     var showPinShortcuts by remember { mutableStateOf(false) }
+    var showPinWidgets by remember { mutableStateOf(false) }
 
     NavHost(navController, startDestination = Home) {
       composable<Home> {
@@ -511,6 +511,10 @@ private fun Launcher(
         if (showPinShortcuts) {
           PinShortcutsDialog(profile) { showPinShortcuts = false }
         }
+
+        if (showPinWidgets) {
+          PinWidgetsDialog(profile) { showPinWidgets = false }
+        }
       }
 
       dialog<MoreActions> { backStackEntry ->
@@ -527,7 +531,7 @@ private fun Launcher(
               }
               BottomBarAction.Type.PIN_WIDGET -> {
                 navController.navigateUp()
-                navController.navigate(PinWidgets(profile))
+                showPinWidgets = true
               }
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
                 navController.navigateUp()
@@ -582,12 +586,6 @@ private fun Launcher(
           },
           onDismissRequest = { navController.navigateUp() },
         )
-      }
-
-      dialog<PinWidgets> { backStackEntry ->
-        PinWidgetsDialog(backStackEntry.toRoute<PinWidgets>().profile) {
-          navController.navigateUp()
-        }
       }
     }
   }
