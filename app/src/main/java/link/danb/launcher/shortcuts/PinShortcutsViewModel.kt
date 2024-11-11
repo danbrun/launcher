@@ -1,6 +1,8 @@
 package link.danb.launcher.shortcuts
 
 import android.app.Application
+import android.content.Intent
+import android.content.IntentSender
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,9 +21,10 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
-import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.apps.LauncherResourceProvider
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.profiles.Profile
+import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
 class PinShortcutsViewModel
@@ -33,41 +36,43 @@ constructor(
   private val shortcutManager: ShortcutManager,
 ) : AndroidViewModel(application) {
 
-  fun getPinShortcutsViewData(profile: Profile): StateFlow<PinShortcutsViewData> =
+  fun getState(profile: Profile): StateFlow<State> =
     activityManager.data
-      .transform { data ->
-        emit(PinShortcutsViewData.Loading)
-
-        emit(
-          PinShortcutsViewData.Loaded(
-            data
-              .asFlow()
-              .filter { it.userActivity.profile == profile }
-              .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
-              .map {
-                ActivityDetailsViewModel.ShortcutCreatorViewData(
-                  it,
-                  launcherResourceProvider.getTileData(it),
-                )
-              }
-              .toList()
-              .sortedBy { it.launcherTileData.name.lowercase() }
-              .toImmutableList()
-          )
+      .map { data ->
+        State.Loaded(
+          data
+            .asFlow()
+            .filter { it.userActivity.profile == profile }
+            .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
+            .map {
+              State.Loaded.Item(
+                it,
+                launcherResourceProvider.getTileData(it),
+                shortcutManager.getShortcutCreatorIntent(it),
+              )
+            }
+            .toList()
+            .sortedBy { it.launcherTileData.name.lowercase() }
+            .toImmutableList()
         )
       }
-      .stateIn(
-        viewModelScope + Dispatchers.IO,
-        SharingStarted.WhileSubscribed(),
-        PinShortcutsViewData.Loading,
+      .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), State.Loading)
+
+  fun acceptPinRequest(intent: Intent) {
+    shortcutManager.acceptPinRequest(intent)
+  }
+
+  sealed interface State {
+
+    data object Loading : State
+
+    data class Loaded(val items: ImmutableList<Item>) : State {
+
+      data class Item(
+        val userShortcutCreator: UserShortcutCreator,
+        val launcherTileData: LauncherTileData,
+        val creatorIntent: IntentSender,
       )
-
-  sealed interface PinShortcutsViewData {
-
-    data object Loading : PinShortcutsViewData
-
-    data class Loaded(
-      val shortcutCreators: ImmutableList<ActivityDetailsViewModel.ShortcutCreatorViewData>
-    ) : PinShortcutsViewData
+    }
   }
 }

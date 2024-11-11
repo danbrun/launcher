@@ -85,7 +85,6 @@ import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.settings.SettingsViewModel
 import link.danb.launcher.shortcuts.PinShortcutsDialog
-import link.danb.launcher.shortcuts.PinShortcutsViewModel
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
@@ -101,8 +100,6 @@ import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 @Serializable data class MoreActions(val profile: Profile)
 
 @Serializable data class ActivityDetails(val userActivity: UserActivity)
-
-@Serializable data class PinShortcuts(val profile: Profile)
 
 @Serializable data class PinWidgets(val profile: Profile)
 
@@ -373,7 +370,6 @@ private fun Launcher(
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   hiddenAppsViewModel: HiddenAppsViewModel = hiltViewModel(),
   launcherViewModel: LauncherViewModel = hiltViewModel(),
-  pinShortcutsViewModel: PinShortcutsViewModel = hiltViewModel(),
   settingsViewModel: SettingsViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   changeProfile: (Profile, Boolean) -> Unit,
@@ -399,12 +395,13 @@ private fun Launcher(
     val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
 
     val navController = rememberNavController()
+    var showPinShortcuts by remember { mutableStateOf(false) }
 
     NavHost(navController, startDestination = Home) {
       composable<Home> {
+        val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
         Scaffold(
           bottomBar = {
-            val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
             val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
             val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
             LauncherBottomBar(
@@ -510,6 +507,10 @@ private fun Launcher(
             }
           },
         )
+
+        if (showPinShortcuts) {
+          PinShortcutsDialog(profile) { showPinShortcuts = false }
+        }
       }
 
       dialog<MoreActions> { backStackEntry ->
@@ -522,7 +523,7 @@ private fun Launcher(
             when (action) {
               BottomBarAction.Type.PIN_SHORTCUT -> {
                 navController.navigateUp()
-                navController.navigate(PinShortcuts(profile))
+                showPinShortcuts = true
               }
               BottomBarAction.Type.PIN_WIDGET -> {
                 navController.navigateUp()
@@ -579,20 +580,6 @@ private fun Launcher(
             navController.navigateUp()
             navController.navigate(ActivityDetails(item))
           },
-          onDismissRequest = { navController.navigateUp() },
-        )
-      }
-
-      dialog<PinShortcuts> { backStackEntry ->
-        val profile = backStackEntry.toRoute<PinShortcuts>().profile
-        val viewData by
-          remember { pinShortcutsViewModel.getPinShortcutsViewData(profile) }
-            .collectAsStateWithLifecycle()
-
-        PinShortcutsDialog(
-          isShowing = true,
-          viewData = viewData,
-          onClick = { _, item -> launchShortcutCreator(item) },
           onDismissRequest = { navController.navigateUp() },
         )
       }
