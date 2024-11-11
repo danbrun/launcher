@@ -70,7 +70,6 @@ import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
-import link.danb.launcher.activities.hidden.HiddenAppsViewModel
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserActivityNavType
 import link.danb.launcher.components.UserShortcut
@@ -100,8 +99,6 @@ import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 @Serializable data class MoreActions(val profile: Profile)
 
 @Serializable data class ActivityDetails(val userActivity: UserActivity)
-
-@Serializable data class HiddenApps(val profile: Profile)
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
@@ -366,7 +363,6 @@ class LauncherFragment : Fragment() {
 @Composable
 private fun Launcher(
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
-  hiddenAppsViewModel: HiddenAppsViewModel = hiltViewModel(),
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   settingsViewModel: SettingsViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
@@ -396,6 +392,7 @@ private fun Launcher(
 
     var showPinShortcuts by remember { mutableStateOf(false) }
     var showPinWidgets by remember { mutableStateOf(false) }
+    var showHiddenApps by remember { mutableStateOf(false) }
 
     NavHost(navController, startDestination = Home) {
       composable<Home> {
@@ -515,11 +512,24 @@ private fun Launcher(
         if (showPinWidgets) {
           PinWidgetsDialog(profile) { showPinWidgets = false }
         }
+
+        if (showHiddenApps) {
+          HiddenAppsDialog(
+            profile = profile,
+            launchActivity = { offset, userActivity ->
+              launchActivity(offset, userActivity)
+              showHiddenApps = false
+            },
+            navigateToDetails = {
+              navController.navigateUp()
+              navController.navigate(ActivityDetails(it))
+            },
+            dismiss = { showHiddenApps = false },
+          )
+        }
       }
 
       dialog<MoreActions> { backStackEntry ->
-        val profile = backStackEntry.toRoute<MoreActions>().profile
-
         MoreActionsDialog(
           isShowing = true,
           actions = bottomBarActions,
@@ -535,7 +545,7 @@ private fun Launcher(
               }
               BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
                 navController.navigateUp()
-                navController.navigate(HiddenApps(profile))
+                showHiddenApps = true
               }
               BottomBarAction.Type.TOGGLE_MONOCHROME -> {
                 settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
@@ -568,23 +578,6 @@ private fun Launcher(
           onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
           onShortcutCreatorLongClick = { _, _ -> },
           onWidgetPreviewClick = { bindWidget(it) },
-        )
-      }
-
-      dialog<HiddenApps> { backStackEntry ->
-        val profile = backStackEntry.toRoute<HiddenApps>().profile
-        val viewData by
-          remember { hiddenAppsViewModel.getHiddenApps(profile) }.collectAsStateWithLifecycle()
-
-        HiddenAppsDialog(
-          isShowing = true,
-          viewData = viewData,
-          onClick = { offset, item -> launchActivity(offset, item) },
-          onLongClick = { _, item ->
-            navController.navigateUp()
-            navController.navigate(ActivityDetails(item))
-          },
-          onDismissRequest = { navController.navigateUp() },
         )
       }
     }

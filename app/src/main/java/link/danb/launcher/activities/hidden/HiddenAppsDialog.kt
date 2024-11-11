@@ -16,6 +16,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -24,59 +26,70 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
 import link.danb.launcher.components.UserActivity
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.LauncherTile
 
 @Composable
 fun HiddenAppsDialog(
-  isShowing: Boolean,
-  viewData: HiddenAppsViewModel.HiddenAppsViewData,
-  onClick: (Offset, UserActivity) -> Unit,
-  onLongClick: (Offset, UserActivity) -> Unit,
-  onDismissRequest: () -> Unit,
+  profile: Profile,
+  hiddenAppsViewModel: HiddenAppsViewModel = hiltViewModel(),
+  launchActivity: (Offset, UserActivity) -> Unit,
+  navigateToDetails: (UserActivity) -> Unit,
+  dismiss: () -> Unit,
 ) {
-  BottomSheet(isShowing, onDismissRequest) { dismiss ->
-    LazyVerticalGrid(GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
-      item(span = { GridItemSpan(maxLineSpan) }) {
-        ListItem(
-          headlineContent = {
-            Text(
-              stringResource(R.string.hidden_apps),
-              style = MaterialTheme.typography.headlineMedium,
-            )
-          },
-          leadingContent = {
-            Icon(
-              painter = painterResource(R.drawable.ic_baseline_visibility_24),
-              contentDescription = null,
-            )
-          },
-          colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        )
-      }
+  BottomSheet(isShowing = true, dismiss) { dismiss ->
+    val state by remember { hiddenAppsViewModel.getState(profile) }.collectAsStateWithLifecycle()
 
-      when (viewData) {
-        is HiddenAppsViewModel.HiddenAppsViewData.Loading -> {
-          item(span = { GridItemSpan(maxLineSpan) }) {
-            Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-              CircularProgressIndicator(Modifier.size(64.dp))
-            }
+    HiddenAppsContent(state, launchActivity, navigateToDetails)
+  }
+}
+
+@Composable
+private fun HiddenAppsContent(
+  state: HiddenAppsViewModel.State,
+  launchActivity: (Offset, UserActivity) -> Unit,
+  navigateToDetails: (UserActivity) -> Unit,
+) {
+  LazyVerticalGrid(GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
+    item(span = { GridItemSpan(maxLineSpan) }) {
+      ListItem(
+        headlineContent = {
+          Text(
+            stringResource(R.string.hidden_apps),
+            style = MaterialTheme.typography.headlineMedium,
+          )
+        },
+        leadingContent = {
+          Icon(
+            painter = painterResource(R.drawable.ic_baseline_visibility_24),
+            contentDescription = null,
+          )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+      )
+    }
+
+    when (state) {
+      is HiddenAppsViewModel.State.Loading -> {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+          Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(Modifier.size(64.dp))
           }
         }
-        is HiddenAppsViewModel.HiddenAppsViewData.Loaded -> {
-          items(items = viewData.apps) { app ->
-            Card(Modifier.padding(4.dp)) {
-              LauncherTile(
-                app.launcherTileData,
-                onClick = {
-                  onClick(it, app.userActivity)
-                  dismiss()
-                },
-                onLongClick = { onLongClick(it, app.userActivity) },
-              )
-            }
+      }
+      is HiddenAppsViewModel.State.Loaded -> {
+        items(items = state.items) { item ->
+          Card(Modifier.padding(4.dp)) {
+            LauncherTile(
+              item.launcherTileData,
+              onClick = { launchActivity(it, item.userActivity) },
+              onLongClick = { navigateToDetails(item.userActivity) },
+            )
           }
         }
       }
