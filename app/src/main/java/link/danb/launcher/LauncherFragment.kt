@@ -8,7 +8,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -82,7 +81,6 @@ import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
-import link.danb.launcher.settings.SettingsViewModel
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTile
@@ -96,15 +94,12 @@ import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
 @Serializable data object Home
 
-@Serializable data class MoreActions(val profile: Profile)
-
 @Serializable data class ActivityDetails(val userActivity: UserActivity)
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
 
   private val launcherViewModel: LauncherViewModel by activityViewModels()
-  private val settingsViewModel: SettingsViewModel by activityViewModels()
 
   @Inject lateinit var activityManager: ActivityManager
   @Inject lateinit var gestureActivityIconStore: GestureActivityIconStore
@@ -135,7 +130,7 @@ class LauncherFragment : Fragment() {
       gestureContract,
       data.boundsInRoot.toAndroidRectF(),
       data.launcherIconData,
-      settingsViewModel.useMonochromeIcons.value,
+      launcherViewModel.useMonochromeIcons.value,
     )
   }
 
@@ -147,13 +142,6 @@ class LauncherFragment : Fragment() {
 
   private val bindWidgetActivityLauncher =
     registerForActivityResult(AppWidgetSetupActivityResultContract()) {}
-
-  private val setHomeActivityResultLauncher =
-    registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-      if (canRequestHomeRole) {
-        startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
-      }
-    }
 
   private val canRequestHomeRole: Boolean
     get() =
@@ -187,7 +175,6 @@ class LauncherFragment : Fragment() {
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       Launcher(
         launcherViewModel = launcherViewModel,
-        settingsViewModel = settingsViewModel,
         changeProfile = { newProfile, isEnabled ->
           profileManager.setProfileEnabled(newProfile, isEnabled)
           launcherViewModel.setProfile(newProfile)
@@ -208,13 +195,6 @@ class LauncherFragment : Fragment() {
               item.userActivity,
               item.launcherTileData.launcherIconData,
               rect,
-            )
-          }
-        },
-        requestHomeRole = {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            setHomeActivityResultLauncher.launch(
-              roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
             )
           }
         },
@@ -364,7 +344,6 @@ class LauncherFragment : Fragment() {
 private fun Launcher(
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   launcherViewModel: LauncherViewModel = hiltViewModel(),
-  settingsViewModel: SettingsViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   changeProfile: (Profile, Boolean) -> Unit,
   configureWidget: (View, Int) -> Unit,
@@ -374,7 +353,6 @@ private fun Launcher(
   unpinShortcut: (UserShortcut) -> Unit,
   launchActivity: (Offset, UserActivity) -> Unit,
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
-  requestHomeRole: () -> Unit,
   toggleAppPinned: (ActivityData) -> Unit,
   toggleAppHidden: (ActivityData) -> Unit,
   uninstallApp: (UserActivity) -> Unit,
@@ -384,15 +362,14 @@ private fun Launcher(
   bindWidget: (AppWidgetProviderInfo) -> Unit,
   gestureActivity: UserActivity?,
 ) {
-  val useMonochromeIcons by settingsViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
+  val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
   LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
-    val bottomBarActions by launcherViewModel.bottomBarActions.collectAsStateWithLifecycle()
-
     val navController = rememberNavController()
 
     var showPinShortcuts by remember { mutableStateOf(false) }
     var showPinWidgets by remember { mutableStateOf(false) }
     var showHiddenApps by remember { mutableStateOf(false) }
+    var showMoreActions by remember { mutableStateOf(false) }
 
     NavHost(navController, startDestination = Home) {
       composable<Home> {
@@ -404,11 +381,10 @@ private fun Launcher(
             LauncherBottomBar(
               profile,
               profiles,
-              bottomBarActions,
               onChangeProfile = changeProfile,
               searchQuery = searchQuery,
               onSearchGo = { launchFirstItem() },
-              onMoreActionsClick = { navController.navigate(MoreActions(profile)) },
+              onMoreActionsClick = { showMoreActions = true },
               onSearchChange = { launcherViewModel.setSearchQuery(it) },
               onSearchCancel = { launcherViewModel.setSearchQuery(null) },
               onSearchFabClick = { onFabClick() },
@@ -527,36 +503,23 @@ private fun Launcher(
             dismiss = { showHiddenApps = false },
           )
         }
-      }
 
-      dialog<MoreActions> { backStackEntry ->
-        MoreActionsDialog(
-          isShowing = true,
-          actions = bottomBarActions,
-          onActionClick = { action ->
-            when (action) {
-              BottomBarAction.Type.PIN_SHORTCUT -> {
-                navController.navigateUp()
-                showPinShortcuts = true
-              }
-              BottomBarAction.Type.PIN_WIDGET -> {
-                navController.navigateUp()
-                showPinWidgets = true
-              }
-              BottomBarAction.Type.SHOW_HIDDEN_APPS -> {
-                navController.navigateUp()
-                showHiddenApps = true
-              }
-              BottomBarAction.Type.TOGGLE_MONOCHROME -> {
-                settingsViewModel.setUseMonochromeIcons(!useMonochromeIcons)
-              }
-              BottomBarAction.Type.REQUEST_HOME_ROLE -> {
-                requestHomeRole()
-              }
-            }
-          },
-          onDismissRequest = { navController.navigateUp() },
-        )
+        if (showMoreActions) {
+          MoreActionsDialog(
+            profile = profile,
+            pinShortcuts = {
+              showPinShortcuts = true
+            },
+            pinWidgets = {
+              showPinWidgets = true
+            },
+            shownHiddenApps = {
+              showHiddenApps = true
+            },
+          ) {
+            showMoreActions = false
+          }
+        }
       }
 
       dialog<ActivityDetails>(typeMap = mapOf(typeOf<UserActivity>() to UserActivityNavType)) {

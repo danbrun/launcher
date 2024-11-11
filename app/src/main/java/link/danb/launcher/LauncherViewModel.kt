@@ -39,6 +39,7 @@ import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.profiles.ProfileState
+import link.danb.launcher.settings.SettingsRepository
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.widgets.WidgetManager
@@ -90,6 +91,7 @@ constructor(
   private val profileManager: ProfileManager,
   shortcutManager: ShortcutManager,
   widgetManager: WidgetManager,
+  settingsRepository: SettingsRepository,
 ) : AndroidViewModel(application) {
 
   private val _searchQuery = MutableStateFlow<String?>(null)
@@ -133,20 +135,12 @@ constructor(
         persistentListOf(),
       )
 
-  val bottomBarActions: StateFlow<List<BottomBarAction>> =
-    combine(activityManager.data, profile, profileManager.profiles, _canRequestHomeRole) {
-        activities,
-        profile,
-        profiles,
-        canRequestHomeRole ->
-        BottomBarStateProducer.getBottomBarActions(
-          profile,
-          profiles.getValue(profile),
-          activities,
-          canRequestHomeRole,
-        )
-      }
-      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+  val useMonochromeIcons: StateFlow<Boolean> =
+    settingsRepository.useMonochromeIcons.stateIn(
+      viewModelScope,
+      SharingStarted.WhileSubscribed(),
+      initialValue = false,
+    )
 
   fun setSearchQuery(value: String?) {
     _searchQuery.value = value

@@ -46,7 +46,6 @@ import link.danb.launcher.ui.IconButtonGroup
 fun LauncherBottomBar(
   profile: Profile,
   profiles: Map<Profile, ProfileState>,
-  bottomBarActions: List<BottomBarAction>,
   onChangeProfile: (Profile, Boolean) -> Unit,
   searchQuery: String?,
   onSearchChange: (String) -> Unit,
@@ -64,7 +63,7 @@ fun LauncherBottomBar(
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         ProfilesTabGroup(profile, profiles, onChangeProfile)
 
-        MoreActionsTabGroup({ onSearchChange("") }, bottomBarActions, onMoreActionsClick)
+        MoreActionsTabGroup({ onSearchChange("") }, onMoreActionsClick)
 
         SearchFab(onSearchFabClick)
       }
@@ -147,25 +146,17 @@ private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCance
 }
 
 @Composable
-private fun MoreActionsTabGroup(
-  onSearchClick: () -> Unit,
-  actions: List<BottomBarAction>,
-  onMoreActionsClick: () -> Unit,
-) {
+private fun MoreActionsTabGroup(onSearchClick: () -> Unit, onMoreActionsClick: () -> Unit) {
   IconButtonGroup {
     IconButton(onSearchClick) {
       Icon(painterResource(R.drawable.ic_baseline_search_24), stringResource(R.string.search))
     }
 
-    ExpandingAnimatedVisibility(visible = actions.isNotEmpty()) {
-      ExpandingAnimatedVisibility(actions.isNotEmpty()) {
-        IconButton(onMoreActionsClick) {
-          Icon(
-            painterResource(R.drawable.baseline_more_horiz_24),
-            stringResource(R.string.more_actions),
-          )
-        }
-      }
+    IconButton(onMoreActionsClick) {
+      Icon(
+        painterResource(R.drawable.baseline_more_horiz_24),
+        stringResource(R.string.more_actions),
+      )
     }
   }
 }
