@@ -3,9 +3,7 @@ package link.danb.launcher
 import android.app.ActivityOptions
 import android.app.SearchManager
 import android.app.role.RoleManager
-import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -56,24 +54,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.getValue
-import kotlin.reflect.typeOf
 import kotlinx.serialization.Serializable
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
-import link.danb.launcher.activities.details.ActivityDetailsViewModel
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.components.UserActivity
-import link.danb.launcher.components.UserActivityNavType
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
-import link.danb.launcher.database.ActivityData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureActivityIconStore
@@ -86,15 +78,12 @@ import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
-import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 import link.danb.launcher.widgets.WidgetManager
 import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
 @Serializable data object Home
-
-@Serializable data class ActivityDetails(val userActivity: UserActivity)
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
@@ -139,9 +128,6 @@ class LauncherFragment : Fragment() {
       ActivityResultContracts.StartIntentSenderForResult(),
       ::onPinShortcutActivityResult,
     )
-
-  private val bindWidgetActivityLauncher =
-    registerForActivityResult(AppWidgetSetupActivityResultContract()) {}
 
   private val canRequestHomeRole: Boolean
     get() =
@@ -198,13 +184,9 @@ class LauncherFragment : Fragment() {
             )
           }
         },
-        toggleAppPinned = this::toggleAppPinned,
-        toggleAppHidden = this::toggleAppHidden,
-        uninstallApp = this::uninstallApp,
         openAppSettings = this::openAppSettings,
         pinShortcut = this::pinShortcut,
         launchShortcutCreator = this::launchShortcutCreator,
-        bindWidget = this::bindWidget,
         gestureActivity = gestureActivity,
       )
     }
@@ -256,28 +238,12 @@ class LauncherFragment : Fragment() {
     )
   }
 
-  private fun uninstallApp(userActivity: UserActivity) {
-    startActivity(
-      Intent(Intent.ACTION_DELETE)
-        .setData(Uri.parse("package:${userActivity.componentName.packageName}"))
-        .putExtra(Intent.EXTRA_USER, profileManager.getUserHandle(userActivity.profile))
-    )
-  }
-
   private fun openAppSettings(userActivity: UserActivity) {
     activityManager.launchAppDetails(
       userActivity,
       Rect.Zero.toAndroidRectF().toRect(),
       ActivityOptions.makeBasic().toBundle(),
     )
-  }
-
-  private fun toggleAppPinned(activityData: ActivityData) {
-    launcherViewModel.setMetadata(activityData.copy(isPinned = !activityData.isPinned))
-  }
-
-  private fun toggleAppHidden(activityData: ActivityData) {
-    launcherViewModel.setMetadata(activityData.copy(isHidden = !activityData.isHidden))
   }
 
   private fun launchWithIconView(offset: Offset, onView: View.() -> Unit) {
@@ -329,20 +295,10 @@ class LauncherFragment : Fragment() {
     shortcutManager.acceptPinRequest(data)
     Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
   }
-
-  private fun bindWidget(providerInfo: AppWidgetProviderInfo) {
-    bindWidgetActivityLauncher.launch(
-      AppWidgetSetupActivityResultContract.AppWidgetSetupInput(
-        providerInfo.provider,
-        providerInfo.profile,
-      )
-    )
-  }
 }
 
 @Composable
 private fun Launcher(
-  activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   changeProfile: (Profile, Boolean) -> Unit,
@@ -353,13 +309,9 @@ private fun Launcher(
   unpinShortcut: (UserShortcut) -> Unit,
   launchActivity: (Offset, UserActivity) -> Unit,
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
-  toggleAppPinned: (ActivityData) -> Unit,
-  toggleAppHidden: (ActivityData) -> Unit,
-  uninstallApp: (UserActivity) -> Unit,
   openAppSettings: (UserActivity) -> Unit,
   pinShortcut: (UserShortcut) -> Unit,
   launchShortcutCreator: (UserShortcutCreator) -> Unit,
-  bindWidget: (AppWidgetProviderInfo) -> Unit,
   gestureActivity: UserActivity?,
 ) {
   val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
@@ -370,6 +322,7 @@ private fun Launcher(
     var showPinWidgets by remember { mutableStateOf(false) }
     var showHiddenApps by remember { mutableStateOf(false) }
     var showMoreActions by remember { mutableStateOf(false) }
+    var showActivityDetailsFor: UserActivity? by remember { mutableStateOf(null) }
 
     NavHost(navController, startDestination = Home) {
       composable<Home> {
@@ -466,7 +419,7 @@ private fun Launcher(
                           shadow = Shadow(color = Color.Black, blurRadius = 8f),
                         ),
                       onClick = { launchActivity(it, item.userActivity) },
-                      onLongClick = { navController.navigate(ActivityDetails(item.userActivity)) },
+                      onLongClick = { showActivityDetailsFor = item.userActivity },
                       hide = item.userActivity == gestureActivity,
                       onPlace = { onPlaceTile(it, item) },
                     )
@@ -496,10 +449,7 @@ private fun Launcher(
               launchActivity(offset, userActivity)
               showHiddenApps = false
             },
-            navigateToDetails = {
-              navController.navigateUp()
-              navController.navigate(ActivityDetails(it))
-            },
+            navigateToDetails = { showActivityDetailsFor = it },
             dismiss = { showHiddenApps = false },
           )
         }
@@ -507,41 +457,25 @@ private fun Launcher(
         if (showMoreActions) {
           MoreActionsDialog(
             profile = profile,
-            pinShortcuts = {
-              showPinShortcuts = true
-            },
-            pinWidgets = {
-              showPinWidgets = true
-            },
-            shownHiddenApps = {
-              showHiddenApps = true
-            },
+            pinShortcuts = { showPinShortcuts = true },
+            pinWidgets = { showPinWidgets = true },
+            shownHiddenApps = { showHiddenApps = true },
           ) {
             showMoreActions = false
           }
         }
-      }
 
-      dialog<ActivityDetails>(typeMap = mapOf(typeOf<UserActivity>() to UserActivityNavType)) {
-        backStackEntry ->
-        val userActivity = backStackEntry.toRoute<ActivityDetails>().userActivity
-        val activityDetails by
-          remember { activityDetailsViewModel.getActivityDetails(userActivity) }
-            .collectAsStateWithLifecycle()
-
-        ActivityDetailsDialog(
-          activityDetails,
-          onDismissRequest = { navController.navigateUp() },
-          onToggledPinned = { toggleAppPinned(it) },
-          onToggleHidden = { toggleAppHidden(it) },
-          onUninstall = { uninstallApp(it.userActivity) },
-          onSettings = { openAppSettings(it.userActivity) },
-          onShortcutClick = { offset, item -> launchShortcut(offset, item) },
-          onShortcutLongClick = { _, item -> pinShortcut(item) },
-          onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
-          onShortcutCreatorLongClick = { _, _ -> },
-          onWidgetPreviewClick = { bindWidget(it) },
-        )
+        if (showActivityDetailsFor != null) {
+          ActivityDetailsDialog(
+            showActivityDetailsFor!!,
+            dismiss = { showActivityDetailsFor = null },
+            onSettings = { openAppSettings(it.userActivity) },
+            onShortcutClick = { offset, item -> launchShortcut(offset, item) },
+            onShortcutLongClick = { _, item -> pinShortcut(item) },
+            onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
+            onShortcutCreatorLongClick = { _, _ -> },
+          )
+        }
       }
     }
   }

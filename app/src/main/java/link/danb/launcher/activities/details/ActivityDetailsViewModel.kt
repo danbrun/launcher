@@ -2,6 +2,8 @@ package link.danb.launcher.activities.details
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
@@ -25,6 +28,7 @@ import link.danb.launcher.components.UserApplication
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
+import link.danb.launcher.database.LauncherDatabase
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherTileData
@@ -37,6 +41,7 @@ constructor(
   private val activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
+  private val launcherDatabase: LauncherDatabase,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val profileManager: ProfileManager,
   private val shortcutManager: ShortcutManager,
@@ -58,6 +63,23 @@ constructor(
         }
       }
       .stateIn(viewModelScope + Dispatchers.IO, SharingStarted.WhileSubscribed(), Loading)
+
+  fun toggleAppPinned(activityData: ActivityData) {
+    putActivityData(activityData.copy(isPinned = !activityData.isPinned))
+  }
+
+  fun toggleAppHidden(activityData: ActivityData) {
+    putActivityData(activityData.copy(isHidden = !activityData.isHidden))
+  }
+
+  fun getUninstallIntent(userActivity: UserActivity): Intent =
+    Intent(Intent.ACTION_DELETE)
+      .setData(Uri.parse("package:${userActivity.componentName.packageName}"))
+      .putExtra(Intent.EXTRA_USER, profileManager.getUserHandle(userActivity.profile))
+
+  private fun putActivityData(activityData: ActivityData) {
+    viewModelScope.launch(Dispatchers.IO) { launcherDatabase.activityData().put(activityData) }
+  }
 
   private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets?> =
     profileManager.profiles.transform { profiles ->

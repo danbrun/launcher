@@ -1,6 +1,7 @@
 package link.danb.launcher.activities.details
 
 import android.appwidget.AppWidgetProviderInfo
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,15 +20,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.database.ActivityData
@@ -36,30 +43,69 @@ import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreview
+import link.danb.launcher.widgets.AppWidgetSetupActivityResultContract
 
 @Composable
 fun ActivityDetailsDialog(
-  activityDetailsData: ActivityDetailsViewModel.ActivityDetailsData,
-  onDismissRequest: () -> Unit,
-  onToggledPinned: (ActivityData) -> Unit,
-  onToggleHidden: (ActivityData) -> Unit,
-  onUninstall: (ActivityData) -> Unit,
+  userActivity: UserActivity,
+  activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
+  dismiss: () -> Unit,
   onSettings: (ActivityData) -> Unit,
   onShortcutClick: (Offset, UserShortcut) -> Unit,
   onShortcutLongClick: (Offset, UserShortcut) -> Unit,
   onShortcutCreatorClick: (Offset, UserShortcutCreator) -> Unit,
   onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
-  onWidgetPreviewClick: (AppWidgetProviderInfo) -> Unit,
+) {
+  val activityDetailsData by
+    remember { activityDetailsViewModel.getActivityDetails(userActivity) }
+      .collectAsStateWithLifecycle()
+
+  val context = LocalContext.current
+  val bindWidgetLauncher =
+    rememberLauncherForActivityResult(AppWidgetSetupActivityResultContract()) {}
+
+  ActivityDetailsContent(
+    activityDetailsData,
+    dismiss,
+    togglePinned = { activityDetailsViewModel.toggleAppPinned(it) },
+    toggleHidden = { activityDetailsViewModel.toggleAppHidden(it) },
+    uninstall = {
+      context.startActivity(activityDetailsViewModel.getUninstallIntent(it.userActivity))
+    },
+    onSettings,
+    onShortcutClick,
+    onShortcutLongClick,
+    onShortcutCreatorClick,
+    onShortcutCreatorLongClick,
+    bindWidget = {
+      bindWidgetLauncher.launch(
+        AppWidgetSetupActivityResultContract.AppWidgetSetupInput(it.provider, it.profile)
+      )
+    },
+  )
+}
+
+@Composable
+private fun ActivityDetailsContent(
+  activityDetailsData: ActivityDetailsViewModel.ActivityDetailsData,
+  dismiss: () -> Unit,
+  togglePinned: (ActivityData) -> Unit,
+  toggleHidden: (ActivityData) -> Unit,
+  uninstall: (ActivityData) -> Unit,
+  onSettings: (ActivityData) -> Unit,
+  onShortcutClick: (Offset, UserShortcut) -> Unit,
+  onShortcutLongClick: (Offset, UserShortcut) -> Unit,
+  onShortcutCreatorClick: (Offset, UserShortcutCreator) -> Unit,
+  onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
+  bindWidget: (AppWidgetProviderInfo) -> Unit,
 ) {
   if (activityDetailsData is ActivityDetailsViewModel.Missing) {
-    LaunchedEffect(activityDetailsData) {
-      onDismissRequest()
-    }
+    LaunchedEffect(activityDetailsData) { dismiss() }
   }
 
   if (activityDetailsData !is ActivityDetailsViewModel.Loaded) return
 
-  BottomSheet(isShowing = true, onDismissRequest = onDismissRequest) { dismiss ->
+  BottomSheet(isShowing = true, onDismissRequest = dismiss) { dismiss ->
     LazyVerticalGrid(columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
       val activityData = activityDetailsData.activityData
 
@@ -68,15 +114,15 @@ fun ActivityDetailsDialog(
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
-        PinActivityListItem(activityData.isPinned) { onToggledPinned(activityData) }
+        PinActivityListItem(activityData.isPinned) { togglePinned(activityData) }
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
-        HideActivityListItem(activityData.isHidden) { onToggleHidden(activityData) }
+        HideActivityListItem(activityData.isHidden) { toggleHidden(activityData) }
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
-        UninstallActivityListItem { onUninstall(activityData) }
+        UninstallActivityListItem { uninstall(activityData) }
       }
 
       item(span = { GridItemSpan(maxLineSpan) }) {
@@ -161,7 +207,7 @@ fun ActivityDetailsDialog(
             key = { it.providerInfo },
             span = { GridItemSpan(maxLineSpan) },
           ) { item ->
-            WidgetPreview(item) { onWidgetPreviewClick(item.providerInfo) }
+            WidgetPreview(item) { bindWidget(item.providerInfo) }
           }
         }
       }
