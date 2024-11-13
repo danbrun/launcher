@@ -187,7 +187,7 @@ class LauncherFragment : Fragment() {
         openAppSettings = this::openAppSettings,
         pinShortcut = this::pinShortcut,
         launchShortcutCreator = this::launchShortcutCreator,
-        gestureActivity = gestureActivity,
+        gestureActivityProvider = { gestureActivity },
       )
     }
     return view
@@ -312,7 +312,7 @@ private fun Launcher(
   openAppSettings: (UserActivity) -> Unit,
   pinShortcut: (UserShortcut) -> Unit,
   launchShortcutCreator: (UserShortcutCreator) -> Unit,
-  gestureActivity: UserActivity?,
+  gestureActivityProvider: () -> UserActivity?,
 ) {
   val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
   LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
@@ -420,7 +420,7 @@ private fun Launcher(
                         ),
                       onClick = { launchActivity(it, item.userActivity) },
                       onLongClick = { showActivityDetailsFor = item.userActivity },
-                      hide = item.userActivity == gestureActivity,
+                      hide = { item.userActivity == gestureActivityProvider() },
                       onPlace = { onPlaceTile(it, item) },
                     )
                   }

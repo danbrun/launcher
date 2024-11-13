@@ -46,7 +46,7 @@ fun LauncherTile(
   style: TextStyle = MaterialTheme.typography.labelMedium,
   onClick: (Offset) -> Unit,
   onLongClick: (Offset) -> Unit,
-  hide: Boolean = false,
+  hide: () -> Boolean = { false },
   onPlace: ((Rect?) -> Unit)? = null,
 ) {
   val hapticFeedback = LocalHapticFeedback.current
@@ -81,7 +81,7 @@ fun LauncherTile(
         .padding(8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    if (hide) {
+    if (hide()) {
       Spacer(Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
     } else {
       LauncherIcon(
