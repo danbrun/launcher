@@ -91,7 +91,7 @@ fun LauncherBottomBar(
       SearchBar(
         onValueChange = { launcherViewModel.setSearchQuery(it) },
         onGo = onSearchGo,
-        onCancel = { launcherViewModel.setSearchQuery("") },
+        onCancel = { launcherViewModel.setSearchQuery(null) },
       )
     }
   }
