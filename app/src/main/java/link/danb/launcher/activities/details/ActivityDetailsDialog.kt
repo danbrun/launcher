@@ -99,13 +99,13 @@ private fun ActivityDetailsContent(
   onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
   bindWidget: (AppWidgetProviderInfo) -> Unit,
 ) {
-  if (activityDetailsData is ActivityDetailsViewModel.Missing) {
-    LaunchedEffect(activityDetailsData) { dismiss() }
-  }
-
-  if (activityDetailsData !is ActivityDetailsViewModel.Loaded) return
-
   BottomSheet(isShowing = true, onDismissRequest = dismiss) { dismiss ->
+    if (activityDetailsData is ActivityDetailsViewModel.Missing) {
+      LaunchedEffect(activityDetailsData) { dismiss() }
+    }
+
+    if (activityDetailsData !is ActivityDetailsViewModel.Loaded) return@BottomSheet
+
     LazyVerticalGrid(columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
       val activityData = activityDetailsData.activityData
 
