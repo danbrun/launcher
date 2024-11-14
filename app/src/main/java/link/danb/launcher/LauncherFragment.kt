@@ -2,7 +2,6 @@ package link.danb.launcher
 
 import android.app.ActivityOptions
 import android.app.SearchManager
-import android.app.role.RoleManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -44,7 +43,6 @@ import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.getSystemService
 import androidx.core.graphics.toRect
 import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
@@ -97,10 +95,6 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
 
-  private val roleManager: RoleManager by lazy {
-    checkNotNull(requireContext().getSystemService<RoleManager>())
-  }
-
   private lateinit var iconLaunchView: View
   private lateinit var gestureIconView: GestureIconView
 
@@ -128,12 +122,6 @@ class LauncherFragment : Fragment() {
       ActivityResultContracts.StartIntentSenderForResult(),
       ::onPinShortcutActivityResult,
     )
-
-  private val canRequestHomeRole: Boolean
-    get() =
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-        roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
-        !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -191,12 +179,6 @@ class LauncherFragment : Fragment() {
       )
     }
     return view
-  }
-
-  override fun onResume() {
-    super.onResume()
-
-    launcherViewModel.setCanRequestHomeRole(canRequestHomeRole)
   }
 
   override fun onDestroy() {

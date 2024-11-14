@@ -93,7 +93,6 @@ constructor(
 
   private val _searchQuery = MutableStateFlow<String?>(null)
   private val _profile = MutableStateFlow(Profile.PERSONAL)
-  private val _canRequestHomeRole = MutableStateFlow(false)
 
   val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
   val profile: StateFlow<Profile> = _profile.asStateFlow()
@@ -145,10 +144,6 @@ constructor(
 
   fun setProfile(profile: Profile) {
     _profile.value = profile
-  }
-
-  fun setCanRequestHomeRole(canRequestHomeRole: Boolean) {
-    _canRequestHomeRole.value = canRequestHomeRole
   }
 
   private fun MutableList<ViewItem>.addWidgetListViewItems(
