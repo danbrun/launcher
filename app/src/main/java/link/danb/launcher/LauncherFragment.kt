@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.app.ActivityOptions
-import android.app.SearchManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -157,7 +156,6 @@ class LauncherFragment : Fragment() {
           widgetManager.startConfigurationActivity(requireActivity(), view, widgetId)
         },
         launchFirstItem = this::launchFirstItem,
-        onFabClick = this::onFabClick,
         launchShortcut = this::launchShortcut,
         unpinShortcut = this::unpinShortcut,
         launchActivity = this::launchActivity,
@@ -206,18 +204,6 @@ class LauncherFragment : Fragment() {
     if (firstActivity != null) {
       launchActivity(Offset.Zero, firstActivity.userActivity)
     }
-  }
-
-  private fun onFabClick() {
-    startActivity(
-      Intent().apply {
-        action = Intent.ACTION_WEB_SEARCH
-        putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
-        // This extra is for Firefox to open a new tab.
-        putExtra("open_to_search", "static_shortcut_new_tab")
-      },
-      Bundle(),
-    )
   }
 
   private fun openAppSettings(userActivity: UserActivity) {
@@ -286,7 +272,6 @@ private fun Launcher(
   changeProfile: (Profile, Boolean) -> Unit,
   configureWidget: (View, Int) -> Unit,
   launchFirstItem: () -> Unit,
-  onFabClick: () -> Unit,
   launchShortcut: (Offset, UserShortcut) -> Unit,
   unpinShortcut: (UserShortcut) -> Unit,
   launchActivity: (Offset, UserActivity) -> Unit,
@@ -311,18 +296,11 @@ private fun Launcher(
         val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
         Scaffold(
           bottomBar = {
-            val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
-            val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
             LauncherBottomBar(
-              profile,
-              profiles,
+              launcherViewModel,
               onChangeProfile = changeProfile,
-              searchQuery = searchQuery,
               onSearchGo = { launchFirstItem() },
               onMoreActionsClick = { showMoreActions = true },
-              onSearchChange = { launcherViewModel.setSearchQuery(it) },
-              onSearchCancel = { launcherViewModel.setSearchQuery(null) },
-              onSearchFabClick = { onFabClick() },
             )
           },
           containerColor = Color.Transparent,

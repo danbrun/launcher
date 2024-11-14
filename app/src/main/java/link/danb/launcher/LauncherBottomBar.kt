@@ -1,5 +1,8 @@
 package link.danb.launcher
 
+import android.app.SearchManager
+import android.content.Intent
+import android.os.Bundle
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -33,10 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.ui.FilledIconSelector
@@ -44,33 +50,49 @@ import link.danb.launcher.ui.IconButtonGroup
 
 @Composable
 fun LauncherBottomBar(
-  profile: Profile,
-  profiles: Map<Profile, ProfileState>,
+  launcherViewModel: LauncherViewModel = hiltViewModel(),
   onChangeProfile: (Profile, Boolean) -> Unit,
-  searchQuery: String?,
-  onSearchChange: (String) -> Unit,
   onSearchGo: () -> Unit,
-  onSearchCancel: () -> Unit,
   onMoreActionsClick: () -> Unit,
-  onSearchFabClick: () -> Unit,
 ) {
   Column(
     Modifier.consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
       .safeDrawingPadding()
       .padding(8.dp)
   ) {
+    val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
     AnimatedVisibility(visible = searchQuery == null) {
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+        val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
         ProfilesTabGroup(profile, profiles, onChangeProfile)
 
-        MoreActionsTabGroup({ onSearchChange("") }, onMoreActionsClick)
+        MoreActionsTabGroup(
+          onSearchClick = { launcherViewModel.setSearchQuery("") },
+          onMoreActionsClick,
+        )
 
-        SearchFab(onSearchFabClick)
+        val context = LocalContext.current
+        SearchFab {
+          context.startActivity(
+            Intent().apply {
+              action = Intent.ACTION_WEB_SEARCH
+              putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
+              // This extra is for Firefox to open a new tab.
+              putExtra("open_to_search", "static_shortcut_new_tab")
+            },
+            Bundle(),
+          )
+        }
       }
     }
 
     AnimatedVisibility(visible = searchQuery != null) {
-      SearchBar(onSearchChange, onSearchGo, onSearchCancel)
+      SearchBar(
+        onValueChange = { launcherViewModel.setSearchQuery(it) },
+        onGo = onSearchGo,
+        onCancel = { launcherViewModel.setSearchQuery("") },
+      )
     }
   }
 }
