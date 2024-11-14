@@ -17,7 +17,7 @@ fun BottomSheet(
   onDismissRequest: () -> Unit,
   content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
 ) {
-  val sheetState = rememberModalBottomSheetState()
+  val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
   val coroutineScope = rememberCoroutineScope()
   val dismiss: () -> Unit = remember {
     { coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() } }
