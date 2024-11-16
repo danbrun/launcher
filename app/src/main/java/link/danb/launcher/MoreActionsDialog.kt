@@ -26,6 +26,7 @@ import link.danb.launcher.ui.BottomSheet
 
 @Composable
 fun MoreActionsDialog(
+  isShowing: Boolean,
   profile: Profile,
   moreActionsViewModel: MoreActionsViewModel = hiltViewModel(),
   pinShortcuts: () -> Unit,
@@ -33,10 +34,16 @@ fun MoreActionsDialog(
   shownHiddenApps: () -> Unit,
   dismiss: () -> Unit,
 ) {
+  val canPinItems by
+    remember(profile) { moreActionsViewModel.getCanPinItems(profile) }.collectAsStateWithLifecycle()
+  val hasHiddenApps by
+    remember(profile) { moreActionsViewModel.getHasHiddenApps(profile) }
+      .collectAsStateWithLifecycle()
+
+  if (!isShowing) return
+
   BottomSheet(isShowing = true, onDismissRequest = dismiss) { dismiss ->
     Column {
-      val canPinItems by
-        remember { moreActionsViewModel.getCanPinItems(profile) }.collectAsStateWithLifecycle()
       AnimatedVisibility(visible = canPinItems) {
         Column {
           ListItem(
@@ -67,8 +74,6 @@ fun MoreActionsDialog(
         }
       }
 
-      val hasHiddenApps by
-        remember { moreActionsViewModel.getHasHiddenApps(profile) }.collectAsStateWithLifecycle()
       AnimatedVisibility(visible = hasHiddenApps) {
         ListItem(
           headlineContent = { Text(stringResource(R.string.show_hidden)) },

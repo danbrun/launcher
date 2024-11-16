@@ -414,15 +414,14 @@ private fun Launcher(
           )
         }
 
-        if (showMoreActions) {
-          MoreActionsDialog(
-            profile = profile,
-            pinShortcuts = { showPinShortcuts = true },
-            pinWidgets = { showPinWidgets = true },
-            shownHiddenApps = { showHiddenApps = true },
-          ) {
-            showMoreActions = false
-          }
+        MoreActionsDialog(
+          showMoreActions,
+          profile = profile,
+          pinShortcuts = { showPinShortcuts = true },
+          pinWidgets = { showPinWidgets = true },
+          shownHiddenApps = { showHiddenApps = true },
+        ) {
+          showMoreActions = false
         }
 
         if (showActivityDetailsFor != null) {
