@@ -1,6 +1,5 @@
 package link.danb.launcher
 
-import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -48,7 +47,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toRect
 import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -66,6 +64,7 @@ import kotlinx.serialization.Serializable
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
+import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
@@ -163,9 +162,7 @@ class LauncherFragment : Fragment() {
           widgetManager.startConfigurationActivity(requireActivity(), view, widgetId)
         },
         launchFirstItem = this::launchFirstItem,
-        launchShortcut = this::launchShortcut,
         unpinShortcut = this::unpinShortcut,
-        launchActivity = this::launchActivity,
         onPlaceTile = { rect, item ->
           if (rect == null) {
             gestureActivityIconStore.clearActivityState(item.userActivity)
@@ -177,7 +174,6 @@ class LauncherFragment : Fragment() {
             )
           }
         },
-        openAppSettings = this::openAppSettings,
         pinShortcut = this::pinShortcut,
         launchShortcutCreator = this::launchShortcutCreator,
         gestureActivityProvider = { gestureActivity },
@@ -213,14 +209,6 @@ class LauncherFragment : Fragment() {
     }
   }
 
-  private fun openAppSettings(userActivity: UserActivity) {
-    activityManager.launchAppDetails(
-      userActivity,
-      Rect.Zero.toAndroidRectF().toRect(),
-      ActivityOptions.makeBasic().toBundle(),
-    )
-  }
-
   private fun launchWithIconView(offset: Offset, onView: View.() -> Unit) {
     iconLaunchView.updateLayoutParams<FrameLayout.LayoutParams> {
       leftMargin = offset.x.toInt()
@@ -240,16 +228,6 @@ class LauncherFragment : Fragment() {
     }
     if (launcherViewModel.searchQuery.value != null) {
       launcherViewModel.setSearchQuery(null)
-    }
-  }
-
-  private fun launchShortcut(offset: Offset, userShortcut: UserShortcut) {
-    launchWithIconView(offset) {
-      shortcutManager.launchShortcut(
-        userShortcut,
-        boundsOnScreen,
-        makeScaleUpAnimation().toBundle(),
-      )
     }
   }
 
@@ -279,11 +257,8 @@ private fun Launcher(
   changeProfile: (Profile, Boolean) -> Unit,
   configureWidget: (View, Int) -> Unit,
   launchFirstItem: () -> Unit,
-  launchShortcut: (Offset, UserShortcut) -> Unit,
   unpinShortcut: (UserShortcut) -> Unit,
-  launchActivity: (Offset, UserActivity) -> Unit,
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
-  openAppSettings: (UserActivity) -> Unit,
   pinShortcut: (UserShortcut) -> Unit,
   launchShortcutCreator: (UserShortcutCreator) -> Unit,
   gestureActivityProvider: () -> UserActivity?,
@@ -297,6 +272,8 @@ private fun Launcher(
     var showHiddenApps by remember { mutableStateOf(false) }
     var showMoreActions by remember { mutableStateOf(false) }
     var showActivityDetailsFor: UserActivity? by remember { mutableStateOf(null) }
+
+    val appsLauncher = rememberAppsLauncher()
 
     NavHost(navController, startDestination = Home) {
       composable<Home> {
@@ -387,7 +364,7 @@ private fun Launcher(
                         )
                       },
                       modifier = Modifier.animateItem(),
-                      onClick = { launchShortcut(it, item.userShortcut) },
+                      onClick = { appsLauncher.startShortcut(item.userShortcut, it) },
                       onLongClick = { unpinShortcut(item.userShortcut) },
                     )
                   }
@@ -418,7 +395,7 @@ private fun Launcher(
                         )
                       },
                       modifier = Modifier.animateItem(),
-                      onClick = { launchActivity(it, item.userActivity) },
+                      onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
                       onLongClick = { showActivityDetailsFor = item.userActivity },
                     )
                   }
@@ -443,10 +420,6 @@ private fun Launcher(
         if (showHiddenApps) {
           HiddenAppsDialog(
             profile = profile,
-            launchActivity = { offset, userActivity ->
-              launchActivity(offset, userActivity)
-              showHiddenApps = false
-            },
             navigateToDetails = { showActivityDetailsFor = it },
             dismiss = { showHiddenApps = false },
           )
@@ -466,11 +439,8 @@ private fun Launcher(
           ActivityDetailsDialog(
             showActivityDetailsFor!!,
             dismiss = { showActivityDetailsFor = null },
-            onSettings = { openAppSettings(it.userActivity) },
-            onShortcutClick = { offset, item -> launchShortcut(offset, item) },
             onShortcutLongClick = { _, item -> pinShortcut(item) },
             onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
-            onShortcutCreatorLongClick = { _, _ -> },
           )
         }
       }

@@ -21,11 +21,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -35,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
@@ -51,11 +56,8 @@ fun ActivityDetailsDialog(
   userActivity: UserActivity,
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   dismiss: () -> Unit,
-  onSettings: (ActivityData) -> Unit,
-  onShortcutClick: (Offset, UserShortcut) -> Unit,
-  onShortcutLongClick: (Offset, UserShortcut) -> Unit,
-  onShortcutCreatorClick: (Offset, UserShortcutCreator) -> Unit,
-  onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
+  onShortcutLongClick: (Rect, UserShortcut) -> Unit,
+  onShortcutCreatorClick: (Rect, UserShortcutCreator) -> Unit,
 ) {
   val activityDetailsData by
     remember { activityDetailsViewModel.getActivityDetails(userActivity) }
@@ -64,6 +66,7 @@ fun ActivityDetailsDialog(
   val context = LocalContext.current
   val bindWidgetLauncher =
     rememberLauncherForActivityResult(AppWidgetSetupActivityResultContract()) {}
+  val appsLauncher = rememberAppsLauncher()
 
   ActivityDetailsContent(
     activityDetailsData,
@@ -73,11 +76,11 @@ fun ActivityDetailsDialog(
     uninstall = {
       context.startActivity(activityDetailsViewModel.getUninstallIntent(it.userActivity))
     },
-    onSettings,
-    onShortcutClick,
+    onSettings = { appsLauncher.startAppDetailsActivity(userActivity, it) },
+    onShortcutClick = { bounds, userShortcut -> appsLauncher.startShortcut(userShortcut, bounds) },
     onShortcutLongClick,
     onShortcutCreatorClick,
-    onShortcutCreatorLongClick,
+    onShortcutCreatorLongClick = { _, _ -> },
     bindWidget = {
       bindWidgetLauncher.launch(
         AppWidgetSetupActivityResultContract.AppWidgetSetupInput(it.provider, it.profile)
@@ -93,11 +96,11 @@ private fun ActivityDetailsContent(
   togglePinned: (ActivityData) -> Unit,
   toggleHidden: (ActivityData) -> Unit,
   uninstall: (ActivityData) -> Unit,
-  onSettings: (ActivityData) -> Unit,
-  onShortcutClick: (Offset, UserShortcut) -> Unit,
-  onShortcutLongClick: (Offset, UserShortcut) -> Unit,
-  onShortcutCreatorClick: (Offset, UserShortcutCreator) -> Unit,
-  onShortcutCreatorLongClick: (Offset, UserShortcutCreator) -> Unit,
+  onSettings: (Rect) -> Unit,
+  onShortcutClick: (Rect, UserShortcut) -> Unit,
+  onShortcutLongClick: (Rect, UserShortcut) -> Unit,
+  onShortcutCreatorClick: (Rect, UserShortcutCreator) -> Unit,
+  onShortcutCreatorLongClick: (Rect, UserShortcutCreator) -> Unit,
   bindWidget: (AppWidgetProviderInfo) -> Unit,
 ) {
   BottomSheet(isShowing = true, onDismissRequest = dismiss) { dismiss ->
@@ -128,7 +131,7 @@ private fun ActivityDetailsContent(
 
       item(span = { GridItemSpan(maxLineSpan) }) {
         OpenActivitySettingsListItem {
-          onSettings(activityData)
+          onSettings(it)
           dismiss()
         }
       }
@@ -305,13 +308,17 @@ private fun UninstallActivityListItem(onClick: () -> Unit) {
 }
 
 @Composable
-private fun OpenActivitySettingsListItem(onClick: () -> Unit) {
+private fun OpenActivitySettingsListItem(onClick: (Rect) -> Unit) {
+  var bounds by remember { mutableStateOf(Rect.Zero) }
   ListItem(
     headlineContent = { Text(stringResource(R.string.settings)) },
     leadingContent = {
       Icon(painter = painterResource(R.drawable.ic_baseline_settings_24), contentDescription = null)
     },
-    modifier = Modifier.clickable(onClick = onClick),
+    modifier =
+      Modifier.clickable(onClick = { onClick(bounds) }).onGloballyPositioned {
+        bounds = it.boundsInRoot()
+      },
     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
   )
 }

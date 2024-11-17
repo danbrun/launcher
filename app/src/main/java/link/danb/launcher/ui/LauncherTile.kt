@@ -22,11 +22,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 
@@ -38,22 +38,22 @@ fun LauncherTile(
   icon: @Composable (isPressed: Boolean) -> Unit,
   text: @Composable () -> Unit,
   modifier: Modifier = Modifier,
-  onClick: (Offset) -> Unit,
-  onLongClick: (Offset) -> Unit,
+  onClick: (Rect) -> Unit,
+  onLongClick: (Rect) -> Unit,
 ) {
   val hapticFeedback = LocalHapticFeedback.current
   var isPressed by remember { mutableStateOf(false) }
-  var offset by remember { mutableStateOf(Offset.Zero) }
+  var bounds by remember { mutableStateOf(Rect.Zero) }
 
   Row(
     modifier =
       modifier
         .clip(CardDefaults.shape)
         .combinedClickable(
-          onClick = { onClick(offset) },
+          onClick = { onClick(bounds) },
           onLongClick = {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-            onLongClick(offset)
+            onLongClick(bounds)
           },
         )
         .pointerInput(isPressed) {
@@ -72,7 +72,7 @@ fun LauncherTile(
         .padding(8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    Box(Modifier.onGloballyPositioned { offset = it.positionInRoot() }) { icon(isPressed) }
+    Box(Modifier.onGloballyPositioned { bounds = it.boundsInRoot() }) { icon(isPressed) }
 
     Spacer(Modifier.width(8.dp))
 

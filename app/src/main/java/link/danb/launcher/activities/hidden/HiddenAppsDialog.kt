@@ -20,7 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
@@ -40,21 +41,27 @@ import link.danb.launcher.ui.LauncherTile
 fun HiddenAppsDialog(
   profile: Profile,
   hiddenAppsViewModel: HiddenAppsViewModel = hiltViewModel(),
-  launchActivity: (Offset, UserActivity) -> Unit,
   navigateToDetails: (UserActivity) -> Unit,
   dismiss: () -> Unit,
 ) {
   BottomSheet(isShowing = true, dismiss) { dismiss ->
+    val appsLauncher = rememberAppsLauncher()
     val state by remember { hiddenAppsViewModel.getState(profile) }.collectAsStateWithLifecycle()
 
-    HiddenAppsContent(state, launchActivity, navigateToDetails)
+    HiddenAppsContent(
+      state,
+      launchActivity = { bounds, userActivity ->
+        appsLauncher.startMainActivity(userActivity, bounds)
+      },
+      navigateToDetails,
+    )
   }
 }
 
 @Composable
 private fun HiddenAppsContent(
   state: HiddenAppsViewModel.State,
-  launchActivity: (Offset, UserActivity) -> Unit,
+  launchActivity: (Rect, UserActivity) -> Unit,
   navigateToDetails: (UserActivity) -> Unit,
 ) {
   LazyVerticalGrid(GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
