@@ -36,7 +36,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -44,11 +43,11 @@ import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
-import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -68,8 +67,6 @@ import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
-import link.danb.launcher.extensions.boundsOnScreen
-import link.danb.launcher.extensions.makeScaleUpAnimation
 import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
@@ -161,7 +158,6 @@ class LauncherFragment : Fragment() {
         configureWidget = { view, widgetId ->
           widgetManager.startConfigurationActivity(requireActivity(), view, widgetId)
         },
-        launchFirstItem = this::launchFirstItem,
         unpinShortcut = this::unpinShortcut,
         onPlaceTile = { rect, item ->
           if (rect == null) {
@@ -201,36 +197,6 @@ class LauncherFragment : Fragment() {
       .show()
   }
 
-  private fun launchFirstItem() {
-    val firstActivity =
-      launcherViewModel.viewItems.value.filterIsInstance<ActivityViewItem>().firstOrNull()
-    if (firstActivity != null) {
-      launchActivity(Offset.Zero, firstActivity.userActivity)
-    }
-  }
-
-  private fun launchWithIconView(offset: Offset, onView: View.() -> Unit) {
-    iconLaunchView.updateLayoutParams<FrameLayout.LayoutParams> {
-      leftMargin = offset.x.toInt()
-      topMargin = offset.y.toInt()
-    }
-
-    iconLaunchView.post { iconLaunchView.onView() }
-  }
-
-  private fun launchActivity(offset: Offset, userActivity: UserActivity) {
-    launchWithIconView(offset) {
-      activityManager.launchActivity(
-        userActivity,
-        boundsOnScreen,
-        makeScaleUpAnimation().toBundle(),
-      )
-    }
-    if (launcherViewModel.searchQuery.value != null) {
-      launcherViewModel.setSearchQuery(null)
-    }
-  }
-
   private fun pinShortcut(userShortcut: UserShortcut) {
     shortcutManager.pinShortcut(userShortcut, isPinned = true)
     Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
@@ -256,7 +222,6 @@ private fun Launcher(
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   changeProfile: (Profile, Boolean) -> Unit,
   configureWidget: (View, Int) -> Unit,
-  launchFirstItem: () -> Unit,
   unpinShortcut: (UserShortcut) -> Unit,
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
   pinShortcut: (UserShortcut) -> Unit,
@@ -280,10 +245,24 @@ private fun Launcher(
         val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
         Scaffold(
           bottomBar = {
+            val searchItemBounds =
+              with(LocalDensity.current) {
+                val iconSize = dimensionResource(R.dimen.launcher_icon_size).toPx()
+                Rect(8.dp.toPx(), 32.dp.toPx(), iconSize, iconSize)
+              }
             LauncherBottomBar(
               launcherViewModel,
               onChangeProfile = changeProfile,
-              onSearchGo = { launchFirstItem() },
+              onSearchGo = {
+                val userActivity =
+                  launcherViewModel.viewItems.value
+                    .filterIsInstance<ActivityViewItem>()
+                    .firstOrNull()
+                    ?.userActivity
+                if (userActivity != null) {
+                  appsLauncher.startMainActivity(userActivity, searchItemBounds)
+                }
+              },
               onMoreActionsClick = { showMoreActions = true },
             )
           },

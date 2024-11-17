@@ -2,8 +2,6 @@ package link.danb.launcher.activities
 
 import android.content.Context
 import android.content.pm.LauncherApps
-import android.graphics.Rect
-import android.os.Bundle
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -76,22 +74,4 @@ constructor(
         activities.map { component -> dataMap.getValue(component) }
       }
       .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
-
-  fun launchActivity(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
-    launcherApps.startMainActivity(
-      userActivity.componentName,
-      profileManager.getUserHandle(userActivity.profile),
-      sourceBounds,
-      opts,
-    )
-  }
-
-  fun launchAppDetails(userActivity: UserActivity, sourceBounds: Rect, opts: Bundle) {
-    launcherApps.startAppDetailsActivity(
-      userActivity.componentName,
-      profileManager.getUserHandle(userActivity.profile),
-      sourceBounds,
-      opts,
-    )
-  }
 }
