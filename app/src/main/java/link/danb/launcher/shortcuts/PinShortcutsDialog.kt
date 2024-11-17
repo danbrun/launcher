@@ -30,12 +30,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
+import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
 
 @Composable
@@ -97,7 +99,16 @@ private fun PinShortcutsContent(
         items(items = state.items) { item ->
           Card(Modifier.padding(4.dp)) {
             LauncherTile(
-              item.launcherTileData,
+              icon = { isPressed ->
+                LauncherIcon(
+                  item.launcherTileData.launcherIconData,
+                  Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                  isPressed = isPressed,
+                )
+              },
+              text = {
+                Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+              },
               onClick = {
                 shortcutActivityLauncher.launch(
                   IntentSenderRequest.Builder(item.creatorIntent).build()

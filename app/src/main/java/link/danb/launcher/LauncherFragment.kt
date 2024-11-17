@@ -13,6 +13,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -29,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,8 +42,11 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.toAndroidRectF
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toRect
 import androidx.core.util.Consumer
@@ -72,6 +78,7 @@ import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
+import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.theme.LauncherTheme
@@ -307,6 +314,12 @@ private fun Launcher(
           content = { paddingValues ->
             var isScrollEnabled by remember { mutableStateOf(true) }
             val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
+            val textStyle =
+              MaterialTheme.typography.labelMedium.copy(
+                color = Color.White,
+                shadow = Shadow(color = Color.Black, blurRadius = 8f),
+              )
+
             LazyVerticalGrid(
               columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
               modifier =
@@ -358,30 +371,55 @@ private fun Launcher(
                   }
                   is ShortcutViewItem -> {
                     LauncherTile(
-                      data = item.launcherTileData,
+                      icon = { isPressed ->
+                        LauncherIcon(
+                          item.launcherTileData.launcherIconData,
+                          Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                          isPressed = isPressed,
+                        )
+                      },
+                      text = {
+                        Text(
+                          item.launcherTileData.name,
+                          maxLines = 2,
+                          overflow = TextOverflow.Ellipsis,
+                          style = textStyle,
+                        )
+                      },
                       modifier = Modifier.animateItem(),
-                      style =
-                        MaterialTheme.typography.labelMedium.copy(
-                          color = Color.White,
-                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                        ),
                       onClick = { launchShortcut(it, item.userShortcut) },
                       onLongClick = { unpinShortcut(item.userShortcut) },
                     )
                   }
                   is ActivityViewItem -> {
                     LauncherTile(
-                      data = item.launcherTileData,
+                      icon = { isPressed ->
+                        Box(
+                          Modifier.onGloballyPositioned { onPlaceTile(it.boundsInRoot(), item) }
+                        ) {
+                          if (item.userActivity == gestureActivityProvider()) {
+                            Spacer(Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
+                          } else {
+                            LauncherIcon(
+                              item.launcherTileData.launcherIconData,
+                              Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                              isPressed = isPressed,
+                            )
+                          }
+                        }
+                        DisposableEffect("clear_position") { onDispose { onPlaceTile(null, item) } }
+                      },
+                      text = {
+                        Text(
+                          item.launcherTileData.name,
+                          maxLines = 2,
+                          overflow = TextOverflow.Ellipsis,
+                          style = textStyle,
+                        )
+                      },
                       modifier = Modifier.animateItem(),
-                      style =
-                        MaterialTheme.typography.labelMedium.copy(
-                          color = Color.White,
-                          shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                        ),
                       onClick = { launchActivity(it, item.userActivity) },
                       onLongClick = { showActivityDetailsFor = item.userActivity },
-                      hide = { item.userActivity == gestureActivityProvider() },
-                      onPlace = { onPlaceTile(it, item) },
                     )
                   }
                 }

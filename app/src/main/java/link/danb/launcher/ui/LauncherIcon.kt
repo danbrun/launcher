@@ -3,8 +3,10 @@ package link.danb.launcher.ui
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -25,9 +27,10 @@ data class LauncherIconData(val icon: AdaptiveIconDrawable, val badge: Drawable)
 fun LauncherIcon(
   data: LauncherIconData,
   modifier: Modifier = Modifier,
-  insetMultiplier: Float = 1f,
-  monochromeIconTheme: MonochromeIconTheme? = LocalIconTheme.current,
+  isPressed: Boolean = false,
 ) {
+  val monochromeIconTheme = LocalIconTheme.current
+  val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
   Canvas(modifier) { drawLauncherIcon(data, monochromeIconTheme, insetMultiplier) }
 }
 

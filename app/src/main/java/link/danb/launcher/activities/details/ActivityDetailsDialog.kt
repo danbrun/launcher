@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -164,7 +165,16 @@ private fun ActivityDetailsContent(
             ->
             Card(Modifier.padding(4.dp)) {
               LauncherTile(
-                item.launcherTileData,
+                icon = { isPressed ->
+                  LauncherIcon(
+                    item.launcherTileData.launcherIconData,
+                    Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                    isPressed = isPressed,
+                  )
+                },
+                text = {
+                  Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                },
                 onClick = { view ->
                   onShortcutClick(view, item.userShortcut)
                   dismiss()
@@ -186,7 +196,16 @@ private fun ActivityDetailsContent(
           ) { item ->
             Card(Modifier.padding(4.dp)) {
               LauncherTile(
-                item.launcherTileData,
+                icon = { isPressed ->
+                  LauncherIcon(
+                    item.launcherTileData.launcherIconData,
+                    Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                    isPressed = isPressed,
+                  )
+                },
+                text = {
+                  Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                },
                 onClick = { view ->
                   onShortcutCreatorClick(view, item.userShortcutCreator)
                   dismiss()
