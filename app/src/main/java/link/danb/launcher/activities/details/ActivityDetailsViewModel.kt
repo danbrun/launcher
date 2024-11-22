@@ -77,6 +77,10 @@ constructor(
       .setData(Uri.parse("package:${userActivity.componentName.packageName}"))
       .putExtra(Intent.EXTRA_USER, profileManager.getUserHandle(userActivity.profile))
 
+  fun pinShortcut(userShortcut: UserShortcut) {
+    shortcutManager.pinShortcut(userShortcut, isPinned = true)
+  }
+
   private fun putActivityData(activityData: ActivityData) {
     viewModelScope.launch(Dispatchers.IO) { launcherDatabase.activityData().put(activityData) }
   }

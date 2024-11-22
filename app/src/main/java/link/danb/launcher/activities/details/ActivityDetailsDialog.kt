@@ -1,6 +1,7 @@
 package link.danb.launcher.activities.details
 
 import android.appwidget.AppWidgetProviderInfo
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import link.danb.launcher.R
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
@@ -56,7 +58,6 @@ fun ActivityDetailsDialog(
   userActivity: UserActivity,
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   dismiss: () -> Unit,
-  onShortcutLongClick: (Rect, UserShortcut) -> Unit,
   onShortcutCreatorClick: (Rect, UserShortcutCreator) -> Unit,
 ) {
   val activityDetailsData by
@@ -78,7 +79,16 @@ fun ActivityDetailsDialog(
     },
     onSettings = { appsLauncher.startAppDetailsActivity(userActivity, it) },
     onShortcutClick = { bounds, userShortcut -> appsLauncher.startShortcut(userShortcut, bounds) },
-    onShortcutLongClick,
+    onShortcutLongClick = { _, userShortcut ->
+      MaterialAlertDialogBuilder(context)
+        .setTitle(R.string.pin_shortcut)
+        .setPositiveButton(android.R.string.ok) { _, _ ->
+          Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+          activityDetailsViewModel.pinShortcut(userShortcut)
+        }
+        .setNegativeButton(android.R.string.cancel, null)
+        .show()
+    },
     onShortcutCreatorClick,
     onShortcutCreatorLongClick = { _, _ -> },
     bindWidget = {

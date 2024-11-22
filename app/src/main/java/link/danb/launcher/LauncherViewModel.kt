@@ -86,7 +86,7 @@ constructor(
   private val appWidgetManager: AppWidgetManager,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val profileManager: ProfileManager,
-  shortcutManager: ShortcutManager,
+  private val shortcutManager: ShortcutManager,
   widgetManager: WidgetManager,
   settingsRepository: SettingsRepository,
 ) : AndroidViewModel(application) {
@@ -144,6 +144,10 @@ constructor(
 
   fun setProfile(profile: Profile) {
     _profile.value = profile
+  }
+
+  fun unpinShortcut(userShortcut: UserShortcut) {
+    shortcutManager.pinShortcut(userShortcut, isPinned = false)
   }
 
   private fun MutableList<ViewItem>.addWidgetListViewItems(

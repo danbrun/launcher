@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,7 +66,6 @@ import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
-import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
@@ -158,7 +158,6 @@ class LauncherFragment : Fragment() {
         configureWidget = { view, widgetId ->
           widgetManager.startConfigurationActivity(requireActivity(), view, widgetId)
         },
-        unpinShortcut = this::unpinShortcut,
         onPlaceTile = { rect, item ->
           if (rect == null) {
             gestureActivityIconStore.clearActivityState(item.userActivity)
@@ -170,7 +169,6 @@ class LauncherFragment : Fragment() {
             )
           }
         },
-        pinShortcut = this::pinShortcut,
         launchShortcutCreator = this::launchShortcutCreator,
         gestureActivityProvider = { gestureActivity },
       )
@@ -184,22 +182,6 @@ class LauncherFragment : Fragment() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       requireActivity().removeOnNewIntentListener(onNewIntentListener)
     }
-  }
-
-  private fun unpinShortcut(userShortcut: UserShortcut) {
-    MaterialAlertDialogBuilder(requireContext())
-      .setTitle(R.string.unpin_shortcut)
-      .setPositiveButton(android.R.string.ok) { _, _ ->
-        Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT).show()
-        shortcutManager.pinShortcut(userShortcut, isPinned = false)
-      }
-      .setNegativeButton(android.R.string.cancel, null)
-      .show()
-  }
-
-  private fun pinShortcut(userShortcut: UserShortcut) {
-    shortcutManager.pinShortcut(userShortcut, isPinned = true)
-    Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
   }
 
   private fun launchShortcutCreator(userShortcutCreator: UserShortcutCreator) {
@@ -222,9 +204,7 @@ private fun Launcher(
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   changeProfile: (Profile, Boolean) -> Unit,
   configureWidget: (View, Int) -> Unit,
-  unpinShortcut: (UserShortcut) -> Unit,
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
-  pinShortcut: (UserShortcut) -> Unit,
   launchShortcutCreator: (UserShortcutCreator) -> Unit,
   gestureActivityProvider: () -> UserActivity?,
 ) {
@@ -326,6 +306,7 @@ private fun Launcher(
                     )
                   }
                   is ShortcutViewItem -> {
+                    val context = LocalContext.current
                     LauncherTile(
                       icon = { isPressed ->
                         LauncherIcon(
@@ -344,7 +325,17 @@ private fun Launcher(
                       },
                       modifier = Modifier.animateItem(),
                       onClick = { appsLauncher.startShortcut(item.userShortcut, it) },
-                      onLongClick = { unpinShortcut(item.userShortcut) },
+                      onLongClick = {
+                        MaterialAlertDialogBuilder(context)
+                          .setTitle(R.string.unpin_shortcut)
+                          .setPositiveButton(android.R.string.ok) { _, _ ->
+                            Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT)
+                              .show()
+                            launcherViewModel.unpinShortcut(item.userShortcut)
+                          }
+                          .setNegativeButton(android.R.string.cancel, null)
+                          .show()
+                      },
                     )
                   }
                   is ActivityViewItem -> {
@@ -418,7 +409,6 @@ private fun Launcher(
           ActivityDetailsDialog(
             showActivityDetailsFor!!,
             dismiss = { showActivityDetailsFor = null },
-            onShortcutLongClick = { _, item -> pinShortcut(item) },
             onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
           )
         }
