@@ -113,30 +113,40 @@ private fun ProfilesTabGroup(
         Icon(painterResource(R.drawable.baseline_person_24), stringResource(R.string.show_personal))
       }
 
-      val workProfileStatus = availableProfiles.singleOrNull { it.profile == Profile.WORK }
-      if (workProfileStatus != null) {
-        FilledIconSelector(
-          items =
-            if (workProfileStatus.canToggle) {
-              listOf(false, true)
-            } else {
-              listOf(workProfileStatus.isEnabled)
-            },
-          selected = workProfileStatus.isEnabled,
-          isChecked = activeProfile == Profile.WORK,
-          onClick = { onChangeProfile(Profile.WORK, it) },
-        ) {
-          when (it) {
-            false ->
-              Icon(
-                painterResource(R.drawable.ic_baseline_work_off_24),
-                stringResource(R.string.show_work),
-              )
-            true ->
-              Icon(
-                painterResource(R.drawable.ic_baseline_work_24),
-                stringResource(R.string.show_work),
-              )
+      for (profile in listOf(Profile.WORK, Profile.PRIVATE)) {
+        val profileStatus = availableProfiles.singleOrNull { it.profile == profile }
+        if (profileStatus != null) {
+          FilledIconSelector(
+            items =
+              if (profileStatus.canToggle) {
+                listOf(false, true)
+              } else {
+                listOf(profileStatus.isEnabled)
+              },
+            selected = profileStatus.isEnabled,
+            isChecked = activeProfile == profile,
+            onClick = { onChangeProfile(profile, it) },
+          ) { enabled ->
+            Icon(
+              painterResource(
+                when (profile) {
+                  Profile.PERSONAL -> throw IllegalStateException()
+                  Profile.WORK ->
+                    if (enabled) {
+                      R.drawable.ic_baseline_work_24
+                    } else {
+                      R.drawable.ic_baseline_work_off_24
+                    }
+                  Profile.PRIVATE ->
+                    if (enabled) {
+                      R.drawable.baseline_lock_open_24
+                    } else {
+                      R.drawable.baseline_lock_24
+                    }
+                }
+              ),
+              stringResource(R.string.show_work),
+            )
           }
         }
       }

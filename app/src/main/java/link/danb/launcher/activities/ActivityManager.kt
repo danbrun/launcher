@@ -20,6 +20,7 @@ import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 
 @Singleton
@@ -46,6 +47,7 @@ constructor(
       ) { profiles, _ ->
         profiles
           .asSequence()
+          .filter { it.isEnabled || it.profile != Profile.PRIVATE }
           .map { profileManager.getUserHandle(it.profile) }
           .flatMap { launcherApps.getActivityList(null, it) }
           .filter { it.componentName.packageName != context.packageName }

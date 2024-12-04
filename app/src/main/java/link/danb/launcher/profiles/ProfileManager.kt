@@ -45,11 +45,23 @@ class ProfileManager @Inject constructor(@ApplicationContext context: Context) {
         context.registerReceiver(
           broadcastReceiver,
           IntentFilter().apply {
-            addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
-            addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
-            addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
-            addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
-            addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+              addAction(Intent.ACTION_PROFILE_ADDED)
+              addAction(Intent.ACTION_PROFILE_REMOVED)
+            } else {
+              addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
+              addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+              addAction(Intent.ACTION_PROFILE_AVAILABLE)
+              addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
+              addAction(Intent.ACTION_PROFILE_ACCESSIBLE)
+              addAction(Intent.ACTION_PROFILE_INACCESSIBLE)
+            } else {
+              addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
+              addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+              addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
+            }
           },
         )
 
