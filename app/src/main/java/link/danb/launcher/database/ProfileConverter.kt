@@ -9,6 +9,7 @@ class ProfileConverter {
     when (profile) {
       Profile.PERSONAL -> 1
       Profile.WORK -> 2
+      Profile.PRIVATE -> 3
     }
 
   @TypeConverter
@@ -16,6 +17,7 @@ class ProfileConverter {
     when (int) {
       1 -> Profile.PERSONAL
       2 -> Profile.WORK
+      3 -> Profile.PRIVATE
       else -> throw IllegalArgumentException()
     }
 }

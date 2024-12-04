@@ -45,7 +45,7 @@ constructor(
 
   fun getCanPinItems(profile: Profile): StateFlow<Boolean> =
     profileManager.profiles
-      .map { profiles -> profiles.getValue(profile).isEnabled }
+      .map { profiles -> profiles.single { it.profile == profile }.isEnabled }
       .stateIn(
         viewModelScope + Dispatchers.IO,
         SharingStarted.WhileSubscribed(),

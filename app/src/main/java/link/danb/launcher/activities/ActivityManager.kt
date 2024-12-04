@@ -6,6 +6,9 @@ import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -30,48 +33,39 @@ constructor(
 
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
-  val activities: Flow<List<UserActivity>> =
-    callbackFlow {
-        var components =
-          launcherApps.profiles
-            .flatMap { launcherApps.getActivityList(null, it) }
-            .filter { it.componentName.packageName != context.packageName }
-            .map { UserActivity(it.componentName, profileManager.getProfile(it.user)) }
-        trySend(components)
+  val activities: Flow<ImmutableList<UserActivity>> =
+    combine(
+        profileManager.profiles,
+        callbackFlow<Unit> {
+          send(Unit)
+          val callback = LauncherAppsCallback { _, _ -> trySend(Unit) }
 
-        val callback = LauncherAppsCallback { packageNames, userHandle ->
-          synchronized(this) {
-            components = buildList {
-              addAll(
-                components.filter {
-                  it.componentName.packageName !in packageNames ||
-                    it.profile != profileManager.getProfile(userHandle)
-                }
-              )
-              addAll(
-                packageNames
-                  .flatMap { launcherApps.getActivityList(it, userHandle) }
-                  .filter { it.componentName.packageName != context.packageName }
-                  .map { UserActivity(it.componentName, profileManager.getProfile(it.user)) }
-              )
-            }
-            trySend(components)
-          }
-        }
-
-        launcherApps.registerCallback(callback)
-        awaitClose { launcherApps.unregisterCallback(callback) }
+          launcherApps.registerCallback(callback)
+          awaitClose { launcherApps.unregisterCallback(callback) }
+        },
+      ) { profiles, _ ->
+        profiles
+          .asSequence()
+          .map { profileManager.getUserHandle(it.profile) }
+          .flatMap { launcherApps.getActivityList(null, it) }
+          .filter { it.componentName.packageName != context.packageName }
+          .map { UserActivity(it.componentName, checkNotNull(profileManager.getProfile(it.user))) }
+          .toImmutableList()
       }
-      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), listOf())
+      .stateIn(MainScope(), SharingStarted.WhileSubscribed(), persistentListOf())
 
-  val data: Flow<List<ActivityData>> =
+  val data: Flow<ImmutableList<ActivityData>> =
     combine(activities, launcherDatabase.activityData().get()) { activities, data ->
         val dataMap =
           data
             .associateBy { it.userActivity }
             .withDefault { ActivityData(it, isPinned = false, isHidden = false) }
 
-        activities.map { component -> dataMap.getValue(component) }
+        activities.asSequence().map { component -> dataMap.getValue(component) }.toImmutableList()
       }
-      .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
+      .stateIn(
+        MainScope(),
+        SharingStarted.WhileSubscribed(replayExpirationMillis = 0),
+        persistentListOf(),
+      )
 }

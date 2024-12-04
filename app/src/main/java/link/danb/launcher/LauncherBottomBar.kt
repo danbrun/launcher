@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.ImmutableList
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.ui.FilledIconSelector
@@ -100,7 +101,7 @@ fun LauncherBottomBar(
 @Composable
 private fun ProfilesTabGroup(
   activeProfile: Profile,
-  availableProfiles: Map<Profile, ProfileState>,
+  availableProfiles: ImmutableList<ProfileState>,
   onChangeProfile: (Profile, Boolean) -> Unit,
 ) {
   ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
@@ -112,7 +113,7 @@ private fun ProfilesTabGroup(
         Icon(painterResource(R.drawable.baseline_person_24), stringResource(R.string.show_personal))
       }
 
-      val workProfileStatus = availableProfiles[Profile.WORK]
+      val workProfileStatus = availableProfiles.singleOrNull { it.profile == Profile.WORK }
       if (workProfileStatus != null) {
         FilledIconSelector(
           items =

@@ -9,9 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.math.max
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -97,11 +95,11 @@ constructor(
   val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
   val profile: StateFlow<Profile> = _profile.asStateFlow()
 
-  val profiles: StateFlow<ImmutableMap<Profile, ProfileState>> =
+  val profiles: StateFlow<ImmutableList<ProfileState>> =
     profileManager.profiles.stateIn(
       viewModelScope + Dispatchers.IO,
       SharingStarted.WhileSubscribed(),
-      persistentMapOf(),
+      persistentListOf(),
     )
 
   @OptIn(FlowPreview::class)

@@ -80,7 +80,7 @@ constructor(
                       ?: launcherResourceProvider.getIcon(
                         UserApplication(
                           widget.provider.packageName,
-                          profileManager.getProfile(widget.profile),
+                          checkNotNull(profileManager.getProfile(widget.profile)),
                         )
                       ),
                     widget.loadLabel(application.packageManager),

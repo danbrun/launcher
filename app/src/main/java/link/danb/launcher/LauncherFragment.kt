@@ -105,7 +105,8 @@ class LauncherFragment : Fragment() {
   @RequiresApi(Build.VERSION_CODES.Q)
   private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
     val gestureContract =
-      GestureContract.fromIntent(intent) { profileManager.getProfile(it) } ?: return@Consumer
+      GestureContract.fromIntent(intent) { checkNotNull(profileManager.getProfile(it)) }
+        ?: return@Consumer
 
     val data =
       gestureActivityIconStore.getActivityIconState(gestureContract.userActivity) ?: return@Consumer

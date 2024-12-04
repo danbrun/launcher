@@ -1,28 +1,27 @@
 package link.danb.launcher.shortcuts
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.IntentSender
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.PinItemRequest
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
-import android.graphics.Rect
-import android.os.Bundle
 import android.os.UserHandle
-import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import link.danb.launcher.apps.LauncherAppsCallback
 import link.danb.launcher.components.UserComponent
@@ -40,51 +39,32 @@ constructor(
 
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
 
-  val shortcuts: Flow<List<UserShortcut>> =
-    callbackFlow {
-        trySend(getPinnedShortcuts())
+  val shortcuts: Flow<ImmutableList<UserShortcut>> =
+    combine(
+        profileManager.profiles,
+        callbackFlow<Unit> {
+          send(Unit)
+          val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(Unit) }
 
-        val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(getPinnedShortcuts()) }
-        val broadcastReceiver =
-          object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-              trySend(getPinnedShortcuts())
-            }
+          launcherApps.registerCallback(launcherAppsCallback)
+          awaitClose { launcherApps.unregisterCallback(launcherAppsCallback) }
+        },
+      ) { profiles, _ ->
+        profiles
+          .asSequence()
+          .filter { it.isEnabled }
+          .mapNotNull { profileManager.getUserHandle(it.profile) }
+          .flatMap {
+            launcherApps.getShortcuts(it) { setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED) }
           }
-
-        launcherApps.registerCallback(launcherAppsCallback)
-        ContextCompat.registerReceiver(
-          context,
-          broadcastReceiver,
-          IntentFilter().apply {
-            addAction(ACTION_PINNED_SHORTCUTS_CHANGED)
-
-            addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
-            addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
-            addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
-            addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
-          },
-          ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
-
-        awaitClose {
-          launcherApps.unregisterCallback(launcherAppsCallback)
-          context.unregisterReceiver(broadcastReceiver)
-        }
+          .map { infoToUserShortcut(it) }
+          .toImmutableList()
       }
-      .stateIn(MainScope(), SharingStarted.WhileSubscribed(replayExpirationMillis = 0), listOf())
-
-  private fun getPinnedShortcuts(): List<UserShortcut> =
-    launcherApps.profiles
-      .filter { profileManager.isEnabled(it) }
-      .flatMap {
-        try {
-          launcherApps.getShortcuts(it) { setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED) }
-        } catch (exception: Exception) {
-          listOf()
-        }
-      }
-      .map { infoToUserShortcut(it) }
+      .stateIn(
+        MainScope(),
+        SharingStarted.WhileSubscribed(replayExpirationMillis = 0),
+        persistentListOf(),
+      )
 
   fun getShortcuts(userComponent: UserComponent): List<UserShortcut> =
     launcherApps
@@ -98,23 +78,15 @@ constructor(
       }
       .map { infoToUserShortcut(it) }
 
-  fun launchShortcut(userShortcut: UserShortcut, sourceBounds: Rect, startActivityOptions: Bundle) {
-    launcherApps.startShortcut(
-      userShortcut.packageName,
-      userShortcut.shortcutId,
-      sourceBounds,
-      startActivityOptions,
-      profileManager.getUserHandle(userShortcut.profile)!!,
-    )
-  }
-
   fun getShortcutCreators(userComponent: UserComponent): List<UserShortcutCreator> =
     launcherApps
       .getConfigurableShortcuts(
         userComponent.packageName,
         profileManager.getUserHandle(userComponent.profile)!!,
       )
-      .map { UserShortcutCreator(it.componentName, profileManager.getProfile(it.user)) }
+      .map {
+        UserShortcutCreator(it.componentName, checkNotNull(profileManager.getProfile(it.user)))
+      }
 
   fun getShortcutCreatorIntent(userShortcutCreator: UserShortcutCreator): IntentSender =
     checkNotNull(
@@ -126,7 +98,7 @@ constructor(
   fun pinShortcut(userShortcut: UserShortcut, isPinned: Boolean) {
     val currentPinnedShortcuts =
       launcherApps
-        .getShortcuts(profileManager.getUserHandle(userShortcut.profile)!!) {
+        .getShortcuts(checkNotNull(profileManager.getUserHandle(userShortcut.profile))) {
           setQueryFlags(ShortcutQuery.FLAG_MATCH_PINNED)
           setPackage(userShortcut.packageName)
         }
@@ -160,7 +132,7 @@ constructor(
     UserShortcut(
       shortcutInfo.`package`,
       shortcutInfo.id,
-      profileManager.getProfile(shortcutInfo.userHandle),
+      checkNotNull(profileManager.getProfile(shortcutInfo.userHandle)),
     )
 
   private fun LauncherApps.getShortcuts(

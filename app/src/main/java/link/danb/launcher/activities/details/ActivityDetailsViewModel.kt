@@ -52,7 +52,7 @@ constructor(
         activityDataList,
         shortcutsAndWidgets ->
         val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
-        if (activityData != null && shortcutsAndWidgets != null) {
+        if (activityData != null) {
           Loaded(
             activityData,
             launcherResourceProvider.getTileData(activityData.userActivity),
@@ -85,26 +85,20 @@ constructor(
     viewModelScope.launch(Dispatchers.IO) { launcherDatabase.activityData().put(activityData) }
   }
 
-  private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets?> =
+  private fun getShortcutsAndWidgets(userActivity: UserActivity): Flow<ShortcutsAndWidgets> =
     profileManager.profiles.transform { profiles ->
-      when (profiles[userActivity.profile]?.isEnabled) {
-        true -> {
-          emit(ShortcutsAndWidgets.Loading)
+      if (profiles.single { it.profile == userActivity.profile }.isEnabled) {
+        emit(ShortcutsAndWidgets.Loading)
 
-          emit(
-            ShortcutsAndWidgets.Loaded(
-              getShortcuts(userActivity),
-              getShortcutCreators(userActivity),
-              getWidgets(userActivity),
-            )
+        emit(
+          ShortcutsAndWidgets.Loaded(
+            getShortcuts(userActivity),
+            getShortcutCreators(userActivity),
+            getWidgets(userActivity),
           )
-        }
-        false -> {
-          emit(ShortcutsAndWidgets.ProfileDisabled)
-        }
-        null -> {
-          emit(null)
-        }
+        )
+      } else {
+        emit(ShortcutsAndWidgets.ProfileDisabled)
       }
     }
 
@@ -135,7 +129,10 @@ constructor(
           it,
           withContext(Dispatchers.IO) { it.loadPreviewImage(application, 0) }
             ?: launcherResourceProvider.getIcon(
-              UserApplication(it.provider.packageName, profileManager.getProfile(it.profile))
+              UserApplication(
+                it.provider.packageName,
+                checkNotNull(profileManager.getProfile(it.profile)),
+              )
             ),
           it.loadLabel(application.packageManager),
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
