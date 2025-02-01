@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -55,37 +56,38 @@ fun Widget(
 ) {
   var height by remember { mutableIntStateOf(widgetData.height) }
   var isEditing by remember { mutableStateOf(false) }
-  var widgetFrame: WidgetFrameView? by remember { mutableStateOf(null) }
   var isScrollEnabled: Boolean by remember { mutableStateOf(true) }
-  val draggableState = rememberDraggableState { height = (height + it.toInt()).coerceIn(sizeRange) }
+
+  val context = LocalContext.current
   val hapticFeedback = LocalHapticFeedback.current
+
+  val widgetFrameView = remember(context) { WidgetFrameView(context) }
+  val draggableState = rememberDraggableState { height = (height + it.toInt()).coerceIn(sizeRange) }
 
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
     AndroidView(
-      factory = { WidgetFrameView(it).apply { widgetFrame = this } },
+      factory = { widgetFrameView },
       modifier =
         modifier
           .fillMaxWidth()
           .height(with(LocalDensity.current) { height.toDp() })
-          .pointerInput(widgetFrame) {
+          .pointerInput(widgetFrameView) {
             detectLongPress(PointerEventPass.Initial) {
               hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
               isEditing = true
             }
           }
-          .pointerInput(widgetFrame, isScrollEnabled) {
+          .pointerInput(widgetFrameView, isScrollEnabled) {
             awaitPointerEventScope {
               isScrollEnabled =
                 if (isScrollEnabled) {
                   val touchPos = awaitFirstDown(false).position
+                  val framePos = widgetFrameView.boundsOnScreen
                   val list =
-                    widgetFrame?.let {
-                      val framePos = it.boundsOnScreen
-                      it.getListViewContaining(
-                        touchPos.x.toInt() + framePos.left,
-                        touchPos.y.toInt() + framePos.top,
-                      )
-                    }
+                    widgetFrameView.getListViewContaining(
+                      touchPos.x.toInt() + framePos.left,
+                      touchPos.y.toInt() + framePos.top,
+                    )
                   list == null
                 } else {
                   waitForUpOrCancellation()
@@ -95,14 +97,8 @@ fun Widget(
             }
           },
       onReset = {},
-      onRelease = {
-        widgetFrame = null
-        it.clearAppWidget()
-      },
-      update = {
-        widgetFrame = it
-        it.setAppWidget(widgetData.widgetId)
-      },
+      onRelease = { it.clearAppWidget() },
+      update = { it.setAppWidget(widgetData.widgetId) },
     )
 
     AnimatedVisibility(visible = isEditing) {
@@ -134,8 +130,8 @@ fun Widget(
         }
 
         IconButtonGroup {
-          if (isConfigurable && widgetFrame != null) {
-            IconButton({ configure(widgetFrame!!) }) {
+          if (isConfigurable) {
+            IconButton({ configure(widgetFrameView) }) {
               Icon(
                 painterResource(R.drawable.ic_baseline_settings_24),
                 stringResource(R.string.configure_widget),
