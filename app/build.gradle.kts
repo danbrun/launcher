@@ -99,7 +99,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     // Dagger/Hilt dependencies
-    val daggerVersion = "2.52"
+    val daggerVersion = "2.55"
     implementation("com.google.dagger:dagger:$daggerVersion")
     implementation("com.google.dagger:hilt-android:$daggerVersion")
     ksp("com.google.dagger:dagger-compiler:$daggerVersion")
