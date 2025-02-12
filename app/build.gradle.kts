@@ -1,130 +1,99 @@
 plugins {
-    id("com.android.application")
-    id("com.google.dagger.hilt.android")
-    id("com.google.devtools.ksp")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("kotlin-parcelize")
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.dagger.hilt.android)
+  alias(libs.plugins.devtools.ksp)
+  alias(libs.plugins.kotlin.android)
+  alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.parcelize)
+  alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "link.danb.launcher"
-    compileSdk = 35
+  namespace = "link.danb.launcher"
+  compileSdk = 35
 
-    defaultConfig {
-        applicationId = "link.danb.launcher"
-        minSdk = 28
-        targetSdk = 35
-        versionCode = 27
-        versionName = "1.27"
+  defaultConfig {
+    applicationId = "link.danb.launcher"
+    minSdk = 28
+    targetSdk = 35
+    versionCode = 27
+    versionName = "1.27"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        vectorDrawables {
-            useSupportLibrary = true
-        }
+    vectorDrawables { useSupportLibrary = true }
 
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
-    }
+    ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+  }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
+  buildTypes {
+    release {
+      isMinifyEnabled = false
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.3"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    sourceSets {
-        getByName("androidTest").assets.srcDirs("$projectDir/schemas")
-    }
+  }
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+  }
+  kotlinOptions { jvmTarget = "11" }
+  buildFeatures { compose = true }
+  sourceSets { getByName("androidTest").assets.srcDirs("$projectDir/schemas") }
 }
 
 dependencies {
+  androidTestImplementation(libs.androidx.espresso.core)
+  androidTestImplementation(libs.androidx.junit)
+  androidTestImplementation(libs.androidx.ui.test.junit4)
+  androidTestImplementation(libs.ui.test.junit4)
+  androidTestImplementation(platform(libs.androidx.compose.bom))
 
-    // AndroidX dependencies
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.collection:collection-ktx:1.4.5")
-    implementation("androidx.datastore:datastore-preferences:1.1.2")
-    implementation("androidx.fragment:fragment-ktx:1.8.5")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation("androidx.palette:palette-ktx:1.0.0")
-    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
-    implementation("androidx.activity:activity-compose:1.10.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+  annotationProcessor(libs.androidx.room.compiler)
 
-    // Google dependencies
-    implementation("com.google.android.material:material:1.12.0")
+  debugImplementation(libs.androidx.ui.test.manifest)
+  debugImplementation(libs.androidx.ui.tooling)
+  debugImplementation(libs.ui.tooling)
 
-    // Jetbrains dependencies
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+  implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.appcompat)
+  implementation(libs.androidx.collection.ktx)
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.datastore.preferences)
+  implementation(libs.androidx.fragment.ktx)
+  implementation(libs.androidx.hilt.navigation.compose)
+  implementation(libs.androidx.lifecycle.livedata.ktx)
+  implementation(libs.androidx.lifecycle.reactivestreams.ktx)
+  implementation(libs.androidx.lifecycle.runtime.compose)
+  implementation(libs.androidx.lifecycle.runtime.ktx)
+  implementation(libs.androidx.lifecycle.viewmodel.compose)
+  implementation(libs.androidx.lifecycle.viewmodel.ktx)
+  implementation(libs.androidx.material3)
+  implementation(libs.androidx.navigation.compose)
+  implementation(libs.androidx.navigation.fragment.ktx)
+  implementation(libs.androidx.navigation.runtime.ktx)
+  implementation(libs.androidx.navigation.ui.ktx)
+  implementation(libs.androidx.palette.ktx)
+  implementation(libs.androidx.room.ktx)
+  implementation(libs.androidx.room.runtime)
+  implementation(libs.androidx.sqlite.ktx)
+  implementation(libs.androidx.ui)
+  implementation(libs.androidx.ui.graphics)
+  implementation(libs.androidx.ui.tooling.preview)
+  implementation(libs.androidx.work.runtime.ktx)
+  implementation(libs.dagger)
+  implementation(libs.hilt.android)
+  implementation(libs.kotlinx.collections.immutable)
+  implementation(libs.kotlinx.serialization.json)
+  implementation(libs.material)
+  implementation(libs.material3)
+  implementation(libs.ui)
+  implementation(libs.ui.graphics)
+  implementation(libs.ui.tooling.preview)
+  implementation(platform(libs.androidx.compose.bom))
 
-    // JUnit dependencies
-    testImplementation("junit:junit:4.13.2")
+  ksp(libs.androidx.room.compiler)
+  ksp(libs.dagger.compiler)
+  ksp(libs.hilt.compiler)
 
-    // Compose dependencies
-    implementation(platform("androidx.compose:compose-bom:2025.01.01"))
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-
-    // Dagger/Hilt dependencies
-    val daggerVersion = "2.55"
-    implementation("com.google.dagger:dagger:$daggerVersion")
-    implementation("com.google.dagger:hilt-android:$daggerVersion")
-    ksp("com.google.dagger:dagger-compiler:$daggerVersion")
-    ksp("com.google.dagger:hilt-compiler:$daggerVersion")
-
-    // Lifecycle dependencies
-    val lifecycleVersion = "2.8.7"
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-reactivestreams-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
-
-    // Navigation dependencies
-    val navigationVersion = "2.8.6"
-    implementation("androidx.navigation:navigation-compose:$navigationVersion")
-    implementation("androidx.navigation:navigation-fragment-ktx:$navigationVersion")
-    implementation("androidx.navigation:navigation-runtime-ktx:$navigationVersion")
-    implementation("androidx.navigation:navigation-ui-ktx:$navigationVersion")
-
-    // Room dependencies
-    val roomVersion = "2.6.1"
-    implementation("androidx.room:room-ktx:$roomVersion")
-    implementation("androidx.room:room-runtime:$roomVersion")
-    annotationProcessor("androidx.room:room-compiler:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
+  testImplementation(libs.junit)
 }
