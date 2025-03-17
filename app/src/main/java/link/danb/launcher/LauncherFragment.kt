@@ -8,10 +8,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -39,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -57,6 +60,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.getValue
+import kotlinx.coroutines.CancellationException
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
@@ -144,7 +148,22 @@ class LauncherFragment : Fragment() {
     }
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
+      val scale = remember { Animatable(1f) }
+      PredictiveBackHandler { progress ->
+        try {
+          progress.collect { scale.snapTo(1 - (it.progress / 7.5f)) }
+          scale.animateTo(1f)
+        } catch (e: CancellationException) {
+          scale.animateTo(1f)
+        }
+      }
+
       Launcher(
+        modifier =
+          Modifier.graphicsLayer {
+            scaleX = scale.value
+            scaleY = scale.value
+          },
         launcherViewModel = launcherViewModel,
         changeProfile = { newProfile, isEnabled ->
           profileManager.setProfileEnabled(newProfile, isEnabled)
@@ -195,6 +214,7 @@ class LauncherFragment : Fragment() {
 
 @Composable
 private fun Launcher(
+  modifier: Modifier = Modifier,
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   changeProfile: (Profile, Boolean) -> Unit,
@@ -215,6 +235,7 @@ private fun Launcher(
 
     val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
     Scaffold(
+      modifier = modifier,
       bottomBar = {
         val searchItemBounds =
           with(LocalDensity.current) {
