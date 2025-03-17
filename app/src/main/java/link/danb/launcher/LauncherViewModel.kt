@@ -189,7 +189,7 @@ constructor(
           shortcuts
             .asFlow()
             .filter { it.profile == profile }
-            .map { ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it).await()) },
+            .map { ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it)) },
         )
         .toList()
         .sortedBy { it.launcherTileData.name.lowercase() }
@@ -242,7 +242,7 @@ constructor(
   private suspend fun getActivityTileItem(activityData: ActivityData, isPinned: Boolean) =
     ActivityViewItem(
       activityData.userActivity,
-      launcherResourceProvider.getTileDataWithCache(activityData.userActivity).await(),
+      launcherResourceProvider.getTileDataWithCache(activityData.userActivity),
       isPinned,
     )
 

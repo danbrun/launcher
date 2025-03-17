@@ -8,16 +8,16 @@ import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.PaintDrawable
 import android.os.UserHandle
 import androidx.core.content.getSystemService
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.drawable.toDrawable
 import androidx.palette.graphics.Palette
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -92,7 +92,7 @@ constructor(
     badges.getOrPut(profile) {
       val size = context.resources.getDimensionPixelOffset(R.dimen.launcher_icon_size)
       context.packageManager.getUserBadgedIcon(
-        BitmapDrawable(context.resources, Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)),
+        createBitmap(size, size).toDrawable(context.resources),
         profileManager.getUserHandle(profile)!!,
       )
     }
@@ -103,13 +103,18 @@ constructor(
       getLabel(userComponent),
     )
 
-  suspend fun getTileDataWithCache(userComponent: UserComponent): Deferred<LauncherTileData> =
-    coroutineScope.async {
-      LauncherTileData(
-        LauncherIconData(getIconWithCache(userComponent).await(), getBadge(userComponent.profile)),
-        getLabel(userComponent),
-      )
-    }
+  suspend fun getTileDataWithCache(userComponent: UserComponent): LauncherTileData =
+    coroutineScope
+      .async {
+        LauncherTileData(
+          LauncherIconData(
+            getIconWithCache(userComponent).await(),
+            getBadge(userComponent.profile),
+          ),
+          getLabel(userComponent),
+        )
+      }
+      .await()
 
   private fun UserComponent.getSourceIcon(): Drawable =
     when (this) {
@@ -184,10 +189,13 @@ constructor(
       return this
     }
 
-    val palette = withContext(Dispatchers.IO) { Palette.from(toBitmap()).generate() }
-    val background = PaintDrawable(palette.getMutedColor(Color.WHITE))
-    val foreground = InsetDrawable(this, AdaptiveIconDrawable.getExtraInsetFraction())
-
-    return AdaptiveIconDrawable(background, foreground)
+    try {
+      val palette = withContext(Dispatchers.IO) { Palette.from(toBitmap()).generate() }
+      val background = PaintDrawable(palette.getMutedColor(Color.WHITE))
+      val foreground = InsetDrawable(this, AdaptiveIconDrawable.getExtraInsetFraction())
+      return AdaptiveIconDrawable(background, foreground)
+    } catch (e: IllegalArgumentException) {
+      return AdaptiveIconDrawable(Color.WHITE.toDrawable(), this)
+    }
   }
 }
