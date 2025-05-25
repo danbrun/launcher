@@ -66,7 +66,6 @@ import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.gestures.GestureContract
 import link.danb.launcher.gestures.GestureIconView
-import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
@@ -148,13 +147,6 @@ class LauncherFragment : Fragment() {
       Launcher(
         modifier = Modifier.predictiveBackScaling(48.dp),
         launcherViewModel = launcherViewModel,
-        changeProfile = { newProfile, isEnabled ->
-          profileManager.setProfileEnabled(newProfile, isEnabled)
-          launcherViewModel.setProfile(newProfile)
-        },
-        configureWidget = { view, widgetId ->
-          widgetManager.startConfigurationActivity(requireActivity(), view, widgetId)
-        },
         onPlaceTile = { rect, item ->
           if (rect == null) {
             gestureActivityIconStore.clearActivityState(item.userActivity)
@@ -200,8 +192,6 @@ private fun Launcher(
   modifier: Modifier = Modifier,
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
-  changeProfile: (Profile, Boolean) -> Unit,
-  configureWidget: (View, Int) -> Unit,
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
   launchShortcutCreator: (UserShortcutCreator) -> Unit,
   gestureActivityProvider: () -> UserActivity?,
@@ -227,7 +217,7 @@ private fun Launcher(
           }
         LauncherBottomBar(
           launcherViewModel,
-          onChangeProfile = changeProfile,
+          onChangeProfile = launcherViewModel::setProfile,
           onSearchGo = {
             val userActivity =
               launcherViewModel.viewItems.value
@@ -286,7 +276,7 @@ private fun Launcher(
                   moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
                   remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
                   setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
-                  configure = { configureWidget(it, item.widgetData.widgetId) },
+                  configure = { appsLauncher.configureWidget(it, item.widgetData.widgetId) },
                 )
               }
               is GroupHeaderViewItem -> {

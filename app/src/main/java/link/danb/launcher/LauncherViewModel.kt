@@ -140,7 +140,8 @@ constructor(
     _searchQuery.value = value
   }
 
-  fun setProfile(profile: Profile) {
+  fun setProfile(profile: Profile, isEnabled: Boolean) {
+    profileManager.setProfileEnabled(profile, isEnabled)
     _profile.value = profile
   }
 
