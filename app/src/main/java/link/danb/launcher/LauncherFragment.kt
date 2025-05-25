@@ -1,7 +1,5 @@
 package link.danb.launcher
 
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,7 +9,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -39,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
@@ -48,7 +44,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.util.Consumer
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -63,9 +58,8 @@ import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcutCreator
+import link.danb.launcher.gestures.GestureActivityAnimation
 import link.danb.launcher.gestures.GestureActivityIconStore
-import link.danb.launcher.gestures.GestureContract
-import link.danb.launcher.gestures.GestureIconView
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.shortcuts.ShortcutManager
@@ -92,41 +86,12 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
 
   private lateinit var iconLaunchView: View
-  private lateinit var gestureIconView: GestureIconView
-
-  private var gestureActivity: UserActivity? by mutableStateOf(null)
-
-  @RequiresApi(Build.VERSION_CODES.Q)
-  private val onNewIntentListener: Consumer<Intent> = Consumer { intent ->
-    val gestureContract =
-      GestureContract.fromIntent(intent) { checkNotNull(profileManager.getProfile(it)) }
-        ?: return@Consumer
-
-    val data =
-      gestureActivityIconStore.getActivityIconState(gestureContract.userActivity) ?: return@Consumer
-
-    gestureActivity = data.userActivity
-    gestureIconView.animateNavigationGesture(
-      gestureContract,
-      data.boundsInRoot.toAndroidRectF(),
-      data.launcherIconData,
-      launcherViewModel.useMonochromeIcons.value,
-    )
-  }
 
   private val shortcutActivityLauncher =
     registerForActivityResult(
       ActivityResultContracts.StartIntentSenderForResult(),
       ::onPinShortcutActivityResult,
     )
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      requireActivity().addOnNewIntentListener(onNewIntentListener)
-    }
-  }
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -136,12 +101,6 @@ class LauncherFragment : Fragment() {
     val view = inflater.inflate(R.layout.launcher_fragment, container, false) as FrameLayout
 
     iconLaunchView = view.findViewById(R.id.icon_launch_view)
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      gestureIconView = GestureIconView(view.context)
-      gestureIconView.onFinishGestureAnimation = { gestureActivity = null }
-      view.addView(gestureIconView, 0)
-    }
 
     view.findViewById<ComposeView>(R.id.compose_view).setContent {
       Launcher(
@@ -159,18 +118,9 @@ class LauncherFragment : Fragment() {
           }
         },
         launchShortcutCreator = this::launchShortcutCreator,
-        gestureActivityProvider = { gestureActivity },
       )
     }
     return view
-  }
-
-  override fun onDestroy() {
-    super.onDestroy()
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      requireActivity().removeOnNewIntentListener(onNewIntentListener)
-    }
   }
 
   private fun launchShortcutCreator(userShortcutCreator: UserShortcutCreator) {
@@ -194,7 +144,6 @@ private fun Launcher(
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
   launchShortcutCreator: (UserShortcutCreator) -> Unit,
-  gestureActivityProvider: () -> UserActivity?,
 ) {
   val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
   LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
@@ -205,6 +154,9 @@ private fun Launcher(
     var showActivityDetailsFor: UserActivity? by remember { mutableStateOf(null) }
 
     val appsLauncher = rememberAppsLauncher()
+
+    val gestureActivityState = remember { mutableStateOf<UserActivity?>(null) }
+    GestureActivityAnimation { gestureActivityState.value = it }
 
     val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
     Scaffold(
@@ -327,7 +279,7 @@ private fun Launcher(
                 LauncherTile(
                   icon = { isPressed ->
                     Box(Modifier.onGloballyPositioned { onPlaceTile(it.boundsInRoot(), item) }) {
-                      if (item.userActivity == gestureActivityProvider()) {
+                      if (item.userActivity == gestureActivityState.value) {
                         Spacer(Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
                       } else {
                         LauncherIcon(
