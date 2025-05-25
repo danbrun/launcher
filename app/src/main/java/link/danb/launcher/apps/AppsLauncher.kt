@@ -4,7 +4,12 @@ import android.app.Activity
 import android.app.ActivityOptions
 import android.content.pm.LauncherApps
 import android.view.View
+import android.widget.Toast
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
@@ -15,29 +20,40 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.EntryPoints
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ActivityComponent
+import link.danb.launcher.R
+import link.danb.launcher.apps.AppsLauncher.AppsLauncherEntryPoint
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
+import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.widgets.WidgetManager
 
 @Composable
 fun rememberAppsLauncher(): AppsLauncher {
   val activity = checkNotNull(LocalActivity.current)
-  return remember(activity) { AppsLauncher(activity) }
+  val entryPoint = EntryPoints.get(activity, AppsLauncherEntryPoint::class.java)
+  val shortcutActivityLauncher =
+    rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
+      val data = it.data ?: return@rememberLauncherForActivityResult
+      entryPoint.shortcutManager().acceptPinRequest(data)
+      Toast.makeText(activity, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
+    }
+  return remember(activity) { AppsLauncher(activity, entryPoint, shortcutActivityLauncher) }
 }
 
-class AppsLauncher(private val activity: Activity) {
+class AppsLauncher(
+  private val activity: Activity,
+  private val entryPoint: AppsLauncherEntryPoint,
+  private val shortcutActivityLauncher: ActivityResultLauncher<IntentSenderRequest>,
+) {
 
   private val launcherApps: LauncherApps by lazy { checkNotNull(activity.getSystemService()) }
-  private val appsLauncherEntryPoint: AppsLauncherEntryPoint by lazy {
-    EntryPoints.get(activity, AppsLauncherEntryPoint::class.java)
-  }
-  private val profileManager: ProfileManager by lazy { appsLauncherEntryPoint.profileManager() }
 
   fun startMainActivity(userActivity: UserActivity, rect: Rect) {
     launcherApps.startMainActivity(
       userActivity.componentName,
-      profileManager.getUserHandle(userActivity.profile),
+      entryPoint.profileManager().getUserHandle(userActivity.profile),
       rect.roundToIntRect().toAndroidRect(),
       makeScaleUpAnimation(rect).toBundle(),
     )
@@ -46,7 +62,7 @@ class AppsLauncher(private val activity: Activity) {
   fun startAppDetailsActivity(userActivity: UserActivity, rect: Rect) {
     launcherApps.startAppDetailsActivity(
       userActivity.componentName,
-      profileManager.getUserHandle(userActivity.profile),
+      entryPoint.profileManager().getUserHandle(userActivity.profile),
       rect.roundToIntRect().toAndroidRect(),
       makeScaleUpAnimation(rect).toBundle(),
     )
@@ -58,12 +74,21 @@ class AppsLauncher(private val activity: Activity) {
       userShortcut.shortcutId,
       rect.roundToIntRect().toAndroidRect(),
       makeScaleUpAnimation(rect).toBundle(),
-      profileManager.getUserHandle(userShortcut.profile)!!,
+      entryPoint.profileManager().getUserHandle(userShortcut.profile)!!,
+    )
+  }
+
+  fun startShortcutCreator(userShortcutCreator: UserShortcutCreator) {
+    shortcutActivityLauncher.launch(
+      IntentSenderRequest.Builder(
+          entryPoint.shortcutManager().getShortcutCreatorIntent(userShortcutCreator)
+        )
+        .build()
     )
   }
 
   fun configureWidget(view: View, widgetId: Int) {
-    appsLauncherEntryPoint.widgetManager().startConfigurationActivity(activity, view, widgetId)
+    entryPoint.widgetManager().startConfigurationActivity(activity, view, widgetId)
   }
 
   private fun makeScaleUpAnimation(rect: Rect) =
@@ -75,6 +100,8 @@ class AppsLauncher(private val activity: Activity) {
   @InstallIn(ActivityComponent::class)
   interface AppsLauncherEntryPoint {
     fun profileManager(): ProfileManager
+
+    fun shortcutManager(): ShortcutManager
 
     fun widgetManager(): WidgetManager
   }

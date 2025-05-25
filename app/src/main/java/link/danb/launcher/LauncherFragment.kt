@@ -5,9 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -56,7 +53,6 @@ import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
-import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.gestures.GestureActivityAnimation
 import link.danb.launcher.gestures.GestureActivityIconStore
 import link.danb.launcher.profiles.ProfileManager
@@ -84,12 +80,6 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
 
-  private val shortcutActivityLauncher =
-    registerForActivityResult(
-      ActivityResultContracts.StartIntentSenderForResult(),
-      ::onPinShortcutActivityResult,
-    )
-
   override fun onCreateView(
     inflater: LayoutInflater,
     container: ViewGroup?,
@@ -111,23 +101,9 @@ class LauncherFragment : Fragment() {
               )
             }
           },
-          launchShortcutCreator = { launchShortcutCreator(it) },
         )
       }
     }
-
-  private fun launchShortcutCreator(userShortcutCreator: UserShortcutCreator) {
-    shortcutActivityLauncher.launch(
-      IntentSenderRequest.Builder(shortcutManager.getShortcutCreatorIntent(userShortcutCreator))
-        .build()
-    )
-  }
-
-  private fun onPinShortcutActivityResult(activityResult: ActivityResult) {
-    val data = activityResult.data ?: return
-    shortcutManager.acceptPinRequest(data)
-    Toast.makeText(context, R.string.pinned_shortcut, Toast.LENGTH_SHORT).show()
-  }
 }
 
 @Composable
@@ -136,7 +112,6 @@ private fun Launcher(
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
   onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
-  launchShortcutCreator: (UserShortcutCreator) -> Unit,
 ) {
   val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
   LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
@@ -337,7 +312,7 @@ private fun Launcher(
       ActivityDetailsDialog(
         showActivityDetailsFor!!,
         dismiss = { showActivityDetailsFor = null },
-        onShortcutCreatorClick = { _, item -> launchShortcutCreator(item) },
+        onShortcutCreatorClick = { _, item -> appsLauncher.startShortcutCreator(item) },
       )
     }
   }
