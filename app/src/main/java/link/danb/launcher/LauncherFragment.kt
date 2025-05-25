@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -85,8 +84,6 @@ class LauncherFragment : Fragment() {
   @Inject lateinit var widgetManager: WidgetManager
   @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
 
-  private lateinit var iconLaunchView: View
-
   private val shortcutActivityLauncher =
     registerForActivityResult(
       ActivityResultContracts.StartIntentSenderForResult(),
@@ -97,31 +94,27 @@ class LauncherFragment : Fragment() {
     inflater: LayoutInflater,
     container: ViewGroup?,
     savedInstanceState: Bundle?,
-  ): View {
-    val view = inflater.inflate(R.layout.launcher_fragment, container, false) as FrameLayout
-
-    iconLaunchView = view.findViewById(R.id.icon_launch_view)
-
-    view.findViewById<ComposeView>(R.id.compose_view).setContent {
-      Launcher(
-        modifier = Modifier.predictiveBackScaling(48.dp),
-        launcherViewModel = launcherViewModel,
-        onPlaceTile = { rect, item ->
-          if (rect == null) {
-            gestureActivityIconStore.clearActivityState(item.userActivity)
-          } else {
-            gestureActivityIconStore.setActivityState(
-              item.userActivity,
-              item.launcherTileData.launcherIconData,
-              rect,
-            )
-          }
-        },
-        launchShortcutCreator = this::launchShortcutCreator,
-      )
+  ): View =
+    ComposeView(requireContext()).apply {
+      setContent {
+        Launcher(
+          modifier = Modifier.predictiveBackScaling(48.dp),
+          launcherViewModel = launcherViewModel,
+          onPlaceTile = { rect, item ->
+            if (rect == null) {
+              gestureActivityIconStore.clearActivityState(item.userActivity)
+            } else {
+              gestureActivityIconStore.setActivityState(
+                item.userActivity,
+                item.launcherTileData.launcherIconData,
+                rect,
+              )
+            }
+          },
+          launchShortcutCreator = { launchShortcutCreator(it) },
+        )
+      }
     }
-    return view
-  }
 
   private fun launchShortcutCreator(userShortcutCreator: UserShortcutCreator) {
     shortcutActivityLauncher.launch(
