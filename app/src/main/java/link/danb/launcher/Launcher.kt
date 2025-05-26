@@ -1,9 +1,5 @@
 package link.danb.launcher
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -31,17 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
@@ -57,22 +50,8 @@ import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
-@AndroidEntryPoint
-class LauncherFragment : Fragment() {
-
-  override fun onCreateView(
-    inflater: LayoutInflater,
-    container: ViewGroup?,
-    savedInstanceState: Bundle?,
-  ): View =
-    ComposeView(requireContext()).apply {
-      setContent { Launcher(modifier = Modifier.predictiveBackScaling(48.dp)) }
-    }
-}
-
 @Composable
-private fun Launcher(
-  modifier: Modifier = Modifier,
+fun Launcher(
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
 ) {
@@ -91,7 +70,7 @@ private fun Launcher(
 
     val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
     Scaffold(
-      modifier = modifier,
+      modifier = Modifier.predictiveBackScaling(48.dp),
       bottomBar = {
         val searchItemBounds =
           with(LocalDensity.current) {

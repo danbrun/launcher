@@ -2,10 +2,11 @@ package link.danb.launcher
 
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.commitNow
 import dagger.hilt.android.AndroidEntryPoint
+import link.danb.launcher.ui.theme.LauncherTheme
 
 @AndroidEntryPoint
 class LauncherActivity : AppCompatActivity() {
@@ -14,11 +15,7 @@ class LauncherActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
 
     enableEdgeToEdge()
-    setContentView(R.layout.launcher_activity)
-
-    if (savedInstanceState == null) {
-      supportFragmentManager.commitNow { replace(R.id.activity_frame, LauncherFragment()) }
-    }
+    setContent { LauncherTheme { Launcher() } }
 
     onBackPressedDispatcher.addCallback(
       object : OnBackPressedCallback(true) {
