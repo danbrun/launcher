@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,8 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -41,44 +38,27 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlin.getValue
-import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.activities.details.ActivityDetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.gestures.GestureActivityAnimation
-import link.danb.launcher.gestures.GestureActivityIconStore
-import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.gestures.gestureIconPosition
 import link.danb.launcher.shortcuts.PinShortcutsDialog
-import link.danb.launcher.shortcuts.ShortcutManager
 import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.predictiveBackScaling
 import link.danb.launcher.ui.theme.LauncherTheme
-import link.danb.launcher.widgets.WidgetManager
-import link.danb.launcher.widgets.WidgetSizeUtil
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
 @AndroidEntryPoint
 class LauncherFragment : Fragment() {
-
-  private val launcherViewModel: LauncherViewModel by activityViewModels()
-
-  @Inject lateinit var activityManager: ActivityManager
-  @Inject lateinit var gestureActivityIconStore: GestureActivityIconStore
-  @Inject lateinit var profileManager: ProfileManager
-  @Inject lateinit var shortcutManager: ShortcutManager
-  @Inject lateinit var widgetManager: WidgetManager
-  @Inject lateinit var widgetSizeUtil: WidgetSizeUtil
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -86,23 +66,7 @@ class LauncherFragment : Fragment() {
     savedInstanceState: Bundle?,
   ): View =
     ComposeView(requireContext()).apply {
-      setContent {
-        Launcher(
-          modifier = Modifier.predictiveBackScaling(48.dp),
-          launcherViewModel = launcherViewModel,
-          onPlaceTile = { rect, item ->
-            if (rect == null) {
-              gestureActivityIconStore.clearActivityState(item.userActivity)
-            } else {
-              gestureActivityIconStore.setActivityState(
-                item.userActivity,
-                item.launcherTileData.launcherIconData,
-                rect,
-              )
-            }
-          },
-        )
-      }
+      setContent { Launcher(modifier = Modifier.predictiveBackScaling(48.dp)) }
     }
 }
 
@@ -111,7 +75,6 @@ private fun Launcher(
   modifier: Modifier = Modifier,
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
-  onPlaceTile: (Rect?, ActivityViewItem) -> Unit,
 ) {
   val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
   LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
@@ -246,7 +209,7 @@ private fun Launcher(
               is ActivityViewItem -> {
                 LauncherTile(
                   icon = { isPressed ->
-                    Box(Modifier.onGloballyPositioned { onPlaceTile(it.boundsInRoot(), item) }) {
+                    Box(Modifier.gestureIconPosition(item)) {
                       if (item.userActivity == gestureActivityState.value) {
                         Spacer(Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
                       } else {
@@ -257,7 +220,6 @@ private fun Launcher(
                         )
                       }
                     }
-                    DisposableEffect("clear_position") { onDispose { onPlaceTile(null, item) } }
                   },
                   text = {
                     Text(
