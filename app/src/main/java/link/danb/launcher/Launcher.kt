@@ -1,7 +1,6 @@
 package link.danb.launcher
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -40,7 +39,6 @@ import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.gestures.GestureActivityAnimation
-import link.danb.launcher.gestures.gestureIconPosition
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
@@ -65,196 +63,194 @@ fun Launcher(
 
     val appsLauncher = rememberAppsLauncher()
 
-    val gestureActivityState = remember { mutableStateOf<UserActivity?>(null) }
-    GestureActivityAnimation { gestureActivityState.value = it }
-
-    val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
-    Scaffold(
-      modifier = Modifier.predictiveBackScaling(48.dp),
-      bottomBar = {
-        val searchItemBounds =
-          with(LocalDensity.current) {
-            val iconSize = dimensionResource(R.dimen.launcher_icon_size).toPx()
-            Rect(8.dp.toPx(), 32.dp.toPx(), iconSize, iconSize)
-          }
-        LauncherBottomBar(
-          launcherViewModel,
-          onChangeProfile = launcherViewModel::setProfile,
-          onSearchGo = {
-            val userActivity =
-              launcherViewModel.viewItems.value
-                .filterIsInstance<ActivityViewItem>()
-                .firstOrNull()
-                ?.userActivity
-            if (userActivity != null) {
-              appsLauncher.startMainActivity(userActivity, searchItemBounds)
+    GestureActivityAnimation {
+      val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+      Scaffold(
+        modifier = Modifier.predictiveBackScaling(48.dp),
+        bottomBar = {
+          val searchItemBounds =
+            with(LocalDensity.current) {
+              val iconSize = dimensionResource(R.dimen.launcher_icon_size).toPx()
+              Rect(8.dp.toPx(), 32.dp.toPx(), iconSize, iconSize)
             }
-          },
-          onMoreActionsClick = { showMoreActions = true },
-        )
-      },
-      containerColor = Color.Transparent,
-      content = { paddingValues ->
-        var isScrollEnabled by remember { mutableStateOf(true) }
-        val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
-        val textStyle =
-          MaterialTheme.typography.labelMedium.copy(
-            color = Color.White,
-            shadow = Shadow(color = Color.Black, blurRadius = 8f),
-          )
-
-        LazyVerticalGrid(
-          columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
-          modifier =
-            Modifier.windowInsetsPadding(
-              WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
-            ),
-          userScrollEnabled = isScrollEnabled,
-        ) {
-          item(span = { GridItemSpan(maxLineSpan) }) {
-            Spacer(Modifier.height(paddingValues.calculateTopPadding()))
-          }
-
-          items(
-            items,
-            span = { item ->
-              when (item) {
-                is WidgetViewItem,
-                is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
-                else -> GridItemSpan(1)
+          LauncherBottomBar(
+            launcherViewModel,
+            onChangeProfile = launcherViewModel::setProfile,
+            onSearchGo = {
+              val userActivity =
+                launcherViewModel.viewItems.value
+                  .filterIsInstance<ActivityViewItem>()
+                  .firstOrNull()
+                  ?.userActivity
+              if (userActivity != null) {
+                appsLauncher.startMainActivity(userActivity, searchItemBounds)
               }
             },
-            key = { item -> "${item::class.qualifiedName}:${item.key}" },
-          ) { item ->
-            when (item) {
-              is WidgetViewItem -> {
-                Widget(
-                  widgetData = item.widgetData,
-                  sizeRange = item.sizeRange,
-                  isConfigurable = item.isConfigurable,
-                  modifier = Modifier.animateItem(),
-                  setScrollEnabled = { isScrollEnabled = it },
-                  moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
-                  moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
-                  remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
-                  setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
-                  configure = { appsLauncher.configureWidget(it, item.widgetData.widgetId) },
-                )
-              }
-              is GroupHeaderViewItem -> {
-                Text(
-                  item.name,
-                  Modifier.padding(8.dp).animateItem(),
-                  style =
-                    MaterialTheme.typography.titleMedium.copy(
-                      color = Color.White,
-                      shadow = Shadow(color = Color.Black, blurRadius = 8f),
-                    ),
-                )
-              }
-              is ShortcutViewItem -> {
-                val context = LocalContext.current
-                LauncherTile(
-                  icon = { isPressed ->
-                    LauncherIcon(
-                      item.launcherTileData.launcherIconData,
-                      Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-                      isPressed = isPressed,
-                    )
-                  },
-                  text = {
-                    Text(
-                      item.launcherTileData.name,
-                      maxLines = 2,
-                      overflow = TextOverflow.Ellipsis,
-                      style = textStyle,
-                    )
-                  },
-                  modifier = Modifier.animateItem(),
-                  onClick = { appsLauncher.startShortcut(item.userShortcut, it) },
-                  onLongClick = {
-                    MaterialAlertDialogBuilder(context)
-                      .setTitle(R.string.unpin_shortcut)
-                      .setPositiveButton(android.R.string.ok) { _, _ ->
-                        Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT)
-                          .show()
-                        launcherViewModel.unpinShortcut(item.userShortcut)
-                      }
-                      .setNegativeButton(android.R.string.cancel, null)
-                      .show()
-                  },
-                )
-              }
-              is ActivityViewItem -> {
-                LauncherTile(
-                  icon = { isPressed ->
-                    Box(Modifier.gestureIconPosition(item)) {
-                      if (item.userActivity == gestureActivityState.value) {
-                        Spacer(Modifier.size(dimensionResource(R.dimen.launcher_icon_size)))
-                      } else {
-                        LauncherIcon(
-                          item.launcherTileData.launcherIconData,
-                          Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-                          isPressed = isPressed,
-                        )
-                      }
-                    }
-                  },
-                  text = {
-                    Text(
-                      item.launcherTileData.name,
-                      maxLines = 2,
-                      overflow = TextOverflow.Ellipsis,
-                      style = textStyle,
-                    )
-                  },
-                  modifier = Modifier.animateItem(),
-                  onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
-                  onLongClick = { showActivityDetailsFor = item.userActivity },
-                )
+            onMoreActionsClick = { showMoreActions = true },
+          )
+        },
+        containerColor = Color.Transparent,
+        content = { paddingValues ->
+          var isScrollEnabled by remember { mutableStateOf(true) }
+          val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
+          val textStyle =
+            MaterialTheme.typography.labelMedium.copy(
+              color = Color.White,
+              shadow = Shadow(color = Color.Black, blurRadius = 8f),
+            )
+
+          LazyVerticalGrid(
+            columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
+            modifier =
+              Modifier.windowInsetsPadding(
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+              ),
+            userScrollEnabled = isScrollEnabled,
+          ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+              Spacer(Modifier.height(paddingValues.calculateTopPadding()))
+            }
+
+            items(
+              items,
+              span = { item ->
+                when (item) {
+                  is WidgetViewItem,
+                  is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
+
+                  else -> GridItemSpan(1)
+                }
+              },
+              key = { item -> "${item::class.qualifiedName}:${item.key}" },
+            ) { item ->
+              when (item) {
+                is WidgetViewItem -> {
+                  Widget(
+                    widgetData = item.widgetData,
+                    sizeRange = item.sizeRange,
+                    isConfigurable = item.isConfigurable,
+                    modifier = Modifier.animateItem(),
+                    setScrollEnabled = { isScrollEnabled = it },
+                    moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
+                    moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
+                    remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
+                    setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
+                    configure = { appsLauncher.configureWidget(it, item.widgetData.widgetId) },
+                  )
+                }
+
+                is GroupHeaderViewItem -> {
+                  Text(
+                    item.name,
+                    Modifier.padding(8.dp).animateItem(),
+                    style =
+                      MaterialTheme.typography.titleMedium.copy(
+                        color = Color.White,
+                        shadow = Shadow(color = Color.Black, blurRadius = 8f),
+                      ),
+                  )
+                }
+
+                is ShortcutViewItem -> {
+                  val context = LocalContext.current
+                  LauncherTile(
+                    icon = { isPressed ->
+                      LauncherIcon(
+                        item.launcherTileData.launcherIconData,
+                        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                        isPressed = isPressed,
+                      )
+                    },
+                    text = {
+                      Text(
+                        item.launcherTileData.name,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = textStyle,
+                      )
+                    },
+                    modifier = Modifier.animateItem(),
+                    onClick = { appsLauncher.startShortcut(item.userShortcut, it) },
+                    onLongClick = {
+                      MaterialAlertDialogBuilder(context)
+                        .setTitle(R.string.unpin_shortcut)
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                          Toast.makeText(context, R.string.unpinned_shortcut, Toast.LENGTH_SHORT)
+                            .show()
+                          launcherViewModel.unpinShortcut(item.userShortcut)
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                    },
+                  )
+                }
+
+                is ActivityViewItem -> {
+                  LauncherTile(
+                    icon = { isPressed ->
+                      LauncherIcon(
+                        item.launcherTileData.launcherIconData,
+                        Modifier.gestureIcon(item)
+                          .size(dimensionResource(R.dimen.launcher_icon_size)),
+                        isPressed = isPressed,
+                      )
+                    },
+                    text = {
+                      Text(
+                        item.launcherTileData.name,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = textStyle,
+                      )
+                    },
+                    modifier = Modifier.animateItem(),
+                    onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
+                    onLongClick = { showActivityDetailsFor = item.userActivity },
+                  )
+                }
               }
             }
+
+            item(span = { GridItemSpan(maxLineSpan) }) {
+              Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
+            }
           }
+        },
+      )
 
-          item(span = { GridItemSpan(maxLineSpan) }) {
-            Spacer(Modifier.height(paddingValues.calculateBottomPadding()))
-          }
-        }
-      },
-    )
+      if (showPinShortcuts) {
+        PinShortcutsDialog(profile) { showPinShortcuts = false }
+      }
 
-    if (showPinShortcuts) {
-      PinShortcutsDialog(profile) { showPinShortcuts = false }
-    }
+      if (showPinWidgets) {
+        PinWidgetsDialog(profile) { showPinWidgets = false }
+      }
 
-    if (showPinWidgets) {
-      PinWidgetsDialog(profile) { showPinWidgets = false }
-    }
+      if (showHiddenApps) {
+        HiddenAppsDialog(
+          profile = profile,
+          navigateToDetails = { showActivityDetailsFor = it },
+          dismiss = { showHiddenApps = false },
+        )
+      }
 
-    if (showHiddenApps) {
-      HiddenAppsDialog(
+      MoreActionsDialog(
+        showMoreActions,
         profile = profile,
-        navigateToDetails = { showActivityDetailsFor = it },
-        dismiss = { showHiddenApps = false },
-      )
-    }
+        pinShortcuts = { showPinShortcuts = true },
+        pinWidgets = { showPinWidgets = true },
+        shownHiddenApps = { showHiddenApps = true },
+      ) {
+        showMoreActions = false
+      }
 
-    MoreActionsDialog(
-      showMoreActions,
-      profile = profile,
-      pinShortcuts = { showPinShortcuts = true },
-      pinWidgets = { showPinWidgets = true },
-      shownHiddenApps = { showHiddenApps = true },
-    ) {
-      showMoreActions = false
-    }
-
-    if (showActivityDetailsFor != null) {
-      ActivityDetailsDialog(
-        showActivityDetailsFor!!,
-        dismiss = { showActivityDetailsFor = null },
-        onShortcutCreatorClick = { _, item -> appsLauncher.startShortcutCreator(item) },
-      )
+      if (showActivityDetailsFor != null) {
+        ActivityDetailsDialog(
+          showActivityDetailsFor!!,
+          dismiss = { showActivityDetailsFor = null },
+          onShortcutCreatorClick = { _, item -> appsLauncher.startShortcutCreator(item) },
+        )
+      }
     }
   }
 }

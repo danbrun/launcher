@@ -10,8 +10,15 @@ import android.os.Build
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.getSystemService
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.collections.immutable.ImmutableList
@@ -121,4 +128,18 @@ class ProfileManager @Inject constructor(@ApplicationContext context: Context) {
 
   fun isEnabled(userHandle: UserHandle) =
     !userManager.isQuietModeEnabled(userHandle) && userManager.isUserUnlocked(userHandle)
+}
+
+@Composable
+fun rememberProfileManager(): ProfileManager {
+  val context = LocalContext.current
+  return remember(context) {
+    EntryPointAccessors.fromApplication<ProfileManagerEntryPoint>(context).getProfileManager()
+  }
+}
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface ProfileManagerEntryPoint {
+  fun getProfileManager(): ProfileManager
 }
