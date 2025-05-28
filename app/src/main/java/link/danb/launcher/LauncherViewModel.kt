@@ -72,7 +72,7 @@ data class ActivityViewItem(
   override val launcherTileData: LauncherTileData,
   val isPinned: Boolean,
 ) : IconTileViewItem {
-  override val key: String = "$userActivity,$isPinned"
+  override val key: String = "${userActivity.componentName},$isPinned"
 }
 
 @HiltViewModel

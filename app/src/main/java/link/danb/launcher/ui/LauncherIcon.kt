@@ -3,6 +3,7 @@ package link.danb.launcher.ui
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
@@ -19,9 +20,14 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import link.danb.launcher.extensions.drawAdaptiveIcon
 import link.danb.launcher.extensions.drawDrawable
 import link.danb.launcher.extensions.drawMonochromeIcon
+import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.theme.LocalIconTheme
 
-data class LauncherIconData(val icon: AdaptiveIconDrawable, val badge: Drawable)
+data class LauncherIconData(
+  val icon: AdaptiveIconDrawable,
+  val profile: Profile,
+  val badge: Drawable,
+)
 
 @Composable
 fun LauncherIcon(
@@ -31,11 +37,12 @@ fun LauncherIcon(
 ) {
   val monochromeIconTheme = LocalIconTheme.current
   val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
-  Canvas(modifier) { drawLauncherIcon(data, monochromeIconTheme, insetMultiplier) }
+  Canvas(modifier) { drawLauncherIcon(data.icon, monochromeIconTheme, insetMultiplier) }
+  AnimatedContent(data, contentKey = { it.profile }) { Canvas(modifier) { drawDrawable(it.badge) } }
 }
 
 fun DrawScope.drawLauncherIcon(
-  data: LauncherIconData,
+  icon: AdaptiveIconDrawable,
   monochromeIconTheme: MonochromeIconTheme?,
   insetMultiplier: Float = 1f,
 ) {
@@ -45,15 +52,14 @@ fun DrawScope.drawLauncherIcon(
     }
   ) {
     if (monochromeIconTheme != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      if (data.icon.monochrome != null) {
-        drawMonochromeIcon(data.icon, monochromeIconTheme, insetMultiplier)
+      if (icon.monochrome != null) {
+        drawMonochromeIcon(icon, monochromeIconTheme, insetMultiplier)
       } else {
-        drawAdaptiveIcon(data.icon, insetMultiplier)
+        drawAdaptiveIcon(icon, insetMultiplier)
         drawRect(monochromeIconTheme.background, Offset.Zero, size, blendMode = BlendMode.Color)
       }
     } else {
-      drawAdaptiveIcon(data.icon, insetMultiplier)
+      drawAdaptiveIcon(icon, insetMultiplier)
     }
-    drawDrawable(data.badge)
   }
 }

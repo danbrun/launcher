@@ -99,7 +99,11 @@ constructor(
 
   suspend fun getTileData(userComponent: UserComponent): LauncherTileData =
     LauncherTileData(
-      LauncherIconData(getIcon(userComponent), getBadge(userComponent.profile)),
+      LauncherIconData(
+        getIcon(userComponent),
+        userComponent.profile,
+        getBadge(userComponent.profile),
+      ),
       getLabel(userComponent),
     )
 
@@ -109,6 +113,7 @@ constructor(
         LauncherTileData(
           LauncherIconData(
             getIconWithCache(userComponent).await(),
+            userComponent.profile,
             getBadge(userComponent.profile),
           ),
           getLabel(userComponent),

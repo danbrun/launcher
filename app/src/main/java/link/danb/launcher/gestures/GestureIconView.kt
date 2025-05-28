@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import link.danb.launcher.R
+import link.danb.launcher.extensions.drawDrawable
 import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.MonochromeIconTheme
 import link.danb.launcher.ui.drawLauncherIcon
@@ -105,13 +106,14 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
       Size(canvas.width.toFloat(), canvas.height.toFloat()),
     ) {
       drawLauncherIcon(
-        data.launcherIconData,
+        data.launcherIconData.icon,
         if (data.useMonochromeIcons) {
           MonochromeIconTheme.fromContext(context)
         } else {
           null
         },
       )
+      drawDrawable(data.launcherIconData.badge)
     }
     surfaceView.holder.unlockCanvasAndPost(canvas)
 
