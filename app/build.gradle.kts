@@ -16,15 +16,15 @@ android {
     applicationId = "link.danb.launcher"
     minSdk = 28
     targetSdk = 35
-    versionCode = 28
-    versionName = "1.28"
+    versionCode = 29
+    versionName = "1.29"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     vectorDrawables { useSupportLibrary = true }
-
-    ksp { arg("room.schemaLocation", "$projectDir/schemas") }
   }
+
+  ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 
   buildTypes {
     release {
