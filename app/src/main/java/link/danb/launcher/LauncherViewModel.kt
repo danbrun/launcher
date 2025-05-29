@@ -71,8 +71,15 @@ data class ActivityViewItem(
   val userActivity: UserActivity,
   override val launcherTileData: LauncherTileData,
   val isPinned: Boolean,
+  val isSearching: Boolean,
 ) : IconTileViewItem {
-  override val key: String = "${userActivity.componentName},$isPinned"
+  override val key: String
+    get() {
+      val component =
+        if (isSearching && userActivity.profile != Profile.PERSONAL) userActivity
+        else userActivity.componentName
+      return "$component,$isPinned"
+    }
 }
 
 @HiltViewModel
@@ -186,7 +193,7 @@ constructor(
           activities
             .asFlow()
             .filter { it.isPinned && it.userActivity.profile == profile }
-            .map { getActivityTileItem(it, isPinned = true) },
+            .map { getActivityTileItem(it, isPinned = true, isSearching = false) },
           shortcuts
             .asFlow()
             .filter { it.profile == profile }
@@ -216,7 +223,7 @@ constructor(
             true
           }
         }
-        .map { getActivityTileItem(it, isPinned = false) }
+        .map { getActivityTileItem(it, isPinned = false, searchQuery != null) }
         .filter {
           if (searchQuery != null) {
             it.launcherTileData.name.lowercase().contains(searchQuery.lowercase().trim())
@@ -240,11 +247,16 @@ constructor(
     }
   }
 
-  private suspend fun getActivityTileItem(activityData: ActivityData, isPinned: Boolean) =
+  private suspend fun getActivityTileItem(
+    activityData: ActivityData,
+    isPinned: Boolean,
+    isSearching: Boolean,
+  ) =
     ActivityViewItem(
       activityData.userActivity,
       launcherResourceProvider.getTileDataWithCache(activityData.userActivity),
       isPinned,
+      isSearching,
     )
 
   private data class CombinedData(
