@@ -126,6 +126,7 @@ fun Launcher(
                 }
               },
               key = { item -> "${item::class.qualifiedName}:${item.key}" },
+              contentType = { item -> item::class },
             ) { item ->
               when (item) {
                 is WidgetViewItem -> {
