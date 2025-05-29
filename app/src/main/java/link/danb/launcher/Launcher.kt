@@ -18,6 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,9 +47,10 @@ import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.predictiveBackScaling
-import link.danb.launcher.ui.theme.LauncherTheme
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
+
+val LocalUseMonochromeIcons: ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
 
 @Composable
 fun Launcher(
@@ -54,7 +58,7 @@ fun Launcher(
   widgetsViewModel: WidgetsViewModel = hiltViewModel(),
 ) {
   val useMonochromeIcons by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
-  LauncherTheme(useMonochromeIcons = useMonochromeIcons) {
+  CompositionLocalProvider(LocalUseMonochromeIcons provides useMonochromeIcons) {
     var showPinShortcuts by remember { mutableStateOf(false) }
     var showPinWidgets by remember { mutableStateOf(false) }
     var showHiddenApps by remember { mutableStateOf(false) }

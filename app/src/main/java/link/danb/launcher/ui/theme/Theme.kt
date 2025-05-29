@@ -8,11 +8,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalContext
-import link.danb.launcher.ui.MonochromeIconTheme
 
 private val DarkColorScheme =
   darkColorScheme(
@@ -80,12 +76,9 @@ private val LightColorScheme =
     scrim = md_theme_light_scrim,
   )
 
-val LocalIconTheme: ProvidableCompositionLocal<MonochromeIconTheme?> = compositionLocalOf { null }
-
 @Composable
 fun LauncherTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
-  useMonochromeIcons: Boolean = false,
   // Dynamic color is available on Android 12+
   dynamicColor: Boolean = true,
   content: @Composable () -> Unit,
@@ -108,17 +101,5 @@ fun LauncherTheme(
   //      }
   //    }
 
-  MaterialTheme(
-    colorScheme = colorScheme,
-    typography = Typography,
-    content = {
-      val iconTheme =
-        if (useMonochromeIcons) {
-          MonochromeIconTheme.theme
-        } else {
-          null
-        }
-      CompositionLocalProvider(LocalIconTheme provides iconTheme) { content() }
-    },
-  )
+  MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

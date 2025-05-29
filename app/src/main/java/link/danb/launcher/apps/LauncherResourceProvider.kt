@@ -14,8 +14,8 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.PaintDrawable
 import android.os.UserHandle
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.getSystemService
-import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toDrawable
 import androidx.palette.graphics.Palette
@@ -51,7 +51,7 @@ constructor(
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
   private val density: Int by lazy { context.resources.displayMetrics.densityDpi }
   private val icons: MutableMap<UserComponent, Deferred<AdaptiveIconDrawable>> = mutableMapOf()
-  private val badges: MutableMap<Profile, Drawable> = mutableMapOf()
+  private val badges: MutableMap<Profile, Drawable?> = mutableMapOf()
   private val coroutineScope: CoroutineScope = MainScope() + Dispatchers.IO
 
   init {
@@ -88,13 +88,13 @@ constructor(
   suspend fun getIcon(userComponent: UserComponent): AdaptiveIconDrawable =
     withContext(Dispatchers.IO) { userComponent.getSourceIcon().toAdaptiveIconDrawable() }
 
-  fun getBadge(profile: Profile): Drawable =
+  fun getBadge(profile: Profile): Drawable? =
     badges.getOrPut(profile) {
-      val size = context.resources.getDimensionPixelOffset(R.dimen.launcher_icon_size)
-      context.packageManager.getUserBadgedIcon(
-        createBitmap(size, size).toDrawable(context.resources),
-        profileManager.getUserHandle(profile)!!,
-      )
+      when (profile) {
+        Profile.PERSONAL -> null
+        Profile.WORK -> AppCompatResources.getDrawable(context, R.drawable.ic_baseline_work_24)
+        Profile.PRIVATE -> AppCompatResources.getDrawable(context, R.drawable.baseline_lock_24)
+      }
     }
 
   suspend fun getTileData(userComponent: UserComponent): LauncherTileData =

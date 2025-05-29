@@ -14,15 +14,22 @@ import android.view.SurfaceView
 import android.view.View
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import link.danb.launcher.R
-import link.danb.launcher.extensions.drawDrawable
 import link.danb.launcher.ui.LauncherIconData
 import link.danb.launcher.ui.MonochromeIconTheme
+import link.danb.launcher.ui.drawBadge
 import link.danb.launcher.ui.drawLauncherIcon
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -105,15 +112,20 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
       Canvas(canvas),
       Size(canvas.width.toFloat(), canvas.height.toFloat()),
     ) {
-      drawLauncherIcon(
-        data.launcherIconData.icon,
-        if (data.useMonochromeIcons) {
-          MonochromeIconTheme.fromContext(context)
-        } else {
-          null
-        },
-      )
-      drawDrawable(data.launcherIconData.badge)
+      clipPath(
+        Path().apply {
+          addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(size.width * 0.25f)))
+        }
+      ) {
+        val theme =
+          if (data.useMonochromeIcons) {
+            MonochromeIconTheme.fromContext(context)
+          } else {
+            MonochromeIconTheme(Color.White, Color.Blue)
+          }
+        drawLauncherIcon(data.launcherIconData.icon, theme.takeIf { data.useMonochromeIcons })
+        drawBadge(data.launcherIconData.badge, theme)
+      }
     }
     surfaceView.holder.unlockCanvasAndPost(canvas)
 
