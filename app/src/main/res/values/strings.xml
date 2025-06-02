@@ -17,6 +17,8 @@
     <string name="pinned_shortcut">Pinned shortcut</string>
     <string name="unpinned_shortcut">Unpinned shortcut</string>
     <string name="pinned_widget">Pinned widget</string>
+    <string name="tab_service_title">Tab service</string>
+    <string name="tab_service_text">Syncing tabs with Launcher.</string>
 
     <!-- Actions -->
     <string name="search">Search</string>
@@ -44,4 +46,7 @@
     <string name="configure_widget">Configure widget</string>
     <string name="request_home_role">Set as default home app</string>
     <string name="show_private">Show private apps</string>
+
+    <!-- Notification channels -->
+    <string name="tab_service">Tab Service</string>
 </resources>

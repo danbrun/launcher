@@ -39,6 +39,8 @@ android {
   kotlinOptions { jvmTarget = "11" }
   buildFeatures { compose = true }
   sourceSets { getByName("androidTest").assets.srcDirs("$projectDir/schemas") }
+
+  packaging { resources.excludes.add("META-INF/*") }
 }
 
 dependencies {
@@ -84,8 +86,14 @@ dependencies {
   implementation(libs.hilt.android)
   implementation(libs.kotlinx.collections.immutable)
   implementation(libs.kotlinx.serialization.json)
+  implementation(libs.ktor.serialization.kotlinx.json)
+  implementation(libs.ktor.server.content.negotiation)
+  implementation(libs.ktor.server.core)
+  implementation(libs.ktor.server.netty)
   implementation(libs.material)
   implementation(libs.material3)
+  implementation(libs.slf4j.android)
+  implementation(libs.slf4j.api)
   implementation(libs.ui)
   implementation(libs.ui.graphics)
   implementation(libs.ui.tooling.preview)

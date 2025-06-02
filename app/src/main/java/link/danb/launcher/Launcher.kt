@@ -1,6 +1,8 @@
 package link.danb.launcher
 
+import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -14,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -120,7 +124,8 @@ fun Launcher(
               span = { item ->
                 when (item) {
                   is WidgetViewItem,
-                  is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
+                  is GroupHeaderViewItem,
+                  is TabViewItem -> GridItemSpan(maxLineSpan)
 
                   else -> GridItemSpan(1)
                 }
@@ -211,6 +216,31 @@ fun Launcher(
                     modifier = Modifier.animateItem(),
                     onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
                     onLongClick = { showActivityDetailsFor = item.userActivity },
+                  )
+                }
+
+                is TabViewItem -> {
+                  val context = LocalContext.current
+                  LauncherTile(
+                    icon = {
+                      if (item.icon != null) {
+                        Image(
+                          item.icon,
+                          contentDescription = null,
+                          Modifier.clip(RoundedCornerShape(25)),
+                        )
+                      }
+                    },
+                    text = {
+                      Text(
+                        item.name,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        style = textStyle,
+                      )
+                    },
+                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, item.uri)) },
+                    onLongClick = {},
                   )
                 }
               }

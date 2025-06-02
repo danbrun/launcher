@@ -2,7 +2,13 @@ package link.danb.launcher
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
+import android.util.Base64
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,6 +88,11 @@ data class ActivityViewItem(
     }
 }
 
+data class TabViewItem(val id: Int, val uri: Uri, val name: String, val icon: ImageBitmap?) :
+  ViewItem {
+  override val key: String = id.toString()
+}
+
 @HiltViewModel
 class LauncherViewModel
 @Inject
@@ -115,18 +126,19 @@ constructor(
         activityManager.data,
         shortcutManager.shortcuts,
         widgetManager.data,
-        searchQuery,
-        profile,
+        TabService.tabStateFlow,
+        combine(searchQuery, profile, ::Filter),
         ::CombinedData,
       )
       .debounce(100)
       .map {
         buildList {
-            if (it.searchQuery == null) {
-              addWidgetListViewItems(it.widgets, it.profile)
-              addPinnedListViewItems(it.activities, it.shortcuts, it.profile)
+            if (it.filter.searchQuery == null) {
+              addWidgetListViewItems(it.widgets, it.filter.profile)
+              addTabTileViewItems(it.tabState)
+              addPinnedListViewItems(it.activities, it.shortcuts, it.filter.profile)
             }
-            addAppListViewItems(it.activities, it.searchQuery, it.profile)
+            addAppListViewItems(it.activities, it.filter.searchQuery, it.filter.profile)
           }
           .toImmutableList()
       }
@@ -179,6 +191,18 @@ constructor(
           )
 
         add(WidgetViewItem(widget, minHeight..maxHeight, providerInfo.configure != null))
+      }
+    }
+  }
+
+  private fun MutableList<ViewItem>.addTabTileViewItems(tabState: TabState) {
+    if (tabState.tabs.isEmpty()) return
+    add(GroupHeaderViewItem("Tabs"))
+    for (tab in tabState.tabs) {
+      if (tab.url.startsWith("http") && tab.capture != null) {
+        val bytes = Base64.decode(tab.capture.split(",")[1], Base64.DEFAULT)
+        val icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.size).asImageBitmap()
+        add(TabViewItem(tab.id, tab.url.toUri(), tab.title, icon))
       }
     }
   }
@@ -263,7 +287,9 @@ constructor(
     val activities: List<ActivityData>,
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
-    val searchQuery: String?,
-    val profile: Profile,
+    val tabState: TabState,
+    val filter: Filter,
   )
+
+  private data class Filter(val searchQuery: String?, val profile: Profile)
 }

@@ -3,4 +3,7 @@
     <!-- Widget binding IDs -->
     <id name="app_widget_host_id" />
     <id name="app_widget_configure_request_id" />
+
+    <!-- Notification IDs -->
+    <id name="tab_service" />
 </resources>
