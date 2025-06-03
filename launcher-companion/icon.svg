@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="66"
+   height="66.000008"
+   viewBox="0 0 17.462499 17.462502"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer2"
+     style="display:inline"
+     transform="translate(-5.5562492,-5.5562495)">
+    <circle
+       style="fill:#00522d;fill-opacity:1;stroke:none;stroke-width:4.50881;stroke-opacity:1"
+       id="path3"
+       cx="14.287499"
+       cy="14.287499"
+       r="8.7312498" />
+  </g>
+  <g
+     id="layer1"
+     style="display:inline"
+     transform="translate(-5.5562492,-5.5562495)">
+    <rect
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.529167"
+       id="rect1"
+       width="2.1166666"
+       height="2.1166666"
+       x="13.229167"
+       y="16.933332" />
+    <rect
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.529167"
+       id="rect1-7"
+       width="2.1166666"
+       height="2.1166666"
+       x="13.229167"
+       y="13.758333" />
+    <rect
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.529167"
+       id="rect1-5-0"
+       width="2.1166666"
+       height="2.1166666"
+       x="10.054166"
+       y="13.758333" />
+    <rect
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.529167"
+       id="rect1-2-9"
+       width="2.1166666"
+       height="2.1166666"
+       x="16.404165"
+       y="13.758333" />
+    <path
+       id="path2"
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.264583"
+       d="M 16.404167,16.933333 V 17.991667 19.05 H 17.4625 a 1.0583333,1.0583333 0 0 0 1.058333,-1.058333 V 16.933333 H 17.4625 Z" />
+    <path
+       id="path2-6"
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.264583"
+       d="M 12.170833,16.933333 V 17.991667 19.05 H 11.1125 A 1.0583333,1.0583333 0 0 1 10.054167,17.991667 V 16.933333 H 11.1125 Z" />
+    <path
+       id="path8"
+       style="fill:#97f7b7;fill-opacity:1;stroke-width:0.264583"
+       d="m 14.2875,9.525 a 1.0583333,1.0583333 0 0 0 -0.472323,0.1136881 l -10e-4,-0.00207 -3.161048,1.5807819 -0.01395,0.0067 10e-4,0.0016 a 1.0583333,1.0583333 0 0 0 -0.586011,0.945151 v 0.529166 h 8.466666 V 12.170831 A 1.0583333,1.0583333 0 0 0 17.93534,11.225152 l 5.29e-4,-10e-4 -3.175,-1.5874998 v 5.159e-4 A 1.0583333,1.0583333 0 0 0 14.287501,9.5249995 Z" />
+  </g>
+</svg>
