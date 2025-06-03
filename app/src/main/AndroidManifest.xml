@@ -74,12 +74,12 @@
         </activity>
 
         <service
-            android:name=".TabService"
+            android:name=".CompanionService"
             android:exported="false"
             android:foregroundServiceType="specialUse" />
 
         <receiver
-            android:name=".TabServiceBroadcastReceiver"
+            android:name=".CompanionBroadcastReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

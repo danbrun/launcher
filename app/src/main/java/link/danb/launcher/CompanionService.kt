@@ -30,21 +30,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-class TabServiceBroadcastReceiver : BroadcastReceiver() {
+class CompanionBroadcastReceiver : BroadcastReceiver() {
 
   override fun onReceive(context: Context, intent: Intent) {
     when (intent.action) {
       Intent.ACTION_BOOT_COMPLETED,
       Intent.ACTION_MY_PACKAGE_REPLACED -> {
-        if (TabService.tabService == null) {
-          context.startForegroundService(Intent(context, TabService::class.java))
+        if (CompanionService.tabService == null) {
+          context.startForegroundService(Intent(context, CompanionService::class.java))
         }
       }
     }
   }
 }
 
-class TabService : Service() {
+class CompanionService : Service() {
 
   override fun onCreate() {
     super.onCreate()
@@ -91,13 +91,13 @@ class TabService : Service() {
     super.onDestroy()
 
     tabService = null
-    tabStateFlow.value = TabState(listOf())
+    tabStateFlow.value = listOf()
   }
 
   companion object {
-    var tabService: TabService? = null
+    var tabService: CompanionService? = null
 
-    val tabStateFlow: MutableStateFlow<TabState> = MutableStateFlow(TabState(listOf()))
+    val tabStateFlow: MutableStateFlow<List<TabInfo>> = MutableStateFlow(listOf())
 
     private const val TAB_SERVICE_CHANNEL_ID = "tab_service"
   }
@@ -110,10 +110,22 @@ class TabService : Service() {
 
       post {
         try {
-          val tabState = call.receive<TabState>()
-          tabStateFlow.value = tabState
-          log.atInfo().log("Received tabs: $tabState")
+          val tabState = call.receive<TabEvent>()
+          when {
+            tabState.updated != null -> {
+              tabStateFlow.value =
+                tabStateFlow.value.filter { it.id != tabState.updated.info.id } +
+                  tabState.updated.info
+            }
 
+            tabState.removed != null -> {
+              tabStateFlow.value = tabStateFlow.value.filter { it.id != tabState.removed.id }
+            }
+
+            else -> {
+              throw IllegalArgumentException()
+            }
+          }
           call.respond(HttpStatusCode.OK)
         } catch (e: BadRequestException) {
           log.atWarn().log("failed ${e.cause} ${e.message}")
@@ -123,7 +135,17 @@ class TabService : Service() {
   }
 }
 
-@Serializable data class TabState(val tabs: List<Tab>)
+@Serializable
+data class TabInfo(
+  val id: Int,
+  val url: String,
+  val title: String = url,
+  val capture: String? = null,
+)
+
+@Serializable data class TabUpdatedEvent(val info: TabInfo)
+
+@Serializable data class TabRemovedEvent(val id: Int)
 
 @Serializable
-data class Tab(val id: Int, val url: String, val capture: String? = null, val title: String = url)
+data class TabEvent(val updated: TabUpdatedEvent? = null, val removed: TabRemovedEvent? = null)

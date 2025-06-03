@@ -126,7 +126,7 @@ constructor(
         activityManager.data,
         shortcutManager.shortcuts,
         widgetManager.data,
-        TabService.tabStateFlow,
+        CompanionService.tabStateFlow,
         combine(searchQuery, profile, ::Filter),
         ::CombinedData,
       )
@@ -195,10 +195,10 @@ constructor(
     }
   }
 
-  private fun MutableList<ViewItem>.addTabTileViewItems(tabState: TabState) {
-    if (tabState.tabs.isEmpty()) return
+  private fun MutableList<ViewItem>.addTabTileViewItems(tabs: List<TabInfo>) {
+    if (tabs.isEmpty()) return
     add(GroupHeaderViewItem("Tabs"))
-    for (tab in tabState.tabs) {
+    for (tab in tabs) {
       if (tab.url.startsWith("http") && tab.capture != null) {
         val bytes = Base64.decode(tab.capture.split(",")[1], Base64.DEFAULT)
         val icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.size).asImageBitmap()
@@ -287,7 +287,7 @@ constructor(
     val activities: List<ActivityData>,
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
-    val tabState: TabState,
+    val tabState: List<TabInfo>,
     val filter: Filter,
   )
 
