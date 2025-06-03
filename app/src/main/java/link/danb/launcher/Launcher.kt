@@ -28,11 +28,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -227,7 +229,9 @@ fun Launcher(
                         Image(
                           item.icon,
                           contentDescription = null,
-                          Modifier.clip(RoundedCornerShape(25)),
+                          Modifier.size(width = 80.dp, height = 60.dp).clip(RoundedCornerShape(25)),
+                          alignment = Alignment.TopCenter,
+                          contentScale = ContentScale.FillWidth,
                         )
                       }
                     },
