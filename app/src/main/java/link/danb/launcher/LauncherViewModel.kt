@@ -31,12 +31,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
+import link.danb.launcher.database.LauncherDatabase
+import link.danb.launcher.database.TabData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
@@ -100,6 +103,7 @@ constructor(
   activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
+  private val launcherDatabase: LauncherDatabase,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val profileManager: ProfileManager,
   private val shortcutManager: ShortcutManager,
@@ -126,7 +130,7 @@ constructor(
         activityManager.data,
         shortcutManager.shortcuts,
         widgetManager.data,
-        CompanionService.tabStateFlow,
+        launcherDatabase.tabData().get(),
         combine(searchQuery, profile, ::Filter),
         ::CombinedData,
       )
@@ -168,6 +172,10 @@ constructor(
     shortcutManager.pinShortcut(userShortcut, isPinned = false)
   }
 
+  fun clearTab(tabId: Int) {
+    viewModelScope.launch { launcherDatabase.tabData().delete(tabId) }
+  }
+
   private fun MutableList<ViewItem>.addWidgetListViewItems(
     widgets: List<WidgetData>,
     profile: Profile,
@@ -195,7 +203,7 @@ constructor(
     }
   }
 
-  private fun MutableList<ViewItem>.addTabTileViewItems(tabs: List<TabInfo>) {
+  private fun MutableList<ViewItem>.addTabTileViewItems(tabs: List<TabData>) {
     if (tabs.isEmpty()) return
     add(GroupHeaderViewItem("Tabs"))
     for (tab in tabs) {
@@ -287,7 +295,7 @@ constructor(
     val activities: List<ActivityData>,
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
-    val tabState: List<TabInfo>,
+    val tabState: List<TabData>,
     val filter: Filter,
   )
 

@@ -240,7 +240,7 @@ fun Launcher(
                       )
                     },
                     onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, item.uri)) },
-                    onLongClick = {},
+                    onLongClick = { launcherViewModel.clearTab(item.id) },
                   )
                 }
               }

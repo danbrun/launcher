@@ -11,12 +11,13 @@ import link.danb.launcher.database.migrations.DeleteActivityDataTagsColumn
 import link.danb.launcher.database.migrations.MigrateUserHandleToProfile
 
 @Database(
-  entities = [ActivityData::class, WidgetData::class],
-  version = 8,
+  entities = [ActivityData::class, WidgetData::class, TabData::class],
+  version = 9,
   autoMigrations =
     [
       AutoMigration(from = 1, to = 6),
       AutoMigration(from = 6, to = 7, spec = DeleteActivityDataTagsColumn::class),
+      AutoMigration(from = 8, to = 9),
     ],
 )
 @TypeConverters(ComponentNameConverter::class, ProfileConverter::class, StringSetConverter::class)
@@ -25,6 +26,8 @@ abstract class LauncherDatabase : RoomDatabase() {
   abstract fun activityData(): ActivityData.DataAccessObject
 
   abstract fun widgetData(): WidgetData.DataAccessObject
+
+  abstract fun tabData(): TabData.DataAccessObject
 
   @Module
   @InstallIn(SingletonComponent::class)

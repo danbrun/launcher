@@ -11,13 +11,16 @@ import android.os.IBinder
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import dagger.hilt.android.AndroidEntryPoint
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
@@ -26,9 +29,11 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
-import kotlinx.coroutines.flow.MutableStateFlow
+import javax.inject.Inject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import link.danb.launcher.database.LauncherDatabase
+import link.danb.launcher.database.TabData
 
 class CompanionBroadcastReceiver : BroadcastReceiver() {
 
@@ -44,7 +49,12 @@ class CompanionBroadcastReceiver : BroadcastReceiver() {
   }
 }
 
+@AndroidEntryPoint
 class CompanionService : Service() {
+
+  @Inject lateinit var launcherDatabase: LauncherDatabase
+
+  private val tabData: TabData.DataAccessObject by lazy { launcherDatabase.tabData() }
 
   override fun onCreate() {
     super.onCreate()
@@ -82,7 +92,7 @@ class CompanionService : Service() {
       },
     )
 
-    embeddedServer(Netty, port = 47051, module = { module() }).start()
+    server = embeddedServer(Netty, port = 47051, module = { module() }).start()
   }
 
   override fun onBind(intent: Intent?): IBinder? = null
@@ -91,13 +101,13 @@ class CompanionService : Service() {
     super.onDestroy()
 
     tabService = null
-    tabStateFlow.value = listOf()
+    server?.stop()
+    server = null
   }
 
   companion object {
     var tabService: CompanionService? = null
-
-    val tabStateFlow: MutableStateFlow<List<TabInfo>> = MutableStateFlow(listOf())
+    var server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>? = null
 
     private const val TAB_SERVICE_CHANNEL_ID = "tab_service"
   }
@@ -113,13 +123,11 @@ class CompanionService : Service() {
           val tabState = call.receive<TabEvent>()
           when {
             tabState.updated != null -> {
-              tabStateFlow.value =
-                tabStateFlow.value.filter { it.id != tabState.updated.info.id } +
-                  tabState.updated.info
+              tabData.put(tabState.updated.info)
             }
 
             tabState.removed != null -> {
-              tabStateFlow.value = tabStateFlow.value.filter { it.id != tabState.removed.id }
+              tabData.delete(tabState.removed.id)
             }
 
             else -> {
@@ -135,15 +143,7 @@ class CompanionService : Service() {
   }
 }
 
-@Serializable
-data class TabInfo(
-  val id: Int,
-  val url: String,
-  val title: String = url,
-  val capture: String? = null,
-)
-
-@Serializable data class TabUpdatedEvent(val info: TabInfo)
+@Serializable data class TabUpdatedEvent(val info: TabData)
 
 @Serializable data class TabRemovedEvent(val id: Int)
 
