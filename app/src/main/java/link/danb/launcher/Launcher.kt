@@ -244,7 +244,11 @@ fun Launcher(
                       )
                     },
                     modifier = Modifier.animateItem(),
-                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, item.uri)) },
+                    onClick = {
+                      if (item.uri != null) {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, item.uri))
+                      }
+                    },
                     onLongClick = { launcherViewModel.clearTab(item.id) },
                   )
                 }

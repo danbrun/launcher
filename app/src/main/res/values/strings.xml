@@ -8,6 +8,7 @@
     <string name="widgets">Widgets</string>
     <string name="hidden_apps">Hidden apps</string>
     <string name="ellipses">&#8230;</string>
+    <string name="tabs">Tabs</string>
 
     <!-- Error messages -->
     <string name="widget_permission_denied">Cannot bind widget without permission</string>

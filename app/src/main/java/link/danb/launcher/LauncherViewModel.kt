@@ -91,7 +91,7 @@ data class ActivityViewItem(
     }
 }
 
-data class TabViewItem(val id: Int, val uri: Uri, val name: String, val icon: ImageBitmap?) :
+data class TabViewItem(val id: Int, val uri: Uri?, val name: String, val icon: ImageBitmap?) :
   ViewItem {
   override val key: String = id.toString()
 }
@@ -205,13 +205,15 @@ constructor(
 
   private fun MutableList<ViewItem>.addTabTileViewItems(tabs: List<TabData>) {
     if (tabs.isEmpty()) return
-    add(GroupHeaderViewItem("Tabs"))
+    add(GroupHeaderViewItem(application.getString(R.string.tabs)))
     for (tab in tabs) {
-      if (tab.url.startsWith("http") && tab.capture != null) {
-        val bytes = Base64.decode(tab.capture.split(",")[1], Base64.DEFAULT)
-        val icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.size).asImageBitmap()
-        add(TabViewItem(tab.id, tab.url.toUri(), tab.title, icon))
-      }
+      val uri = tab.url.takeIf { it.startsWith("http") }?.toUri()
+      val icon =
+        tab.capture?.let {
+          val bytes = Base64.decode(it.split(",")[1], Base64.DEFAULT)
+          BitmapFactory.decodeByteArray(bytes, 0, bytes.size).asImageBitmap()
+        }
+      add(TabViewItem(tab.id, uri, tab.title, icon))
     }
   }
 
