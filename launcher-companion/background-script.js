@@ -41,7 +41,13 @@ class TabEvent {
     static async fromUpdatedInfo(tab) {
         console.info("Creating TabUpdatedEvent", tab);
 
-        var capture = await browser.tabs.captureTab(tab.id, this.#captureOptions);
+        var capture;
+        try {
+            capture = await browser.tabs.captureTab(tab.id, this.#captureOptions);
+        } catch (error) {
+            console.error("Failed to capture tab", tab, error);
+        }
+
         var info = new TabInfo(tab.id, tab.url, tab.title, capture);
 
         var event = new TabEvent();
