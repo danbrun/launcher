@@ -4,13 +4,8 @@ import android.app.SearchManager
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -21,8 +16,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -46,8 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.ImmutableList
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileState
-import link.danb.launcher.ui.FilledIconSelector
-import link.danb.launcher.ui.IconButtonGroup
 
 @Composable
 fun LauncherBottomBar(
@@ -63,27 +59,30 @@ fun LauncherBottomBar(
   ) {
     val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
     AnimatedVisibility(visible = searchQuery == null) {
-      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-        val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
-        val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
-        ProfilesTabGroup(profile, profiles, onChangeProfile)
+      Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+        HorizontalFloatingToolbar(
+          expanded = true,
+          floatingActionButton = {
+            val context = LocalContext.current
+            SearchFab {
+              context.startActivity(
+                Intent().apply {
+                  action = Intent.ACTION_WEB_SEARCH
+                  putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
+                  // This extra is for Firefox to open a new tab.
+                  putExtra("open_to_search", "static_shortcut_new_tab")
+                },
+                Bundle(),
+              )
+            }
+          },
+        ) {
+          val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+          val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
+          Profiles(profile, profiles, onChangeProfile)
 
-        MoreActionsTabGroup(
-          onSearchClick = { launcherViewModel.setSearchQuery("") },
-          onMoreActionsClick,
-        )
-
-        val context = LocalContext.current
-        SearchFab {
-          context.startActivity(
-            Intent().apply {
-              action = Intent.ACTION_WEB_SEARCH
-              putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
-              // This extra is for Firefox to open a new tab.
-              putExtra("open_to_search", "static_shortcut_new_tab")
-            },
-            Bundle(),
-          )
+          MoreActions(onSearchClick = { launcherViewModel.setSearchQuery("") }, onMoreActionsClick)
         }
       }
     }
@@ -99,56 +98,47 @@ fun LauncherBottomBar(
 }
 
 @Composable
-private fun ProfilesTabGroup(
+private fun Profiles(
   activeProfile: Profile,
   availableProfiles: ImmutableList<ProfileState>,
   onChangeProfile: (Profile, Boolean) -> Unit,
 ) {
-  ExpandingAnimatedVisibility(visible = availableProfiles.size > 1) {
-    IconButtonGroup {
-      FilledIconToggleButton(
-        activeProfile == Profile.PERSONAL,
-        { onChangeProfile(Profile.PERSONAL, true) },
-      ) {
-        Icon(painterResource(R.drawable.baseline_person_24), stringResource(R.string.show_personal))
-      }
+  FilledIconToggleButton(
+    activeProfile == Profile.PERSONAL,
+    { onChangeProfile(Profile.PERSONAL, true) },
+  ) {
+    Icon(painterResource(R.drawable.baseline_person_24), stringResource(R.string.show_personal))
+  }
 
-      for (profile in listOf(Profile.WORK, Profile.PRIVATE)) {
-        val profileStatus = availableProfiles.singleOrNull { it.profile == profile }
-        if (profileStatus != null) {
-          FilledIconSelector(
-            items =
-              if (profileStatus.canToggle) {
-                listOf(false, true)
-              } else {
-                listOf(profileStatus.isEnabled)
-              },
-            selected = profileStatus.isEnabled,
-            isChecked = activeProfile == profile,
-            onClick = { onChangeProfile(profile, it) },
-          ) { enabled ->
-            Icon(
-              painterResource(
-                when (profile) {
-                  Profile.PERSONAL -> throw IllegalStateException()
-                  Profile.WORK ->
-                    if (enabled) {
-                      R.drawable.ic_baseline_work_24
-                    } else {
-                      R.drawable.ic_baseline_work_off_24
-                    }
-                  Profile.PRIVATE ->
-                    if (enabled) {
-                      R.drawable.baseline_lock_open_24
-                    } else {
-                      R.drawable.baseline_lock_24
-                    }
+  for (profile in listOf(Profile.WORK, Profile.PRIVATE)) {
+    val profileStatus = availableProfiles.singleOrNull { it.profile == profile }
+    if (profileStatus != null) {
+      FilledIconToggleButton(
+        checked = activeProfile == profile,
+        onCheckedChange = {
+          onChangeProfile(profile, (activeProfile == profile) xor profileStatus.isEnabled)
+        },
+      ) {
+        Icon(
+          painterResource(
+            when (profile) {
+              Profile.PERSONAL -> throw IllegalStateException()
+              Profile.WORK ->
+                if (profileStatus.isEnabled) {
+                  R.drawable.ic_baseline_work_24
+                } else {
+                  R.drawable.ic_baseline_work_off_24
                 }
-              ),
-              stringResource(R.string.show_work),
-            )
-          }
-        }
+              Profile.PRIVATE ->
+                if (profileStatus.isEnabled) {
+                  R.drawable.baseline_lock_open_24
+                } else {
+                  R.drawable.baseline_lock_24
+                }
+            }
+          ),
+          stringResource(R.string.show_work),
+        )
       }
     }
   }
@@ -179,42 +169,22 @@ private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCance
 }
 
 @Composable
-private fun MoreActionsTabGroup(onSearchClick: () -> Unit, onMoreActionsClick: () -> Unit) {
-  IconButtonGroup {
-    IconButton(onSearchClick) {
-      Icon(painterResource(R.drawable.ic_baseline_search_24), stringResource(R.string.search))
-    }
+private fun MoreActions(onSearchClick: () -> Unit, onMoreActionsClick: () -> Unit) {
+  IconButton(onSearchClick) {
+    Icon(painterResource(R.drawable.ic_baseline_search_24), stringResource(R.string.search))
+  }
 
-    IconButton(onMoreActionsClick) {
-      Icon(
-        painterResource(R.drawable.baseline_more_horiz_24),
-        stringResource(R.string.more_actions),
-      )
-    }
+  IconButton(onMoreActionsClick) {
+    Icon(painterResource(R.drawable.baseline_more_horiz_24), stringResource(R.string.more_actions))
   }
 }
 
 @Composable
 private fun SearchFab(onClick: () -> Unit) {
-  FloatingActionButton(
-    onClick = onClick,
-    modifier = Modifier.padding(horizontal = 4.dp),
-    containerColor = MaterialTheme.colorScheme.primary,
-  ) {
+  FloatingActionButton(onClick = onClick, containerColor = MaterialTheme.colorScheme.primary) {
     Icon(
       painter = painterResource(R.drawable.travel_explore_24),
       contentDescription = stringResource(R.string.search),
     )
-  }
-}
-
-@Composable
-private fun ExpandingAnimatedVisibility(visible: Boolean, content: @Composable () -> Unit) {
-  AnimatedVisibility(
-    visible = visible,
-    enter = fadeIn() + expandHorizontally(),
-    exit = fadeOut() + shrinkHorizontally(),
-  ) {
-    content()
   }
 }
