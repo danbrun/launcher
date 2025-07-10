@@ -139,7 +139,9 @@ constructor(
         buildList {
             if (it.filter.searchQuery == null) {
               addWidgetListViewItems(it.widgets, it.filter.profile)
-              addTabTileViewItems(it.tabState)
+              if (it.filter.profile == Profile.PERSONAL) {
+                addTabTileViewItems(it.tabState)
+              }
               addPinnedListViewItems(it.activities, it.shortcuts, it.filter.profile)
             }
             addAppListViewItems(it.activities, it.filter.searchQuery, it.filter.profile)
