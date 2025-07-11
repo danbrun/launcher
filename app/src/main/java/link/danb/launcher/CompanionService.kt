@@ -30,7 +30,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import javax.inject.Inject
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import link.danb.launcher.database.LauncherDatabase
 import link.danb.launcher.database.TabData
@@ -120,20 +119,9 @@ class CompanionService : Service() {
 
       post {
         try {
-          val tabState = call.receive<TabEvent>()
-          when {
-            tabState.updated != null -> {
-              tabData.put(tabState.updated.info)
-            }
-
-            tabState.removed != null -> {
-              tabData.delete(tabState.removed.id)
-            }
-
-            else -> {
-              throw IllegalArgumentException()
-            }
-          }
+          val tabsPost = call.receive<List<TabData>>()
+          tabData.clear()
+          tabData.put(*tabsPost.toTypedArray())
           call.respond(HttpStatusCode.OK)
         } catch (e: BadRequestException) {
           log.atWarn().log("failed ${e.cause} ${e.message}")
@@ -142,10 +130,3 @@ class CompanionService : Service() {
     }
   }
 }
-
-@Serializable data class TabUpdatedEvent(val info: TabData)
-
-@Serializable data class TabRemovedEvent(val id: Int)
-
-@Serializable
-data class TabEvent(val updated: TabUpdatedEvent? = null, val removed: TabRemovedEvent? = null)

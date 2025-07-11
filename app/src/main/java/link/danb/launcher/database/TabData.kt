@@ -24,5 +24,7 @@ data class TabData(
     @Upsert suspend fun put(vararg tabData: TabData)
 
     @Query("DELETE FROM TabData WHERE id=:id") suspend fun delete(id: Int)
+
+    @Query("DELETE FROM TabData") suspend fun clear()
   }
 }

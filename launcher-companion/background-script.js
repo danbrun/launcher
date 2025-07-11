@@ -1,33 +1,70 @@
+"use strict";
+
 /** Represents the state of a tab. */
 class TabInfo {
+
     constructor(id, url, title, capture) {
         this.id = id;
         this.url = url;
         this.title = title;
         this.capture = capture;
     }
-}
-
-/** Represents a tab changing. */
-class TabUpdatedEvent {
-    constructor(info) {
-        this.info = info;
-    }
-}
-
-/** Represents a tab being closed. */
-class TabRemovedEvent {
-    constructor(id) {
-        this.id = id;
-    }
-}
-
-/** Container for tab events which can be send to the Launcher app. */
-class TabEvent {
 
     static #captureOptions = {
         scale: 0.5
     };
+
+    static async fromTab(tab) {
+        console.info("Creating TabInfo", tab);
+
+        var capture;
+        try {
+            capture = await browser.tabs.captureTab(tab.id, this.#captureOptions);
+        } catch (error) {
+            console.error("Failed to capture tab", tab, error);
+        }
+
+        return new TabInfo(tab.id, tab.url, tab.title, capture);
+    }
+}
+
+/** Stores tabs in browser local data due to querying all not working. */
+class TabStore {
+
+    static async get() {
+        return (await browser.storage.local.get("tabs")).tabs ?? {};
+    }
+
+    static async set(tabs) {
+        await browser.storage.local.set({ tabs });
+    }
+
+    static async edit(lamdba) {
+        var tabs = await this.get();
+        lamdba(tabs);
+        console.log("Edited tabs", tabs);
+        await this.set(tabs);
+    }
+
+    static async put(tabInfo) {
+        console.log("Put tab", tabInfo);
+
+        await this.edit(tabs => {
+            tabs[tabInfo.id] = tabInfo;
+        });
+    }
+
+    static async delete(id) {
+        console.info("Delete tab", id);
+
+        await this.edit(tabs => {
+            delete tabs[id];
+        })
+    }
+}
+
+/** Sends tabs to the companion server. */
+class TabSender {
 
     static #serverUrl = "http://localhost:47051/"
     static #requestTemplate = {
@@ -37,55 +74,31 @@ class TabEvent {
         }
     }
 
-    /** Returns a new TabEvent for the given tab updated info. */
-    static async fromUpdatedInfo(tab) {
-        console.info("Creating TabUpdatedEvent", tab);
-
-        var capture;
-        try {
-            capture = await browser.tabs.captureTab(tab.id, this.#captureOptions);
-        } catch (error) {
-            console.error("Failed to capture tab", tab, error);
-        }
-
-        var info = new TabInfo(tab.id, tab.url, tab.title, capture);
-
-        var event = new TabEvent();
-        event.updated = new TabUpdatedEvent(info);
-        return event;
-    }
-
-    /** Returns a new TabEvent for the given tab removed info. */
-    static fromRemovedInfo(id) {
-        console.info("Creating TabRemovedEvent", id);
-
-        var event = new TabEvent();
-        event.removed = new TabRemovedEvent(id);
-        return event;
-    }
-
     /** Sends the event to the server. */
-    async sendEvent() {
-        console.info("Sending TabEvent", this);
+    static async send() {
+        var tabs = Object.values(await TabStore.get());
+        console.info("Sending tabs", tabs);
 
-        return await fetch(TabEvent.#serverUrl, {
-            ...TabEvent.#requestTemplate,
-            body: JSON.stringify(this),
-        })
+        return await fetch(TabSender.#serverUrl, {
+            ...TabSender.#requestTemplate,
+            body: JSON.stringify(tabs),
+        });
     }
 }
 
 /** Extension entry point. */
 async function main() {
     // Add listeners for browser events.
-    browser.tabs.onUpdated.addListener(async (id, change, tab) => (await TabEvent.fromUpdatedInfo(tab)).sendEvent());
-    browser.tabs.onRemoved.addListener(async (id) => TabEvent.fromRemovedInfo(id).sendEvent());
-
-    // Send initial state.
-    var tabs = await browser.tabs.query({});
-    var events = await Promise.all(tabs.map(tab => TabEvent.fromUpdatedInfo(tab)));
-    var promises = events.map(event => event.sendEvent());
-    return await Promise.all(promises);
+    browser.tabs.onUpdated.addListener(async (id, change, tab) => {
+        if (change.status == "complete") {
+            await TabStore.put(await TabInfo.fromTab(tab));
+            await TabSender.send();
+        }
+    });
+    browser.tabs.onRemoved.addListener(async (id) => {
+        await TabStore.delete(id);
+        await TabSender.send();
+    });
 }
 
 main();

@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Launcher Companion",
-    "version": "0.3",
+    "version": "0.4",
     "description": "Allows viewing and opening tabs from Launcher.",
     "icons": {
         "32": "icon.svg"
@@ -15,6 +15,7 @@
     },
     "permissions": [
         "tabs",
+        "storage",
         "<all_urls>"
     ]
 }
