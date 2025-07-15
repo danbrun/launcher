@@ -97,6 +97,17 @@ fun Launcher(
               }
             },
             onMoreActionsClick = { showMoreActions = true },
+            moreActionsMenu = {
+              MoreActionsMenu(
+                showMoreActions,
+                profile = profile,
+                pinShortcuts = { showPinShortcuts = true },
+                pinWidgets = { showPinWidgets = true },
+                shownHiddenApps = { showHiddenApps = true },
+              ) {
+                showMoreActions = false
+              }
+            },
           )
         },
         containerColor = Color.Transparent,
@@ -276,16 +287,6 @@ fun Launcher(
           navigateToDetails = { showActivityDetailsFor = it },
           dismiss = { showHiddenApps = false },
         )
-      }
-
-      MoreActionsDialog(
-        showMoreActions,
-        profile = profile,
-        pinShortcuts = { showPinShortcuts = true },
-        pinWidgets = { showPinWidgets = true },
-        shownHiddenApps = { showHiddenApps = true },
-      ) {
-        showMoreActions = false
       }
 
       if (showActivityDetailsFor != null) {

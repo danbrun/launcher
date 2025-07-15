@@ -51,6 +51,7 @@ fun LauncherBottomBar(
   onChangeProfile: (Profile, Boolean) -> Unit,
   onSearchGo: () -> Unit,
   onMoreActionsClick: () -> Unit,
+  moreActionsMenu: @Composable () -> Unit,
 ) {
   Column(
     Modifier.consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
@@ -82,7 +83,11 @@ fun LauncherBottomBar(
           val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
           Profiles(profile, profiles, onChangeProfile)
 
-          MoreActions(onSearchClick = { launcherViewModel.setSearchQuery("") }, onMoreActionsClick)
+          MoreActions(
+            onSearchClick = { launcherViewModel.setSearchQuery("") },
+            onMoreActionsClick,
+            moreActionsMenu,
+          )
         }
       }
     }
@@ -169,13 +174,24 @@ private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCance
 }
 
 @Composable
-private fun MoreActions(onSearchClick: () -> Unit, onMoreActionsClick: () -> Unit) {
+private fun MoreActions(
+  onSearchClick: () -> Unit,
+  onMoreActionsClick: () -> Unit,
+  moreActionsMenu: @Composable () -> Unit,
+) {
   IconButton(onSearchClick) {
     Icon(painterResource(R.drawable.ic_baseline_search_24), stringResource(R.string.search))
   }
 
-  IconButton(onMoreActionsClick) {
-    Icon(painterResource(R.drawable.baseline_more_horiz_24), stringResource(R.string.more_actions))
+  Box {
+    IconButton(onMoreActionsClick) {
+      Icon(
+        painterResource(R.drawable.baseline_more_horiz_24),
+        stringResource(R.string.more_actions),
+      )
+    }
+
+    moreActionsMenu()
   }
 }
 

@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
@@ -42,6 +43,9 @@ constructor(
       Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
         roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
         !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
+
+  val monochromeIcons: Flow<Boolean>
+    get() = settingsRepository.useMonochromeIcons
 
   fun getCanPinItems(profile: Profile): StateFlow<Boolean> =
     profileManager.profiles

@@ -42,7 +42,7 @@
     <string name="remove">Remove</string>
     <string name="adjust_height">Adjust height</string>
     <string name="done">Done</string>
-    <string name="toggle_monochrome">Toggle themed icons</string>
+    <string name="monochrome_icons">Themed icons</string>
     <string name="cancel">Cancel</string>
     <string name="configure_widget">Configure widget</string>
     <string name="request_home_role">Set as default home app</string>
