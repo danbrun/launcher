@@ -3,6 +3,7 @@ package link.danb.launcher
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -43,10 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import link.danb.launcher.activities.details.ActivityDetailsDialog
+import link.danb.launcher.activities.details.DetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
-import link.danb.launcher.components.UserActivity
 import link.danb.launcher.gestures.GestureActivityAnimation
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.ui.LauncherIcon
@@ -69,7 +69,6 @@ fun Launcher(
     var showPinWidgets by remember { mutableStateOf(false) }
     var showHiddenApps by remember { mutableStateOf(false) }
     var showMoreActions by remember { mutableStateOf(false) }
-    var showActivityDetailsFor: UserActivity? by remember { mutableStateOf(null) }
 
     val appsLauncher = rememberAppsLauncher()
 
@@ -210,27 +209,31 @@ fun Launcher(
                 }
 
                 is ActivityViewItem -> {
-                  LauncherTile(
-                    icon = { isPressed ->
-                      LauncherIcon(
-                        item.launcherTileData.launcherIconData,
-                        Modifier.gestureIcon(item)
-                          .size(dimensionResource(R.dimen.launcher_icon_size)),
-                        isPressed = isPressed,
-                      )
-                    },
-                    text = {
-                      Text(
-                        item.launcherTileData.name,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        style = textStyle,
-                      )
-                    },
-                    modifier = Modifier.animateItem(),
-                    onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
-                    onLongClick = { showActivityDetailsFor = item.userActivity },
-                  )
+                  Box {
+                    var showDetailsMenu by remember { mutableStateOf(false) }
+                    LauncherTile(
+                      icon = { isPressed ->
+                        LauncherIcon(
+                          item.launcherTileData.launcherIconData,
+                          Modifier.gestureIcon(item)
+                            .size(dimensionResource(R.dimen.launcher_icon_size)),
+                          isPressed = isPressed,
+                        )
+                      },
+                      text = {
+                        Text(
+                          item.launcherTileData.name,
+                          maxLines = 2,
+                          overflow = TextOverflow.Ellipsis,
+                          style = textStyle,
+                        )
+                      },
+                      modifier = Modifier.animateItem(),
+                      onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
+                      onLongClick = { showDetailsMenu = true },
+                    )
+                    DetailsDialog(item.userActivity, showDetailsMenu) { showDetailsMenu = false }
+                  }
                 }
 
                 is TabViewItem -> {
@@ -283,19 +286,7 @@ fun Launcher(
       }
 
       if (showHiddenApps) {
-        HiddenAppsDialog(
-          profile = profile,
-          navigateToDetails = { showActivityDetailsFor = it },
-          dismiss = { showHiddenApps = false },
-        )
-      }
-
-      if (showActivityDetailsFor != null) {
-        ActivityDetailsDialog(
-          showActivityDetailsFor!!,
-          dismiss = { showActivityDetailsFor = null },
-          onShortcutCreatorClick = { _, item -> appsLauncher.startShortcutCreator(item) },
-        )
+        HiddenAppsDialog(profile = profile, dismiss = { showHiddenApps = false })
       }
     }
   }

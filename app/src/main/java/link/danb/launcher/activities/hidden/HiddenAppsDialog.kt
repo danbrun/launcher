@@ -17,7 +17,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.activities.details.DetailsDialog
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.profiles.Profile
@@ -41,7 +44,6 @@ import link.danb.launcher.ui.LauncherTile
 fun HiddenAppsDialog(
   profile: Profile,
   hiddenAppsViewModel: HiddenAppsViewModel = hiltViewModel(),
-  navigateToDetails: (UserActivity) -> Unit,
   dismiss: () -> Unit,
 ) {
   BottomSheet(isShowing = true, dismiss) { dismiss ->
@@ -53,7 +55,6 @@ fun HiddenAppsDialog(
       launchActivity = { bounds, userActivity ->
         appsLauncher.startMainActivity(userActivity, bounds)
       },
-      navigateToDetails,
     )
   }
 }
@@ -62,7 +63,6 @@ fun HiddenAppsDialog(
 private fun HiddenAppsContent(
   state: HiddenAppsViewModel.State,
   launchActivity: (Rect, UserActivity) -> Unit,
-  navigateToDetails: (UserActivity) -> Unit,
 ) {
   LazyVerticalGrid(GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
     item(span = { GridItemSpan(maxLineSpan) }) {
@@ -94,20 +94,24 @@ private fun HiddenAppsContent(
       is HiddenAppsViewModel.State.Loaded -> {
         items(items = state.items) { item ->
           Card(Modifier.padding(4.dp)) {
-            LauncherTile(
-              icon = { isPressed ->
-                LauncherIcon(
-                  item.launcherTileData.launcherIconData,
-                  Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-                  isPressed = isPressed,
-                )
-              },
-              text = {
-                Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
-              },
-              onClick = { launchActivity(it, item.userActivity) },
-              onLongClick = { navigateToDetails(item.userActivity) },
-            )
+            Box {
+              var showDetailsMenu by remember { mutableStateOf(false) }
+              LauncherTile(
+                icon = { isPressed ->
+                  LauncherIcon(
+                    item.launcherTileData.launcherIconData,
+                    Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                    isPressed = isPressed,
+                  )
+                },
+                text = {
+                  Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                },
+                onClick = { launchActivity(it, item.userActivity) },
+                onLongClick = { showDetailsMenu = true },
+              )
+              DetailsDialog(item.userActivity, showDetailsMenu) { showDetailsMenu = false }
+            }
           }
         }
       }
