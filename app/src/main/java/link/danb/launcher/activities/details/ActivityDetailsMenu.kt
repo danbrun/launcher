@@ -10,6 +10,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,25 +68,17 @@ fun DetailsDialog(
           onDismiss()
         }
 
-        when (state.shortcutsAndWidgets) {
-          is ActivityDetailsViewModel.ShortcutsAndWidgets.Loaded -> {
-            for (shortcut in state.shortcutsAndWidgets.shortcuts) {
-              ShortcutMenuItem(shortcut) {
-                appsLauncher.startShortcut(shortcut.userShortcut, Rect.Zero)
-              }
-            }
+        for (shortcut in state.shortcuts) {
+          ShortcutMenuItem(shortcut) {
+            appsLauncher.startShortcut(shortcut.userShortcut, Rect.Zero)
           }
-          is ActivityDetailsViewModel.ShortcutsAndWidgets.Loading -> {
-            LoadingMenuItem()
-          }
-          is ActivityDetailsViewModel.ShortcutsAndWidgets.ProfileDisabled -> {}
         }
       }
       is ActivityDetailsViewModel.Loading -> {
         LoadingMenuItem()
       }
       is ActivityDetailsViewModel.Missing -> {
-        // idk
+        LaunchedEffect(Unit) { onDismiss() }
       }
     }
   }
