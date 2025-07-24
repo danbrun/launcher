@@ -50,6 +50,7 @@ fun LauncherBottomBar(
   launcherViewModel: LauncherViewModel = hiltViewModel(),
   onChangeProfile: (Profile, Boolean) -> Unit,
   onSearchGo: () -> Unit,
+  showMoreActionsMenu: Boolean,
   onMoreActionsClick: () -> Unit,
   moreActionsMenu: @Composable () -> Unit,
 ) {
@@ -85,6 +86,7 @@ fun LauncherBottomBar(
 
           MoreActions(
             onSearchClick = { launcherViewModel.setSearchQuery("") },
+            showMoreActionsMenu,
             onMoreActionsClick,
             moreActionsMenu,
           )
@@ -176,6 +178,7 @@ private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCance
 @Composable
 private fun MoreActions(
   onSearchClick: () -> Unit,
+  showMoreActionsMenu: Boolean,
   onMoreActionsClick: () -> Unit,
   moreActionsMenu: @Composable () -> Unit,
 ) {
@@ -184,7 +187,14 @@ private fun MoreActions(
   }
 
   Box {
-    IconButton(onMoreActionsClick) {
+    FilledIconToggleButton(
+      showMoreActionsMenu,
+      onCheckedChange = {
+        if (it) {
+          onMoreActionsClick()
+        }
+      },
+    ) {
       Icon(
         painterResource(R.drawable.baseline_more_horiz_24),
         stringResource(R.string.more_actions),

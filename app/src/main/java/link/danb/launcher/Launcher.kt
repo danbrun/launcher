@@ -96,6 +96,7 @@ fun Launcher(
                 appsLauncher.startMainActivity(userActivity, searchItemBounds)
               }
             },
+            showMoreActionsMenu = showMoreActions,
             onMoreActionsClick = { showMoreActions = true },
             moreActionsMenu = {
               MoreActionsMenu(
