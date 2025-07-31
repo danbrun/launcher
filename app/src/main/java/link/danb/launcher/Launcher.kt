@@ -209,7 +209,7 @@ fun Launcher(
                 }
 
                 is ActivityViewItem -> {
-                  Box {
+                  Box(Modifier.animateItem()) {
                     var showDetailsMenu by remember { mutableStateOf(false) }
                     LauncherTile(
                       icon = { isPressed ->
@@ -228,7 +228,6 @@ fun Launcher(
                           style = textStyle,
                         )
                       },
-                      modifier = Modifier.animateItem(),
                       onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
                       onLongClick = { showDetailsMenu = true },
                     )
