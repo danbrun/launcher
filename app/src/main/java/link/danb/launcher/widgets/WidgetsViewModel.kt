@@ -18,26 +18,26 @@ constructor(
   private val appWidgetHost: AppWidgetHost,
   private val widgetManager: WidgetManager,
   private val widgetSizeUtil: WidgetSizeUtil,
-) : ViewModel() {
+) : ViewModel(), WidgetEditor {
 
   private val widgetData by lazy { launcherDatabase.widgetData() }
 
-  fun delete(widgetId: Int) {
+  override fun delete(widgetId: Int) {
     viewModelScope.launch(Dispatchers.IO) {
       appWidgetHost.deleteAppWidgetId(widgetId)
       widgetManager.notifyChange()
     }
   }
 
-  fun moveUp(widgetId: Int) {
+  override fun moveUp(widgetId: Int) {
     viewModelScope.launch(Dispatchers.IO) { adjustPosition(widgetId, -1) }
   }
 
-  fun moveDown(widgetId: Int) {
+  override fun moveDown(widgetId: Int) {
     viewModelScope.launch(Dispatchers.IO) { adjustPosition(widgetId, 1) }
   }
 
-  fun setHeight(widgetId: Int, height: Int) {
+  override fun setHeight(widgetId: Int, height: Int) {
     viewModelScope.launch(Dispatchers.IO) {
       widgetData.put(
         widgetData
@@ -66,4 +66,14 @@ constructor(
       *widgets.mapIndexed { index, widgetData -> widgetData.copy(position = index) }.toTypedArray()
     )
   }
+}
+
+interface WidgetEditor {
+  fun delete(widgetId: Int)
+
+  fun moveUp(widgetId: Int)
+
+  fun moveDown(widgetId: Int)
+
+  fun setHeight(widgetId: Int, height: Int)
 }

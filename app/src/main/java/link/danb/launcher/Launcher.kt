@@ -154,10 +154,7 @@ fun Launcher(
                     isConfigurable = item.isConfigurable,
                     modifier = Modifier.animateItem(),
                     setScrollEnabled = { isScrollEnabled = it },
-                    moveUp = { widgetsViewModel.moveUp(item.widgetData.widgetId) },
-                    moveDown = { widgetsViewModel.moveDown(item.widgetData.widgetId) },
-                    remove = { widgetsViewModel.delete(item.widgetData.widgetId) },
-                    setHeight = { widgetsViewModel.setHeight(item.widgetData.widgetId, it) },
+                    widgetEditor = widgetsViewModel,
                     configure = { appsLauncher.configureWidget(it, item.widgetData.widgetId) },
                   )
                 }

@@ -40,6 +40,7 @@ import link.danb.launcher.R
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.extensions.boundsOnScreen
 import link.danb.launcher.extensions.detectLongPress
+import link.danb.launcher.widgets.WidgetEditor
 import link.danb.launcher.widgets.WidgetFrameView
 
 @Composable
@@ -49,10 +50,7 @@ fun Widget(
   isConfigurable: Boolean,
   modifier: Modifier = Modifier,
   setScrollEnabled: (Boolean) -> Unit,
-  moveUp: () -> Unit,
-  moveDown: () -> Unit,
-  remove: () -> Unit,
-  setHeight: (Int) -> Unit,
+  widgetEditor: WidgetEditor,
   configure: (View) -> Unit,
 ) {
   var height by remember { mutableIntStateOf(widgetData.height) }
@@ -65,13 +63,12 @@ fun Widget(
   val widgetFrameView = remember(context) { WidgetFrameView(context) }
   val draggableState = rememberDraggableState { height = (height + it.toInt()).coerceIn(sizeRange) }
 
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     key(widgetFrameView) {
       AndroidView(
         factory = { widgetFrameView },
         modifier =
-          modifier
-            .fillMaxWidth()
+          Modifier.fillMaxWidth()
             .height(with(LocalDensity.current) { height.toDp() })
             .pointerInput(widgetFrameView) {
               detectLongPress(PointerEventPass.Initial) {
@@ -89,7 +86,7 @@ fun Widget(
                       widgetFrameView.getListViewContaining(
                         touchPos.x.toInt() + framePos.left,
                         touchPos.y.toInt() + framePos.top,
-                        1
+                        1,
                       )
                     list == null
                   } else {
@@ -108,7 +105,7 @@ fun Widget(
     AnimatedVisibility(visible = isEditing) {
       Row {
         IconButtonGroup {
-          IconButton(moveDown) {
+          IconButton({ widgetEditor.moveDown(widgetData.widgetId) }) {
             Icon(
               painterResource(R.drawable.baseline_arrow_downward_24),
               stringResource(R.string.move_down),
@@ -121,11 +118,11 @@ fun Widget(
               Modifier.draggable(
                   draggableState,
                   Orientation.Vertical,
-                  onDragStopped = { setHeight(height) },
+                  onDragStopped = { widgetEditor.setHeight(widgetData.widgetId, height) },
                 )
                 .padding(4.dp),
           )
-          IconButton(moveUp) {
+          IconButton({ widgetEditor.moveUp(widgetData.widgetId) }) {
             Icon(
               painterResource(R.drawable.baseline_arrow_upward_24),
               stringResource(R.string.move_up),
@@ -142,7 +139,7 @@ fun Widget(
               )
             }
           }
-          IconButton(remove) {
+          IconButton({ widgetEditor.delete(widgetData.widgetId) }) {
             Icon(
               painterResource(R.drawable.ic_baseline_delete_forever_24),
               stringResource(R.string.remove),
