@@ -10,12 +10,12 @@ plugins {
 
 android {
   namespace = "link.danb.launcher"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "link.danb.launcher"
     minSdk = 28
-    targetSdk = 35
+    targetSdk = 36
     versionCode = 34
     versionName = "1.34"
 
