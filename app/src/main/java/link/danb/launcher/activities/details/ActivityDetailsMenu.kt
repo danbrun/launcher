@@ -1,10 +1,6 @@
 package link.danb.launcher.activities.details
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -15,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
@@ -38,14 +33,13 @@ fun DetailsDialog(
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   onDismiss: () -> Unit,
 ) {
-  DropdownMenu(expanded, onDismissRequest = { onDismiss() }) {
-    val activityDetailsDataState by
-      remember { activityDetailsViewModel.getActivityDetails(userActivity) }
-        .collectAsStateWithLifecycle()
-
-    val state = activityDetailsDataState
-    when (state) {
-      is ActivityDetailsViewModel.Loaded -> {
+  val state =
+    remember { activityDetailsViewModel.getActivityDetails(userActivity) }
+      .collectAsStateWithLifecycle()
+      .value
+  when (state) {
+    is ActivityDetailsViewModel.Loaded -> {
+      DropdownMenu(expanded, onDismissRequest = { onDismiss() }) {
         PinMenuItem(state.activityData.isPinned) {
           activityDetailsViewModel.toggleAppPinned(state.activityData)
           onDismiss()
@@ -74,12 +68,10 @@ fun DetailsDialog(
           }
         }
       }
-      is ActivityDetailsViewModel.Loading -> {
-        LoadingMenuItem()
-      }
-      is ActivityDetailsViewModel.Missing -> {
-        LaunchedEffect(Unit) { onDismiss() }
-      }
+    }
+    is ActivityDetailsViewModel.Loading -> {}
+    is ActivityDetailsViewModel.Missing -> {
+      LaunchedEffect(Unit) { onDismiss() }
     }
   }
 }
@@ -153,11 +145,4 @@ private fun ShortcutMenuItem(data: ActivityDetailsViewModel.ShortcutViewData, on
     onClick = onClick,
     leadingIcon = { LauncherIcon(data.launcherTileData.launcherIconData, Modifier.size(24.dp)) },
   )
-}
-
-@Composable
-private fun LoadingMenuItem() {
-  Box(Modifier.padding(4.dp).fillMaxWidth(), Alignment.Center) {
-    CircularProgressIndicator(Modifier.size(24.dp))
-  }
 }
