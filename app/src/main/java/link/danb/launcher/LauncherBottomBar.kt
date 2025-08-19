@@ -60,37 +60,39 @@ fun LauncherBottomBar(
       .padding(8.dp)
   ) {
     val searchQuery by launcherViewModel.searchQuery.collectAsStateWithLifecycle()
-    AnimatedVisibility(visible = searchQuery == null) {
-      Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-        HorizontalFloatingToolbar(
-          expanded = true,
-          floatingActionButton = {
-            val context = LocalContext.current
-            SearchFab {
-              context.startActivity(
-                Intent().apply {
-                  action = Intent.ACTION_WEB_SEARCH
-                  putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
-                  // This extra is for Firefox to open a new tab.
-                  putExtra("open_to_search", "static_shortcut_new_tab")
-                },
-                Bundle(),
-              )
-            }
-          },
-        ) {
-          val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
-          val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
-          Profiles(profile, profiles, onChangeProfile)
-
-          MoreActions(
-            onSearchClick = { launcherViewModel.setSearchQuery("") },
-            showMoreActionsMenu,
-            onMoreActionsClick,
-            moreActionsMenu,
-          )
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+      @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+      HorizontalFloatingToolbar(
+        expanded = true,
+        floatingActionButton = {
+          val context = LocalContext.current
+          SearchFab {
+            context.startActivity(
+              Intent().apply {
+                action = Intent.ACTION_WEB_SEARCH
+                putExtra(SearchManager.EXTRA_NEW_SEARCH, true)
+                // This extra is for Firefox to open a new tab.
+                putExtra("open_to_search", "static_shortcut_new_tab")
+              },
+              Bundle(),
+            )
+          }
+        },
+      ) {
+        val profile by launcherViewModel.profile.collectAsStateWithLifecycle()
+        val profiles by launcherViewModel.profiles.collectAsStateWithLifecycle()
+        Profiles(profile.takeIf { searchQuery == null }, profiles) { profile, enabled ->
+          launcherViewModel.setSearchQuery(null)
+          onChangeProfile(profile, enabled)
         }
+
+        MoreActions(
+          searchQuery,
+          onSearchClick = { launcherViewModel.setSearchQuery("") },
+          showMoreActionsMenu,
+          onMoreActionsClick,
+          moreActionsMenu,
+        )
       }
     }
 
@@ -106,7 +108,7 @@ fun LauncherBottomBar(
 
 @Composable
 private fun Profiles(
-  activeProfile: Profile,
+  activeProfile: Profile?,
   availableProfiles: ImmutableList<ProfileState>,
   onChangeProfile: (Profile, Boolean) -> Unit,
 ) {
@@ -177,12 +179,13 @@ private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCance
 
 @Composable
 private fun MoreActions(
+  searchQuery: String?,
   onSearchClick: () -> Unit,
   showMoreActionsMenu: Boolean,
   onMoreActionsClick: () -> Unit,
   moreActionsMenu: @Composable () -> Unit,
 ) {
-  IconButton(onSearchClick) {
+  FilledIconToggleButton(searchQuery != null, { onSearchClick() }) {
     Icon(painterResource(R.drawable.ic_baseline_search_24), stringResource(R.string.search))
   }
 
