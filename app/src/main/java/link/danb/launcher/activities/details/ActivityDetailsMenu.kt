@@ -6,6 +6,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,13 +36,24 @@ fun DetailsDialog(
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   onDismiss: () -> Unit,
 ) {
-  DropdownMenu(expanded, onDismissRequest = { onDismiss() }) {
-    val state =
+  var isDropdownShowing by remember { mutableStateOf(false) }
+  val state =
+    if (expanded || isDropdownShowing) {
       remember { activityDetailsViewModel.getActivityDetails(userActivity) }
         .collectAsStateWithLifecycle()
         .value
-    when (state) {
-      is ActivityDetailsViewModel.Loaded -> {
+    } else {
+      null
+    }
+
+  when (state) {
+    is ActivityDetailsViewModel.Loaded -> {
+      DropdownMenu(expanded, onDismissRequest = { onDismiss() }) {
+        DisposableEffect(Unit) {
+          isDropdownShowing = true
+          onDispose { isDropdownShowing = false }
+        }
+
         PinMenuItem(state.activityData.isPinned) {
           activityDetailsViewModel.toggleAppPinned(state.activityData)
           onDismiss()
@@ -68,11 +80,12 @@ fun DetailsDialog(
           ShortcutMenuItem(shortcut) { appsLauncher.startShortcut(shortcut, Rect.Zero) }
         }
       }
-      is ActivityDetailsViewModel.Loading -> {}
-      is ActivityDetailsViewModel.Missing -> {
-        LaunchedEffect(Unit) { onDismiss() }
-      }
     }
+    is ActivityDetailsViewModel.Missing -> {
+      LaunchedEffect(Unit) { onDismiss() }
+    }
+    is ActivityDetailsViewModel.Loading -> {}
+    null -> {}
   }
 }
 

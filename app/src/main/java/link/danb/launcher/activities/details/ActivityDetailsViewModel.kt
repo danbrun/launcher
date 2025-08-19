@@ -8,11 +8,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
@@ -23,6 +24,7 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
 import link.danb.launcher.profiles.ProfileManager
+import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.shortcuts.ShortcutManager
 
 @HiltViewModel
@@ -38,11 +40,10 @@ constructor(
 ) : AndroidViewModel(application) {
 
   fun getActivityDetails(userActivity: UserActivity): StateFlow<ActivityDetailsData> =
-    activityManager.data
-      .map { activityDataList ->
+    combine(activityManager.data, profileManager.profiles) { activityDataList, profiles ->
         val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
         if (activityData != null) {
-          Loaded(activityData, getShortcuts(userActivity))
+          Loaded(activityData, getShortcuts(profiles, userActivity))
         } else {
           Missing
         }
@@ -70,11 +71,18 @@ constructor(
     viewModelScope.launch(Dispatchers.IO) { launcherDatabase.activityData().put(activityData) }
   }
 
-  private fun getShortcuts(userActivity: UserActivity): ImmutableList<UserShortcut> =
-    shortcutManager
-      .getShortcuts(userActivity)
-      .sortedBy { launcherResourceProvider.getLabel(it).lowercase() }
-      .toImmutableList()
+  private fun getShortcuts(
+    profiles: List<ProfileState>,
+    userActivity: UserActivity,
+  ): ImmutableList<UserShortcut> =
+    if (profiles.single { it.profile == userActivity.profile }.isEnabled) {
+      shortcutManager
+        .getShortcuts(userActivity)
+        .sortedBy { launcherResourceProvider.getLabel(it).lowercase() }
+        .toImmutableList()
+    } else {
+      persistentListOf()
+    }
 
   sealed interface ActivityDetailsData
 
