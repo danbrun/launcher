@@ -11,8 +11,8 @@
         android:name="android.permission.BIND_APPWIDGET"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+<!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />-->
+<!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />-->
 
     <application
         android:name=".LauncherApplication"
@@ -73,21 +73,21 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".CompanionService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
+<!--        <service-->
+<!--            android:name=".CompanionService"-->
+<!--            android:exported="false"-->
+<!--            android:foregroundServiceType="specialUse" />-->
 
-        <receiver
-            android:name=".CompanionBroadcastReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+<!--        <receiver-->
+<!--            android:name=".CompanionBroadcastReceiver"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />-->
+<!--            </intent-filter>-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
 
     </application>
 
