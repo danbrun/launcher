@@ -35,13 +35,13 @@ fun DetailsDialog(
   activityDetailsViewModel: ActivityDetailsViewModel = hiltViewModel(),
   onDismiss: () -> Unit,
 ) {
-  val state =
-    remember { activityDetailsViewModel.getActivityDetails(userActivity) }
-      .collectAsStateWithLifecycle()
-      .value
-  when (state) {
-    is ActivityDetailsViewModel.Loaded -> {
-      DropdownMenu(expanded, onDismissRequest = { onDismiss() }) {
+  DropdownMenu(expanded, onDismissRequest = { onDismiss() }) {
+    val state =
+      remember { activityDetailsViewModel.getActivityDetails(userActivity) }
+        .collectAsStateWithLifecycle()
+        .value
+    when (state) {
+      is ActivityDetailsViewModel.Loaded -> {
         PinMenuItem(state.activityData.isPinned) {
           activityDetailsViewModel.toggleAppPinned(state.activityData)
           onDismiss()
@@ -68,10 +68,10 @@ fun DetailsDialog(
           ShortcutMenuItem(shortcut) { appsLauncher.startShortcut(shortcut, Rect.Zero) }
         }
       }
-    }
-    is ActivityDetailsViewModel.Loading -> {}
-    is ActivityDetailsViewModel.Missing -> {
-      LaunchedEffect(Unit) { onDismiss() }
+      is ActivityDetailsViewModel.Loading -> {}
+      is ActivityDetailsViewModel.Missing -> {
+        LaunchedEffect(Unit) { onDismiss() }
+      }
     }
   }
 }
