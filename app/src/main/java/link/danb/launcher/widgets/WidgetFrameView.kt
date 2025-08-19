@@ -29,7 +29,7 @@ class WidgetFrameView @JvmOverloads constructor(context: Context, attrs: Attribu
   @Inject lateinit var appWidgetViewProvider: AppWidgetViewProvider
 
   private var appWidgetHostView: AppWidgetHostView? = null
-    private set(value) {
+    set(value) {
       if (value == null) {
         removeAllViews()
       } else if (field !== value) {

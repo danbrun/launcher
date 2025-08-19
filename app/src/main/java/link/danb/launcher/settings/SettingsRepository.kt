@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Singleton
-class SettingsRepository @Inject constructor(@ApplicationContext private val context: Context) {
+class SettingsRepository
+@Inject
+constructor(@param:ApplicationContext private val context: Context) {
 
   private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore("settings")
 

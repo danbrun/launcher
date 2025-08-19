@@ -31,7 +31,7 @@ import link.danb.launcher.extensions.makeScaleUpAnimation
 class WidgetManager
 @Inject
 constructor(
-  @ApplicationContext private val context: Context,
+  @param:ApplicationContext private val context: Context,
   private val appWidgetHost: AppWidgetHost,
   private val appWidgetManager: AppWidgetManager,
   launcherDatabase: LauncherDatabase,

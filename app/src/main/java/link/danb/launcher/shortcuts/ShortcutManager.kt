@@ -33,7 +33,7 @@ import link.danb.launcher.profiles.ProfileManager
 class ShortcutManager
 @Inject
 constructor(
-  @ApplicationContext private val context: Context,
+  @param:ApplicationContext private val context: Context,
   private val profileManager: ProfileManager,
 ) {
 
@@ -42,7 +42,7 @@ constructor(
   val shortcuts: Flow<ImmutableList<UserShortcut>> =
     combine(
         profileManager.profiles,
-        callbackFlow<Unit> {
+        callbackFlow {
           send(Unit)
           val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(Unit) }
 

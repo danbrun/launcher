@@ -104,14 +104,14 @@ class AppWidgetSetupActivity : AppCompatActivity() {
         R.id.app_widget_configure_request_id,
         ActivityOptions.makeBasic().allowPendingIntentBackgroundActivityStart().toBundle(),
       )
-    } catch (exception: ActivityNotFoundException) {
+    } catch (_: ActivityNotFoundException) {
       // If there is no configuration activity, return successfully.
       onBindSuccess()
     }
   }
 
   private fun onConfigurationResult(resultCode: Int) {
-    if (resultCode == Activity.RESULT_OK) {
+    if (resultCode == RESULT_OK) {
       onBindSuccess()
     } else {
       onBindFailed(R.string.widget_configuration_failed)
@@ -121,7 +121,7 @@ class AppWidgetSetupActivity : AppCompatActivity() {
   private fun onBindSuccess() {
     widgetManager.notifyChange()
     Toast.makeText(this, R.string.pinned_widget, Toast.LENGTH_SHORT).show()
-    setResult(Activity.RESULT_OK)
+    setResult(RESULT_OK)
     finish()
   }
 

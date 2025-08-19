@@ -1,9 +1,9 @@
 package link.danb.launcher.widgets
 
 import android.app.Application
-import link.danb.launcher.R
 import javax.inject.Inject
 import javax.inject.Singleton
+import link.danb.launcher.R
 
 @Singleton
 class WidgetSizeUtil @Inject constructor(application: Application) {

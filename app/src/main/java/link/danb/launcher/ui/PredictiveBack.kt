@@ -18,7 +18,7 @@ fun Modifier.predictiveBackScaling(shrinkSize: Dp): Modifier {
     try {
       progress.collect { predictiveBackProgress.snapTo(it.progress) }
       predictiveBackProgress.animateTo(0f)
-    } catch (e: CancellationException) {
+    } catch (_: CancellationException) {
       predictiveBackProgress.animateTo(0f)
     }
   }

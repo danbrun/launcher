@@ -155,7 +155,7 @@ private fun Profiles(
 
 @Composable
 private fun SearchBar(onValueChange: (String) -> Unit, onGo: () -> Unit, onCancel: () -> Unit) {
-  val focusRequester = FocusRequester()
+  val focusRequester = remember { FocusRequester() }
   var query: String by remember { mutableStateOf("") }
 
   TextField(

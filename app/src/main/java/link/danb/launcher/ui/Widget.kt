@@ -157,11 +157,9 @@ fun Widget(
   }
 }
 
-private fun View.getListViewContaining(x: Int, y: Int, depth: Int): ListView? {
-  println("TESTING!!! " + 0.rangeTo(depth).joinToString { "\t" } + this.toString())
-  return when (this) {
+private fun View.getListViewContaining(x: Int, y: Int, depth: Int): ListView? =
+  when (this) {
     is ListView -> this.takeIf { boundsOnScreen.contains(x, y) }
     is ViewGroup -> children.firstNotNullOfOrNull { it.getListViewContaining(x, y, depth + 1) }
     else -> null
   }
-}

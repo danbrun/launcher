@@ -20,10 +20,10 @@ fun AppWidgetHostView.updateAppWidgetSize(maxWidthPixels: Int, maxHeightPixels: 
         /* minWidth = */ 0,
         /* minHeight = */ 0,
         maxWidthDips,
-        maxHeightDips
+        maxHeightDips,
       )
     }
-  } catch (exception: NullPointerException) {
+  } catch (_: NullPointerException) {
     // Ignore if update fails due to improper binding.
   }
 }

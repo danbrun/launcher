@@ -39,7 +39,7 @@ import link.danb.launcher.profiles.ProfileManager
 class LauncherResourceProvider
 @Inject
 constructor(
-  @ApplicationContext private val context: Context,
+  @param:ApplicationContext private val context: Context,
   private val profileManager: ProfileManager,
 ) {
 
