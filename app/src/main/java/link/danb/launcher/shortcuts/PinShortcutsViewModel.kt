@@ -24,7 +24,6 @@ import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.profiles.Profile
-import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
 class PinShortcutsViewModel
@@ -44,15 +43,9 @@ constructor(
             .asFlow()
             .filter { it.userActivity.profile == profile }
             .transform { emitAll(shortcutManager.getShortcutCreators(it.userActivity).asFlow()) }
-            .map {
-              State.Loaded.Item(
-                it,
-                launcherResourceProvider.getTileData(it),
-                shortcutManager.getShortcutCreatorIntent(it),
-              )
-            }
+            .map { State.Loaded.Item(it, shortcutManager.getShortcutCreatorIntent(it)) }
             .toList()
-            .sortedBy { it.launcherTileData.name.lowercase() }
+            .sortedBy { launcherResourceProvider.getLabel(it.userShortcutCreator).lowercase() }
             .toImmutableList()
         )
       }
@@ -70,7 +63,6 @@ constructor(
 
       data class Item(
         val userShortcutCreator: UserShortcutCreator,
-        val launcherTileData: LauncherTileData,
         val creatorIntent: IntentSender,
       )
     }

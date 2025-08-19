@@ -46,7 +46,6 @@ import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.profiles.ProfileState
 import link.danb.launcher.settings.SettingsRepository
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.widgets.WidgetManager
 
 sealed interface ViewItem {
@@ -65,23 +64,16 @@ data class GroupHeaderViewItem(val name: String) : ViewItem {
   override val key: String = name
 }
 
-sealed interface IconTileViewItem : ViewItem {
-  val launcherTileData: LauncherTileData
-}
-
-data class ShortcutViewItem(
-  val userShortcut: UserShortcut,
-  override val launcherTileData: LauncherTileData,
-) : IconTileViewItem {
+data class ShortcutViewItem(val userShortcut: UserShortcut) : ViewItem {
   override val key: String = userShortcut.toString()
 }
 
 data class ActivityViewItem(
   val userActivity: UserActivity,
-  override val launcherTileData: LauncherTileData,
+  val label: String,
   val isPinned: Boolean,
   val isSearching: Boolean,
-) : IconTileViewItem {
+) : ViewItem {
   override val key: String
     get() {
       val component =
@@ -230,13 +222,20 @@ constructor(
             .asFlow()
             .filter { it.isPinned && it.userActivity.profile == profile }
             .map { getActivityTileItem(it, isPinned = true, isSearching = false) },
-          shortcuts
-            .asFlow()
-            .filter { it.profile == profile }
-            .map { ShortcutViewItem(it, launcherResourceProvider.getTileDataWithCache(it)) },
+          shortcuts.asFlow().filter { it.profile == profile }.map { ShortcutViewItem(it) },
         )
         .toList()
-        .sortedBy { it.launcherTileData.name.lowercase() }
+        .sortedBy {
+          launcherResourceProvider
+            .getLabel(
+              when (it) {
+                is ActivityViewItem -> it.userActivity
+                is ShortcutViewItem -> it.userShortcut
+                else -> throw Exception()
+              }
+            )
+            .lowercase()
+        }
 
     if (pinnedItems.isNotEmpty()) {
       add(GroupHeaderViewItem(application.getString(R.string.pinned_items)))
@@ -262,35 +261,35 @@ constructor(
         .map { getActivityTileItem(it, isPinned = false, searchQuery != null) }
         .filter {
           if (searchQuery != null) {
-            it.launcherTileData.name.lowercase().contains(searchQuery.lowercase().trim())
+            it.label.lowercase().contains(searchQuery.lowercase().trim())
           } else {
             true
           }
         }
         .toList()
-        .partition { it.launcherTileData.name.first().isLetter() }
+        .partition { it.label.first().isLetter() }
 
     if (miscellaneous.isNotEmpty()) {
       add(GroupHeaderViewItem(application.getString(R.string.ellipses)))
-      addAll(miscellaneous.sortedBy { it.launcherTileData.name.lowercase() })
+      addAll(miscellaneous.sortedBy { it.label.lowercase() })
     }
 
     for ((groupName, activityItems) in
-      alphabetical.groupBy { it.launcherTileData.name.first().uppercaseChar() }.toSortedMap()) {
+      alphabetical.groupBy { it.label.first().uppercaseChar() }.toSortedMap()) {
 
       add(GroupHeaderViewItem(groupName.toString()))
-      addAll(activityItems.sortedBy { it.launcherTileData.name.lowercase() })
+      addAll(activityItems.sortedBy { it.label.lowercase() })
     }
   }
 
-  private suspend fun getActivityTileItem(
+  private fun getActivityTileItem(
     activityData: ActivityData,
     isPinned: Boolean,
     isSearching: Boolean,
   ) =
     ActivityViewItem(
       activityData.userActivity,
-      launcherResourceProvider.getTileDataWithCache(activityData.userActivity),
+      launcherResourceProvider.getLabel(activityData.userActivity),
       isPinned,
       isSearching,
     )

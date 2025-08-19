@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
 import link.danb.launcher.activities.details.DetailsDialog
+import link.danb.launcher.apps.componentLabel
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.profiles.Profile
@@ -99,13 +100,17 @@ private fun HiddenAppsContent(
               LauncherTile(
                 icon = { isPressed ->
                   LauncherIcon(
-                    item.launcherTileData.launcherIconData,
+                    item.userActivity,
                     Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
                     isPressed = isPressed,
                   )
                 },
                 text = {
-                  Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                  Text(
+                    componentLabel(item.userActivity) ?: "",
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                  )
                 },
                 onClick = { launchActivity(it, item.userActivity) },
                 onLongClick = { showDetailsMenu = true },

@@ -11,9 +11,9 @@ import android.os.Messenger
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import android.view.View
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -26,15 +26,20 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import link.danb.launcher.R
-import link.danb.launcher.ui.LauncherIconData
+import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.ui.MonochromeIconTheme
 import link.danb.launcher.ui.drawBadge
 import link.danb.launcher.ui.drawLauncherIcon
 
+@AndroidEntryPoint
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureIconView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
   LinearLayout(context, attrs) {
+
+  @Inject lateinit var launcherResourceProvider: LauncherResourceProvider
 
   private val iconSize = context.resources.getDimensionPixelSize(R.dimen.launcher_icon_size)
 
@@ -87,11 +92,9 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
   fun animateNavigationGesture(
     gestureContract: GestureContract,
     bounds: RectF,
-    launcherIconData: LauncherIconData,
     useMonochromeIcons: Boolean,
   ) {
-    gestureAnimationData =
-      GestureAnimationData(gestureContract, bounds, launcherIconData, useMonochromeIcons)
+    gestureAnimationData = GestureAnimationData(gestureContract, bounds, useMonochromeIcons)
     update()
   }
 
@@ -104,6 +107,12 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
 
   private fun draw() {
     val data = gestureAnimationData ?: return
+
+    val icon = launcherResourceProvider.getIcon(data.gestureContract.userActivity)
+    val badge =
+      LauncherResourceProvider.getBadge(data.gestureContract.userActivity.profile)?.let {
+        AppCompatResources.getDrawable(context, it)
+      }
 
     val canvas = surfaceView.holder.lockCanvas() ?: return
     CanvasDrawScope().draw(
@@ -123,26 +132,25 @@ class GestureIconView @JvmOverloads constructor(context: Context, attrs: Attribu
           } else {
             MonochromeIconTheme(Color.White, Color.Blue)
           }
-        drawLauncherIcon(data.launcherIconData.icon, theme.takeIf { data.useMonochromeIcons })
-        drawBadge(data.launcherIconData.badge, theme)
+        drawLauncherIcon(icon, theme.takeIf { data.useMonochromeIcons })
+        drawBadge(badge, theme)
       }
     }
     surfaceView.holder.unlockCanvasAndPost(canvas)
 
-    visibility = View.VISIBLE
+    visibility = VISIBLE
   }
 
   private fun finish() {
     gestureAnimationData = null
     onFinishGestureAnimation()
 
-    visibility = View.GONE
+    visibility = GONE
   }
 
   data class GestureAnimationData(
     val gestureContract: GestureContract,
     val bounds: RectF,
-    val launcherIconData: LauncherIconData,
     val useMonochromeIcons: Boolean,
   )
 }

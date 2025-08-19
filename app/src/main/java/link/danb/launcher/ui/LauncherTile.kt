@@ -30,8 +30,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 
-data class LauncherTileData(val launcherIconData: LauncherIconData, val name: String)
-
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 fun LauncherTile(

@@ -10,17 +10,13 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.plus
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
-import link.danb.launcher.components.UserActivity
+import link.danb.launcher.database.ActivityData
 import link.danb.launcher.profiles.Profile
-import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
 class HiddenAppsViewModel
@@ -36,16 +32,8 @@ constructor(
       .map { data ->
         State.Loaded(
           data
-            .asFlow()
             .filter { it.isHidden && it.userActivity.profile == profile }
-            .map {
-              State.Loaded.Item(
-                it.userActivity,
-                launcherResourceProvider.getTileData(it.userActivity),
-              )
-            }
-            .toList()
-            .sortedBy { it.launcherTileData.name.lowercase() }
+            .sortedBy { launcherResourceProvider.getLabel(it.userActivity).lowercase() }
             .toImmutableList()
         )
       }
@@ -54,9 +42,6 @@ constructor(
   sealed interface State {
     data object Loading : State
 
-    data class Loaded(val items: ImmutableList<Item>) : State {
-
-      data class Item(val userActivity: UserActivity, val launcherTileData: LauncherTileData)
-    }
+    data class Loaded(val items: ImmutableList<ActivityData>) : State
   }
 }

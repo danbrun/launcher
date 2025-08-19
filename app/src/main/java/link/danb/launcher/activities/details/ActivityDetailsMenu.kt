@@ -22,8 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.apps.componentLabel
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.ui.LauncherIcon
 
 @Composable
@@ -63,9 +65,7 @@ fun DetailsDialog(
         }
 
         for (shortcut in state.shortcuts) {
-          ShortcutMenuItem(shortcut) {
-            appsLauncher.startShortcut(shortcut.userShortcut, Rect.Zero)
-          }
+          ShortcutMenuItem(shortcut) { appsLauncher.startShortcut(shortcut, Rect.Zero) }
         }
       }
     }
@@ -139,10 +139,10 @@ private fun SettingsMenuItem(onClick: (Rect) -> Unit) {
 }
 
 @Composable
-private fun ShortcutMenuItem(data: ActivityDetailsViewModel.ShortcutViewData, onClick: () -> Unit) {
+private fun ShortcutMenuItem(userShortcut: UserShortcut, onClick: () -> Unit) {
   DropdownMenuItem(
-    text = { Text(data.launcherTileData.name) },
+    text = { Text(componentLabel(userShortcut) ?: "") },
     onClick = onClick,
-    leadingIcon = { LauncherIcon(data.launcherTileData.launcherIconData, Modifier.size(24.dp)) },
+    leadingIcon = { LauncherIcon(userShortcut, Modifier.size(24.dp)) },
   )
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.apps.componentLabel
 import link.danb.launcher.components.UserApplication
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
@@ -124,12 +125,15 @@ private fun Header(
 ) {
   ListItem(
     headlineContent = {
-      Text(header.launcherTileData.name, style = MaterialTheme.typography.headlineMedium)
+      Text(
+        componentLabel(header.userApplication) ?: "",
+        style = MaterialTheme.typography.headlineMedium,
+      )
     },
     Modifier.clickable { toggle(header.userApplication) },
     leadingContent = {
       LauncherIcon(
-        header.launcherTileData.launcherIconData,
+        header.userApplication,
         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
       )
     },

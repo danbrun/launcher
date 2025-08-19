@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import link.danb.launcher.activities.details.DetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
+import link.danb.launcher.apps.componentLabel
 import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.gestures.GestureActivityAnimation
 import link.danb.launcher.shortcuts.PinShortcutsDialog
@@ -176,14 +177,14 @@ fun Launcher(
                   LauncherTile(
                     icon = { isPressed ->
                       LauncherIcon(
-                        item.launcherTileData.launcherIconData,
+                        item.userShortcut,
                         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
                         isPressed = isPressed,
                       )
                     },
                     text = {
                       Text(
-                        item.launcherTileData.name,
+                        componentLabel(item.userShortcut) ?: "",
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         style = textStyle,
@@ -211,7 +212,7 @@ fun Launcher(
                     LauncherTile(
                       icon = { isPressed ->
                         LauncherIcon(
-                          item.launcherTileData.launcherIconData,
+                          item.userActivity,
                           Modifier.gestureIcon(item)
                             .size(dimensionResource(R.dimen.launcher_icon_size)),
                           isPressed = isPressed,
@@ -219,7 +220,7 @@ fun Launcher(
                       },
                       text = {
                         Text(
-                          item.launcherTileData.name,
+                          componentLabel(item.userActivity) ?: "",
                           maxLines = 2,
                           overflow = TextOverflow.Ellipsis,
                           style = textStyle,

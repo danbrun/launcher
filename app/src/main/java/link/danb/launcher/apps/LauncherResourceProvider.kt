@@ -14,21 +14,18 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.PaintDrawable
 import android.os.UserHandle
-import androidx.appcompat.content.res.AppCompatResources
+import androidx.annotation.DrawableRes
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toDrawable
 import androidx.palette.graphics.Palette
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.plus
-import kotlinx.coroutines.withContext
 import link.danb.launcher.R
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserApplication
@@ -37,8 +34,6 @@ import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.components.UserShortcutCreator
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
-import link.danb.launcher.ui.LauncherIconData
-import link.danb.launcher.ui.LauncherTileData
 
 @Singleton
 class LauncherResourceProvider
@@ -51,8 +46,6 @@ constructor(
   private val launcherApps: LauncherApps by lazy { checkNotNull(context.getSystemService()) }
   private val density: Int by lazy { context.resources.displayMetrics.densityDpi }
   private val icons: MutableMap<UserComponent, Deferred<AdaptiveIconDrawable>> = mutableMapOf()
-  private val badges: MutableMap<Profile, Drawable?> = mutableMapOf()
-  private val coroutineScope: CoroutineScope = MainScope() + Dispatchers.IO
 
   init {
     launcherApps.registerCallback(
@@ -80,46 +73,8 @@ constructor(
       }
     }
 
-  fun getIconWithCache(userComponent: UserComponent): Deferred<AdaptiveIconDrawable> =
-    synchronized(this) {
-      icons.getOrPut(userComponent) { coroutineScope.async { getIcon(userComponent) } }
-    }
-
-  suspend fun getIcon(userComponent: UserComponent): AdaptiveIconDrawable =
-    withContext(Dispatchers.IO) { userComponent.getSourceIcon().toAdaptiveIconDrawable() }
-
-  fun getBadge(profile: Profile): Drawable? =
-    badges.getOrPut(profile) {
-      when (profile) {
-        Profile.PERSONAL -> null
-        Profile.WORK -> AppCompatResources.getDrawable(context, R.drawable.ic_baseline_work_24)
-        Profile.PRIVATE -> AppCompatResources.getDrawable(context, R.drawable.baseline_lock_24)
-      }
-    }
-
-  suspend fun getTileData(userComponent: UserComponent): LauncherTileData =
-    LauncherTileData(
-      LauncherIconData(
-        getIcon(userComponent),
-        userComponent.profile,
-        getBadge(userComponent.profile),
-      ),
-      getLabel(userComponent),
-    )
-
-  suspend fun getTileDataWithCache(userComponent: UserComponent): LauncherTileData =
-    coroutineScope
-      .async {
-        LauncherTileData(
-          LauncherIconData(
-            getIconWithCache(userComponent).await(),
-            userComponent.profile,
-            getBadge(userComponent.profile),
-          ),
-          getLabel(userComponent),
-        )
-      }
-      .await()
+  fun getIcon(userComponent: UserComponent): AdaptiveIconDrawable =
+    userComponent.getSourceIcon().toAdaptiveIconDrawable()
 
   private fun UserComponent.getSourceIcon(): Drawable =
     when (this) {
@@ -189,18 +144,34 @@ constructor(
       profileManager.getUserHandle(userShortcut.profile)!!,
     )
 
-  private suspend fun Drawable.toAdaptiveIconDrawable(): AdaptiveIconDrawable {
+  private fun Drawable.toAdaptiveIconDrawable(): AdaptiveIconDrawable {
     if (this is AdaptiveIconDrawable && foreground != null && background != null) {
       return this
     }
 
     try {
-      val palette = withContext(Dispatchers.IO) { Palette.from(toBitmap()).generate() }
+      val palette = Palette.from(toBitmap()).generate()
       val background = PaintDrawable(palette.getMutedColor(Color.WHITE))
       val foreground = InsetDrawable(this, AdaptiveIconDrawable.getExtraInsetFraction())
       return AdaptiveIconDrawable(background, foreground)
-    } catch (e: IllegalArgumentException) {
+    } catch (_: IllegalArgumentException) {
       return AdaptiveIconDrawable(Color.WHITE.toDrawable(), this)
     }
+  }
+
+  companion object {
+    @DrawableRes
+    fun getBadge(profile: Profile): Int? =
+      when (profile) {
+        Profile.PERSONAL -> null
+        Profile.WORK -> R.drawable.ic_baseline_work_24
+        Profile.PRIVATE -> R.drawable.baseline_lock_24
+      }
+  }
+
+  @EntryPoint
+  @InstallIn(SingletonComponent::class)
+  interface LauncherResourceProviderEntryPoint {
+    @Singleton fun launcherResourceProvider(): LauncherResourceProvider
   }
 }

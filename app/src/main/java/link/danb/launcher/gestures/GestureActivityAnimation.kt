@@ -25,7 +25,6 @@ import link.danb.launcher.ActivityViewItem
 import link.danb.launcher.LauncherViewModel
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.profiles.rememberProfileManager
-import link.danb.launcher.ui.LauncherIconData
 
 @Composable
 fun GestureActivityAnimation(
@@ -50,21 +49,13 @@ class GestureActivityAnimationScopeNoop : GestureActivityAnimationScope
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
 
-  private val dataMap: MutableMap<UserActivity, LauncherIconData> = mutableMapOf()
   private val boundsMap: MutableMap<UserActivity, Rect> = mutableMapOf()
 
   private var currentUserActivity: UserActivity? by mutableStateOf(null)
 
   @Composable
   override fun Modifier.gestureIcon(item: ActivityViewItem): Modifier {
-    DisposableEffect(item) {
-      dataMap[item.userActivity] = item.launcherTileData.launcherIconData
-
-      onDispose {
-        dataMap.remove(item.userActivity)
-        boundsMap.remove(item.userActivity)
-      }
-    }
+    DisposableEffect(item) { onDispose { boundsMap.remove(item.userActivity) } }
 
     return onGloballyPositioned { boundsMap[item.userActivity] = it.boundsInRoot() }
       .alpha(if (currentUserActivity == item.userActivity) 0f else 1f)
@@ -94,7 +85,6 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
         view.animateNavigationGesture(
           gestureContract,
           gestureActivityData.bounds.toAndroidRectF(),
-          gestureActivityData.launcherIconData,
           useMonochrome,
         )
       }
@@ -112,19 +102,14 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
   }
 
   private fun getGestureData(userActivity: UserActivity): GestureActivityData? {
-    val data = dataMap[userActivity] ?: return null
     val bounds = boundsMap[userActivity] ?: return null
-    return GestureActivityData(userActivity, data, bounds)
+    return GestureActivityData(userActivity, bounds)
   }
 
   private fun getGestureData(packageName: String): GestureActivityData? {
-    val userActivity = dataMap.keys.firstOrNull { it.packageName == packageName } ?: return null
+    val userActivity = boundsMap.keys.firstOrNull { it.packageName == packageName } ?: return null
     return getGestureData(userActivity)
   }
 
-  private data class GestureActivityData(
-    val userActivity: UserActivity,
-    val launcherIconData: LauncherIconData,
-    val bounds: Rect,
-  )
+  private data class GestureActivityData(val userActivity: UserActivity, val bounds: Rect)
 }

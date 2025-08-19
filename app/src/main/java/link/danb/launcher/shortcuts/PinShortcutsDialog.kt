@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.danb.launcher.R
+import link.danb.launcher.apps.componentLabel
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.LauncherIcon
@@ -101,13 +102,17 @@ private fun PinShortcutsContent(
             LauncherTile(
               icon = { isPressed ->
                 LauncherIcon(
-                  item.launcherTileData.launcherIconData,
+                  item.userShortcutCreator,
                   Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
                   isPressed = isPressed,
                 )
               },
               text = {
-                Text(item.launcherTileData.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                  componentLabel(item.userShortcutCreator) ?: "",
+                  maxLines = 2,
+                  overflow = TextOverflow.Ellipsis,
+                )
               },
               onClick = {
                 shortcutActivityLauncher.launch(

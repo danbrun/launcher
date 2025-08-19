@@ -21,7 +21,6 @@ import link.danb.launcher.apps.LauncherResourceProvider
 import link.danb.launcher.components.UserApplication
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
-import link.danb.launcher.ui.LauncherTileData
 import link.danb.launcher.ui.WidgetPreviewData
 
 @HiltViewModel
@@ -61,13 +60,7 @@ constructor(
       .flatMap { entry ->
         buildList {
           val isExpanded = entry.key in expandedApplications
-          add(
-            State.Item.Header(
-              entry.key,
-              launcherResourceProvider.getTileData(entry.key),
-              isExpanded,
-            )
-          )
+          add(State.Item.Header(entry.key, isExpanded))
 
           if (isExpanded) {
             for (widget in entry.value) {
@@ -106,11 +99,7 @@ constructor(
 
     sealed interface Item {
 
-      data class Header(
-        val userApplication: UserApplication,
-        val launcherTileData: LauncherTileData,
-        val isExpanded: Boolean,
-      ) : Item
+      data class Header(val userApplication: UserApplication, val isExpanded: Boolean) : Item
 
       data class Entry(
         val userApplication: UserApplication,

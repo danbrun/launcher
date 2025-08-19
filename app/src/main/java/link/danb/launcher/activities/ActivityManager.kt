@@ -37,7 +37,7 @@ constructor(
   val activities: Flow<ImmutableList<UserActivity>> =
     combine(
         profileManager.profiles,
-        callbackFlow<Unit> {
+        callbackFlow {
           send(Unit)
           val callback = LauncherAppsCallback { _, _ -> trySend(Unit) }
 

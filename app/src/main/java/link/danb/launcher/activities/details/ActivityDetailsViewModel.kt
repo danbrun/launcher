@@ -24,7 +24,6 @@ import link.danb.launcher.database.ActivityData
 import link.danb.launcher.database.LauncherDatabase
 import link.danb.launcher.profiles.ProfileManager
 import link.danb.launcher.shortcuts.ShortcutManager
-import link.danb.launcher.ui.LauncherTileData
 
 @HiltViewModel
 class ActivityDetailsViewModel
@@ -43,11 +42,7 @@ constructor(
       .map { activityDataList ->
         val activityData = activityDataList.firstOrNull { it.userActivity == userActivity }
         if (activityData != null) {
-          Loaded(
-            activityData,
-            launcherResourceProvider.getTileData(activityData.userActivity),
-            getShortcuts(userActivity),
-          )
+          Loaded(activityData, getShortcuts(userActivity))
         } else {
           Missing
         }
@@ -75,11 +70,10 @@ constructor(
     viewModelScope.launch(Dispatchers.IO) { launcherDatabase.activityData().put(activityData) }
   }
 
-  private suspend fun getShortcuts(userActivity: UserActivity): ImmutableList<ShortcutViewData> =
+  private fun getShortcuts(userActivity: UserActivity): ImmutableList<UserShortcut> =
     shortcutManager
       .getShortcuts(userActivity)
-      .map { ShortcutViewData(it, launcherResourceProvider.getTileData(it)) }
-      .sortedBy { it.launcherTileData.name }
+      .sortedBy { launcherResourceProvider.getLabel(it).lowercase() }
       .toImmutableList()
 
   sealed interface ActivityDetailsData
@@ -88,14 +82,6 @@ constructor(
 
   data object Missing : ActivityDetailsData
 
-  data class Loaded(
-    val activityData: ActivityData,
-    val launcherTileData: LauncherTileData,
-    val shortcuts: ImmutableList<ShortcutViewData>,
-  ) : ActivityDetailsData
-
-  data class ShortcutViewData(
-    val userShortcut: UserShortcut,
-    val launcherTileData: LauncherTileData,
-  )
+  data class Loaded(val activityData: ActivityData, val shortcuts: ImmutableList<UserShortcut>) :
+    ActivityDetailsData
 }

@@ -11,47 +11,53 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import link.danb.launcher.LocalUseMonochromeIcons
+import link.danb.launcher.apps.LauncherResourceProvider
+import link.danb.launcher.apps.componentIcon
+import link.danb.launcher.components.UserComponent
 import link.danb.launcher.extensions.drawAdaptiveIcon
 import link.danb.launcher.extensions.drawDrawable
 import link.danb.launcher.extensions.drawMonochromeIcon
-import link.danb.launcher.profiles.Profile
-
-data class LauncherIconData(
-  val icon: AdaptiveIconDrawable,
-  val profile: Profile,
-  val badge: Drawable?,
-)
 
 @Composable
 fun LauncherIcon(
-  data: LauncherIconData,
+  userComponent: UserComponent,
   modifier: Modifier = Modifier,
   isPressed: Boolean = false,
 ) {
-  val useMonochromeIcons = LocalUseMonochromeIcons.current
-  val theme =
-    if (useMonochromeIcons) {
-      MonochromeIconTheme.theme
-    } else {
-      MonochromeIconTheme(Color.White, Color.Blue)
-    }
-  val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
+  val icon = componentIcon(userComponent)
   Box(modifier.clip(RoundedCornerShape(25))) {
+    if (icon == null) return
+
+    val badge =
+      remember(userComponent.profile) { LauncherResourceProvider.getBadge(userComponent.profile) }
+        ?.let { painterResource(it) }
+
+    val useMonochromeIcons = LocalUseMonochromeIcons.current
+    val theme =
+      if (useMonochromeIcons) {
+        MonochromeIconTheme.theme
+      } else {
+        MonochromeIconTheme(Color.White, Color.Blue)
+      }
+    val insetMultiplier by animateFloatAsState(if (isPressed) 0f else 1f, label = "scale")
+
     Canvas(Modifier.fillMaxSize()) {
-      drawLauncherIcon(data.icon, theme.takeIf { useMonochromeIcons }, insetMultiplier)
+      drawLauncherIcon(icon, theme.takeIf { useMonochromeIcons }, insetMultiplier)
     }
-    AnimatedContent(data, contentKey = { it.profile }) {
-      Canvas(Modifier.fillMaxSize()) { drawBadge(it.badge, theme) }
-    }
+    AnimatedContent(badge) { Canvas(Modifier.fillMaxSize()) { drawBadge(it, theme) } }
   }
 }
 
@@ -69,6 +75,17 @@ fun DrawScope.drawLauncherIcon(
     }
   } else {
     drawAdaptiveIcon(icon, insetMultiplier)
+  }
+}
+
+fun DrawScope.drawBadge(badge: Painter?, theme: MonochromeIconTheme) {
+  if (badge == null) return
+
+  withTransform({ scale(0.4f, 0.4f, Offset(size.width, size.height)) }) {
+    drawCircle(theme.foreground)
+    withTransform({ scale(0.7f, 0.7f, Offset(size.width / 2, size.height / 2)) }) {
+      with(badge) { draw(size, colorFilter = ColorFilter.tint(theme.background)) }
+    }
   }
 }
 
