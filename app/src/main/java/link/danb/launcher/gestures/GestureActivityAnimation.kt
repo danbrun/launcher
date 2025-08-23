@@ -13,12 +13,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.toAndroidRectF
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.core.util.Consumer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,6 +23,8 @@ import link.danb.launcher.ActivityViewItem
 import link.danb.launcher.LauncherViewModel
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.profiles.rememberProfileManager
+import link.danb.launcher.ui.LauncherIconBoundsMap
+import link.danb.launcher.ui.LocalLauncherIconBoundsMap
 
 @Composable
 fun GestureActivityAnimation(
@@ -50,23 +49,17 @@ class GestureActivityAnimationScopeNoop : GestureActivityAnimationScope
 @RequiresApi(Build.VERSION_CODES.Q)
 class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
 
-  private val boundsMap: MutableMap<UserActivity, Rect> = mutableMapOf()
-
   private var currentUserActivity: UserActivity? by mutableStateOf(null)
 
-  override fun Modifier.gestureIcon(item: ActivityViewItem): Modifier = composed {
-    DisposableEffect(item) { onDispose { boundsMap.remove(item.userActivity) } }
-
-    this then
-      Modifier.onGloballyPositioned { boundsMap[item.userActivity] = it.boundsInRoot() }
-        .alpha(if (currentUserActivity == item.userActivity) 0f else 1f)
-  }
+  override fun Modifier.gestureIcon(item: ActivityViewItem): Modifier =
+    this then Modifier.alpha(if (currentUserActivity == item.userActivity) 0f else 1f)
 
   @Composable
   fun GestureAnimationView(launcherViewModel: LauncherViewModel = viewModel()) {
     val activity = LocalActivity.current as ComponentActivity
     val profileManager = rememberProfileManager()
     val useMonochrome by launcherViewModel.useMonochromeIcons.collectAsStateWithLifecycle()
+    val launcherIconBoundsMap = LocalLauncherIconBoundsMap.current
 
     DisposableEffect(activity) {
       val view = GestureIconView(activity)
@@ -78,8 +71,8 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
             ?: return@Consumer
 
         val gestureActivityData =
-          getGestureData(gestureContract.userActivity)
-            ?: getGestureData(gestureContract.userActivity.packageName)
+          getGestureData(launcherIconBoundsMap, gestureContract.userActivity)
+            ?: getGestureData(launcherIconBoundsMap, gestureContract.userActivity.packageName)
             ?: return@Consumer
 
         currentUserActivity = gestureActivityData.userActivity
@@ -102,14 +95,23 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
     }
   }
 
-  private fun getGestureData(userActivity: UserActivity): GestureActivityData? {
+  private fun getGestureData(
+    boundsMap: LauncherIconBoundsMap,
+    userActivity: UserActivity,
+  ): GestureActivityData? {
     val bounds = boundsMap[userActivity] ?: return null
     return GestureActivityData(userActivity, bounds)
   }
 
-  private fun getGestureData(packageName: String): GestureActivityData? {
-    val userActivity = boundsMap.keys.firstOrNull { it.packageName == packageName } ?: return null
-    return getGestureData(userActivity)
+  private fun getGestureData(
+    boundsMap: LauncherIconBoundsMap,
+    packageName: String,
+  ): GestureActivityData? {
+    val userActivity =
+      boundsMap.getComponents().filterIsInstance<UserActivity>().firstOrNull {
+        it.packageName == packageName
+      } ?: return null
+    return getGestureData(boundsMap, userActivity)
   }
 
   private data class GestureActivityData(val userActivity: UserActivity, val bounds: Rect)

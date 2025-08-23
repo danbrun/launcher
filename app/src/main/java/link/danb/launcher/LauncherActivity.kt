@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import link.danb.launcher.apps.ProvideLauncherResources
+import link.danb.launcher.ui.ProvideLauncherIconBoundsMap
 import link.danb.launcher.ui.theme.LauncherTheme
 
 @AndroidEntryPoint
@@ -16,7 +17,9 @@ class LauncherActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
 
     enableEdgeToEdge()
-    setContent { LauncherTheme { ProvideLauncherResources { Launcher() } } }
+    setContent {
+      LauncherTheme { ProvideLauncherResources { ProvideLauncherIconBoundsMap { Launcher() } } }
+    }
 
     onBackPressedDispatcher.addCallback(
       object : OnBackPressedCallback(true) {

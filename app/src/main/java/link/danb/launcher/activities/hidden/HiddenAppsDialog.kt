@@ -41,6 +41,8 @@ import link.danb.launcher.profiles.Profile
 import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
+import link.danb.launcher.ui.LocalLauncherIconBoundsMap
+import link.danb.launcher.ui.saveIconPosition
 
 @Composable
 fun HiddenAppsDialog(
@@ -66,6 +68,7 @@ private fun HiddenAppsContent(
   state: HiddenAppsViewModel.State,
   launchActivity: (Rect, UserActivity) -> Unit,
 ) {
+  val launcherIconBoundsMap = LocalLauncherIconBoundsMap.current
   LazyVerticalGrid(GridCells.Adaptive(dimensionResource(R.dimen.min_column_width))) {
     item(span = { GridItemSpan(maxLineSpan) }) {
       ListItem(
@@ -103,7 +106,8 @@ private fun HiddenAppsContent(
                 icon = {
                   LauncherIcon(
                     item.userActivity,
-                    Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+                    Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
+                      .saveIconPosition(item.userActivity),
                     interactionSource = interactionSource,
                   )
                 },
@@ -114,7 +118,12 @@ private fun HiddenAppsContent(
                     overflow = TextOverflow.Ellipsis,
                   )
                 },
-                onClick = { launchActivity(it, item.userActivity) },
+                onClick = {
+                  launchActivity(
+                    launcherIconBoundsMap.getValue(item.userActivity),
+                    item.userActivity,
+                  )
+                },
                 onLongClick = { showDetailsMenu = true },
                 interactionSource = interactionSource,
               )

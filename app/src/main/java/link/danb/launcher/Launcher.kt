@@ -55,8 +55,10 @@ import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherIconIndication
 import link.danb.launcher.ui.LauncherTile
+import link.danb.launcher.ui.LocalLauncherIconBoundsMap
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.predictiveBackScaling
+import link.danb.launcher.ui.saveIconPosition
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
@@ -123,6 +125,7 @@ fun Launcher(
               color = Color.White,
               shadow = Shadow(color = Color.Black, blurRadius = 8f),
             )
+          val launcherIconBoundsMap = LocalLauncherIconBoundsMap.current
 
           LazyVerticalGrid(
             columns = GridCells.Adaptive(dimensionResource(R.dimen.min_column_width)),
@@ -183,6 +186,7 @@ fun Launcher(
                       LauncherIcon(
                         item.userShortcut,
                         Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
+                          .saveIconPosition(item.userShortcut)
                           .indication(interactionSource, LauncherIconIndication),
                       )
                     },
@@ -195,7 +199,12 @@ fun Launcher(
                       )
                     },
                     modifier = Modifier.animateItem(),
-                    onClick = { appsLauncher.startShortcut(item.userShortcut, it) },
+                    onClick = {
+                      appsLauncher.startShortcut(
+                        item.userShortcut,
+                        launcherIconBoundsMap.getValue(item.userShortcut),
+                      )
+                    },
                     onLongClick = {
                       MaterialAlertDialogBuilder(context)
                         .setTitle(R.string.unpin_shortcut)
@@ -219,8 +228,9 @@ fun Launcher(
                       icon = {
                         LauncherIcon(
                           item.userActivity,
-                          Modifier.gestureIcon(item)
-                            .size(dimensionResource(R.dimen.launcher_icon_size)),
+                          Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
+                            .saveIconPosition(item.userActivity)
+                            .gestureIcon(item),
                           interactionSource = interactionSource,
                         )
                       },
@@ -232,7 +242,12 @@ fun Launcher(
                           style = textStyle,
                         )
                       },
-                      onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
+                      onClick = {
+                        appsLauncher.startMainActivity(
+                          item.userActivity,
+                          launcherIconBoundsMap.getValue(item.userActivity),
+                        )
+                      },
                       onLongClick = { showDetailsMenu = true },
                       interactionSource = interactionSource,
                     )
