@@ -1,5 +1,6 @@
 package link.danb.launcher.activities.details
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -153,9 +154,13 @@ private fun SettingsMenuItem(onClick: (Rect) -> Unit) {
 
 @Composable
 private fun ShortcutMenuItem(userShortcut: UserShortcut, onClick: () -> Unit) {
+  val interactionSource = remember { MutableInteractionSource() }
   DropdownMenuItem(
     text = { Text(componentLabel(userShortcut) ?: "") },
     onClick = onClick,
-    leadingIcon = { LauncherIcon(userShortcut, Modifier.size(24.dp)) },
+    leadingIcon = {
+      LauncherIcon(userShortcut, Modifier.size(24.dp), interactionSource = interactionSource)
+    },
+    interactionSource = interactionSource,
   )
 }

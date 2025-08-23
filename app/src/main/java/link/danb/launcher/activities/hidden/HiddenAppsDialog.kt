@@ -1,5 +1,6 @@
 package link.danb.launcher.activities.hidden
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -97,12 +98,13 @@ private fun HiddenAppsContent(
           Card(Modifier.padding(4.dp)) {
             Box {
               var showDetailsMenu by remember { mutableStateOf(false) }
+              val interactionSource = remember { MutableInteractionSource() }
               LauncherTile(
-                icon = { isPressed ->
+                icon = {
                   LauncherIcon(
                     item.userActivity,
                     Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-                    isPressed = isPressed,
+                    interactionSource = interactionSource,
                   )
                 },
                 text = {
@@ -114,6 +116,7 @@ private fun HiddenAppsContent(
                 },
                 onClick = { launchActivity(it, item.userActivity) },
                 onLongClick = { showDetailsMenu = true },
+                interactionSource = interactionSource,
               )
               DetailsDialog(item.userActivity, showDetailsMenu) { showDetailsMenu = false }
             }

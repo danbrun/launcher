@@ -29,9 +29,8 @@ fun DrawScope.drawDrawable(
  * Draws an adaptive icon into a Compose DrawScope. Applies an inset to account for extra space
  * around adaptive icon drawables.
  */
-fun DrawScope.drawAdaptiveIcon(icon: AdaptiveIconDrawable, insetMultiplier: Float = 1f) {
-  val insetScale = AdaptiveIconDrawable.getExtraInsetFraction() * insetMultiplier * -1
-  inset(size.width * insetScale, size.height * insetScale) {
+fun DrawScope.drawAdaptiveIcon(icon: AdaptiveIconDrawable) {
+  inset(size.width * insetFactor, size.height * insetFactor) {
     drawDrawable(icon.background)
     drawDrawable(icon.foreground)
   }
@@ -41,12 +40,12 @@ fun DrawScope.drawAdaptiveIcon(icon: AdaptiveIconDrawable, insetMultiplier: Floa
 fun DrawScope.drawMonochromeIcon(
   icon: AdaptiveIconDrawable,
   monochromeIconTheme: MonochromeIconTheme,
-  insetMultiplier: Float = 1f,
 ) {
-  val insetScale = AdaptiveIconDrawable.getExtraInsetFraction() * insetMultiplier * -1
-  inset(size.width * insetScale, size.height * insetScale) {
+  inset(size.width * insetFactor, size.height * insetFactor) {
     drawRect(monochromeIconTheme.background, Offset.Zero, size)
     icon.monochrome!!.setTint(monochromeIconTheme.foreground.toArgb())
     drawDrawable(icon.monochrome!!)
   }
 }
+
+private val insetFactor = AdaptiveIconDrawable.getExtraInsetFraction() * -1

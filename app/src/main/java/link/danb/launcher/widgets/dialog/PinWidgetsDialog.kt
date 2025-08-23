@@ -2,6 +2,7 @@ package link.danb.launcher.widgets.dialog
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -123,6 +124,7 @@ private fun Header(
   header: PinWidgetsViewModel.State.Item.Header,
   toggle: (UserApplication) -> Unit,
 ) {
+  val interactionSource = remember { MutableInteractionSource() }
   ListItem(
     headlineContent = {
       Text(
@@ -130,11 +132,12 @@ private fun Header(
         style = MaterialTheme.typography.headlineMedium,
       )
     },
-    Modifier.clickable { toggle(header.userApplication) },
+    Modifier.clickable(interactionSource = interactionSource) { toggle(header.userApplication) },
     leadingContent = {
       LauncherIcon(
         header.userApplication,
         Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
+        interactionSource = interactionSource,
       )
     },
     trailingContent = {

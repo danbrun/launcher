@@ -3,6 +3,8 @@ package link.danb.launcher
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -51,6 +53,7 @@ import link.danb.launcher.apps.rememberAppsLauncher
 import link.danb.launcher.gestures.GestureActivityAnimation
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.ui.LauncherIcon
+import link.danb.launcher.ui.LauncherIconIndication
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.predictiveBackScaling
@@ -174,12 +177,13 @@ fun Launcher(
 
                 is ShortcutViewItem -> {
                   val context = LocalContext.current
+                  val interactionSource = remember { MutableInteractionSource() }
                   LauncherTile(
-                    icon = { isPressed ->
+                    icon = {
                       LauncherIcon(
                         item.userShortcut,
-                        Modifier.size(dimensionResource(R.dimen.launcher_icon_size)),
-                        isPressed = isPressed,
+                        Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
+                          .indication(interactionSource, LauncherIconIndication),
                       )
                     },
                     text = {
@@ -203,19 +207,21 @@ fun Launcher(
                         .setNegativeButton(android.R.string.cancel, null)
                         .show()
                     },
+                    interactionSource = interactionSource,
                   )
                 }
 
                 is ActivityViewItem -> {
                   Box(Modifier.animateItem()) {
                     var showDetailsMenu by remember { mutableStateOf(false) }
+                    val interactionSource = remember { MutableInteractionSource() }
                     LauncherTile(
-                      icon = { isPressed ->
+                      icon = {
                         LauncherIcon(
                           item.userActivity,
                           Modifier.gestureIcon(item)
                             .size(dimensionResource(R.dimen.launcher_icon_size)),
-                          isPressed = isPressed,
+                          interactionSource = interactionSource,
                         )
                       },
                       text = {
@@ -228,6 +234,7 @@ fun Launcher(
                       },
                       onClick = { appsLauncher.startMainActivity(item.userActivity, it) },
                       onLongClick = { showDetailsMenu = true },
+                      interactionSource = interactionSource,
                     )
                     DetailsDialog(item.userActivity, showDetailsMenu) { showDetailsMenu = false }
                   }

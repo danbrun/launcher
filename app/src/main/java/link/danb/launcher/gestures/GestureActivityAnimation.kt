@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.toAndroidRectF
@@ -41,7 +42,7 @@ fun GestureActivityAnimation(
 }
 
 interface GestureActivityAnimationScope {
-  @Composable fun Modifier.gestureIcon(item: ActivityViewItem): Modifier = this
+  fun Modifier.gestureIcon(item: ActivityViewItem): Modifier = this
 }
 
 class GestureActivityAnimationScopeNoop : GestureActivityAnimationScope
@@ -53,12 +54,12 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
 
   private var currentUserActivity: UserActivity? by mutableStateOf(null)
 
-  @Composable
-  override fun Modifier.gestureIcon(item: ActivityViewItem): Modifier {
+  override fun Modifier.gestureIcon(item: ActivityViewItem): Modifier = composed {
     DisposableEffect(item) { onDispose { boundsMap.remove(item.userActivity) } }
 
-    return onGloballyPositioned { boundsMap[item.userActivity] = it.boundsInRoot() }
-      .alpha(if (currentUserActivity == item.userActivity) 0f else 1f)
+    this then
+      Modifier.onGloballyPositioned { boundsMap[item.userActivity] = it.boundsInRoot() }
+        .alpha(if (currentUserActivity == item.userActivity) 0f else 1f)
   }
 
   @Composable
