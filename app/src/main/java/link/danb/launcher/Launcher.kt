@@ -58,7 +58,7 @@ import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.LocalLauncherIconBoundsMap
 import link.danb.launcher.ui.Widget
 import link.danb.launcher.ui.predictiveBackScaling
-import link.danb.launcher.ui.saveIconPosition
+import link.danb.launcher.ui.saveIconBounds
 import link.danb.launcher.widgets.WidgetsViewModel
 import link.danb.launcher.widgets.dialog.PinWidgetsDialog
 
@@ -186,7 +186,7 @@ fun Launcher(
                       LauncherIcon(
                         item.userShortcut,
                         Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
-                          .saveIconPosition(item.userShortcut)
+                          .saveIconBounds(item.userShortcut)
                           .indication(interactionSource, LauncherIconIndication),
                       )
                     },
@@ -229,7 +229,7 @@ fun Launcher(
                         LauncherIcon(
                           item.userActivity,
                           Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
-                            .saveIconPosition(item.userActivity)
+                            .saveIconBounds(item.userActivity)
                             .gestureIcon(item),
                           interactionSource = interactionSource,
                         )

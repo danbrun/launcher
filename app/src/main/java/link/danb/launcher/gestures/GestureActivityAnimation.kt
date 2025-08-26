@@ -22,8 +22,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import link.danb.launcher.ActivityViewItem
 import link.danb.launcher.LauncherViewModel
 import link.danb.launcher.components.UserActivity
+import link.danb.launcher.components.UserComponent
 import link.danb.launcher.profiles.rememberProfileManager
-import link.danb.launcher.ui.LauncherIconBoundsMap
 import link.danb.launcher.ui.LocalLauncherIconBoundsMap
 
 @Composable
@@ -96,7 +96,7 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
   }
 
   private fun getGestureData(
-    boundsMap: LauncherIconBoundsMap,
+    boundsMap: Map<UserComponent, Rect>,
     userActivity: UserActivity,
   ): GestureActivityData? {
     val bounds = boundsMap[userActivity] ?: return null
@@ -104,13 +104,12 @@ class GestureActivityAnimationScopeImpl : GestureActivityAnimationScope {
   }
 
   private fun getGestureData(
-    boundsMap: LauncherIconBoundsMap,
+    boundsMap: Map<UserComponent, Rect>,
     packageName: String,
   ): GestureActivityData? {
     val userActivity =
-      boundsMap.getComponents().filterIsInstance<UserActivity>().firstOrNull {
-        it.packageName == packageName
-      } ?: return null
+      boundsMap.keys.filterIsInstance<UserActivity>().firstOrNull { it.packageName == packageName }
+        ?: return null
     return getGestureData(boundsMap, userActivity)
   }
 

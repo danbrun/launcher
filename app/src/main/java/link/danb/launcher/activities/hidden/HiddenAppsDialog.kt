@@ -42,7 +42,7 @@ import link.danb.launcher.ui.BottomSheet
 import link.danb.launcher.ui.LauncherIcon
 import link.danb.launcher.ui.LauncherTile
 import link.danb.launcher.ui.LocalLauncherIconBoundsMap
-import link.danb.launcher.ui.saveIconPosition
+import link.danb.launcher.ui.saveIconBounds
 
 @Composable
 fun HiddenAppsDialog(
@@ -107,7 +107,7 @@ private fun HiddenAppsContent(
                   LauncherIcon(
                     item.userActivity,
                     Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
-                      .saveIconPosition(item.userActivity),
+                      .saveIconBounds(item.userActivity),
                     interactionSource = interactionSource,
                   )
                 },
