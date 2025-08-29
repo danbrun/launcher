@@ -1,7 +1,9 @@
 package link.danb.launcher.shortcuts
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.IntentSender
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
@@ -9,6 +11,7 @@ import android.content.pm.LauncherApps.PinItemRequest
 import android.content.pm.LauncherApps.ShortcutQuery
 import android.content.pm.ShortcutInfo
 import android.os.UserHandle
+import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -45,9 +48,24 @@ constructor(
         callbackFlow {
           send(Unit)
           val launcherAppsCallback = LauncherAppsCallback { _, _ -> trySend(Unit) }
+          val shortcutsBroadcast =
+            object : BroadcastReceiver() {
+              override fun onReceive(p0: Context?, p1: Intent?) {
+                trySend(Unit)
+              }
+            }
 
           launcherApps.registerCallback(launcherAppsCallback)
-          awaitClose { launcherApps.unregisterCallback(launcherAppsCallback) }
+          ContextCompat.registerReceiver(
+            context,
+            shortcutsBroadcast,
+            IntentFilter(ACTION_PINNED_SHORTCUTS_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+          )
+          awaitClose {
+            launcherApps.unregisterCallback(launcherAppsCallback)
+            context.unregisterReceiver(shortcutsBroadcast)
+          }
         },
       ) { profiles, _ ->
         profiles

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -78,7 +79,11 @@ fun DetailsDialog(
         }
 
         for (shortcut in state.shortcuts) {
-          ShortcutMenuItem(shortcut) { appsLauncher.startShortcut(shortcut, Rect.Zero) }
+          ShortcutMenuItem(
+            shortcut,
+            onClick = { appsLauncher.startShortcut(shortcut, Rect.Zero) },
+            onLongClick = { activityDetailsViewModel.pinShortcut(shortcut) },
+          )
         }
       }
     }
@@ -153,7 +158,11 @@ private fun SettingsMenuItem(onClick: (Rect) -> Unit) {
 }
 
 @Composable
-private fun ShortcutMenuItem(userShortcut: UserShortcut, onClick: () -> Unit) {
+private fun ShortcutMenuItem(
+  userShortcut: UserShortcut,
+  onClick: () -> Unit,
+  onLongClick: () -> Unit,
+) {
   val interactionSource = remember { MutableInteractionSource() }
   DropdownMenuItem(
     text = { Text(componentLabel(userShortcut) ?: "") },
@@ -162,5 +171,13 @@ private fun ShortcutMenuItem(userShortcut: UserShortcut, onClick: () -> Unit) {
       LauncherIcon(userShortcut, Modifier.size(24.dp), interactionSource = interactionSource)
     },
     interactionSource = interactionSource,
+    trailingIcon = {
+      IconButton(onClick = onLongClick) {
+        Icon(
+          painterResource(R.drawable.baseline_push_pin_24),
+          contentDescription = stringResource(R.string.pin_shortcut),
+        )
+      }
+    },
   )
 }
