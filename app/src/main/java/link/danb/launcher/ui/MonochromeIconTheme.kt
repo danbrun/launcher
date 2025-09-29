@@ -22,7 +22,9 @@ data class MonochromeIconTheme(val foreground: Color, val background: Color) {
 
     fun fromContext(context: Context): MonochromeIconTheme =
       MonochromeIconTheme(
-        Color(MaterialColors.getColor(context, R.attr.colorPrimary, android.graphics.Color.WHITE)),
+        Color(
+          MaterialColors.getColor(context, R.attr.colorOnPrimary, android.graphics.Color.WHITE)
+        ),
         Color(
           MaterialColors.getColor(
             context,
