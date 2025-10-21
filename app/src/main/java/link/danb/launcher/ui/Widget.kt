@@ -5,10 +5,8 @@ import android.view.ViewGroup
 import android.widget.ListView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,13 +47,11 @@ fun Widget(
   sizeRange: IntRange,
   isConfigurable: Boolean,
   modifier: Modifier = Modifier,
-  setScrollEnabled: (Boolean) -> Unit,
   widgetEditor: WidgetEditor,
   configure: (View) -> Unit,
 ) {
   var height by remember { mutableIntStateOf(widgetData.height) }
   var isEditing by remember { mutableStateOf(false) }
-  var isScrollEnabled: Boolean by remember { mutableStateOf(true) }
 
   val context = LocalContext.current
   val hapticFeedback = LocalHapticFeedback.current
@@ -68,34 +64,14 @@ fun Widget(
       AndroidView(
         factory = { widgetFrameView },
         modifier =
-          Modifier.fillMaxWidth()
-            .height(with(LocalDensity.current) { height.toDp() })
-            .pointerInput(widgetFrameView) {
-              detectLongPress(PointerEventPass.Initial) {
-                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                isEditing = true
-              }
+          Modifier.fillMaxWidth().height(with(LocalDensity.current) { height.toDp() }).pointerInput(
+            widgetFrameView
+          ) {
+            detectLongPress(PointerEventPass.Initial) {
+              hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+              isEditing = true
             }
-            .pointerInput(widgetFrameView, isScrollEnabled) {
-              awaitPointerEventScope {
-                isScrollEnabled =
-                  if (isScrollEnabled) {
-                    val touchPos = awaitFirstDown(false).position
-                    val framePos = widgetFrameView.boundsOnScreen
-                    val list =
-                      widgetFrameView.getListViewContaining(
-                        touchPos.x.toInt() + framePos.left,
-                        touchPos.y.toInt() + framePos.top,
-                        1,
-                      )
-                    list == null
-                  } else {
-                    waitForUpOrCancellation()
-                    true
-                  }
-                setScrollEnabled(isScrollEnabled)
-              }
-            },
+          },
         onReset = {},
         onRelease = { it.clearAppWidget() },
         update = { it.setAppWidget(widgetData.widgetId) },

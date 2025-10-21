@@ -118,7 +118,6 @@ fun Launcher(
         },
         containerColor = Color.Transparent,
         content = { paddingValues ->
-          var isScrollEnabled by remember { mutableStateOf(true) }
           val items by launcherViewModel.viewItems.collectAsStateWithLifecycle()
           val textStyle =
             MaterialTheme.typography.labelMedium.copy(
@@ -133,7 +132,6 @@ fun Launcher(
               Modifier.windowInsetsPadding(
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
               ),
-            userScrollEnabled = isScrollEnabled,
           ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
               Spacer(Modifier.height(paddingValues.calculateTopPadding()))
@@ -160,7 +158,6 @@ fun Launcher(
                     sizeRange = item.sizeRange,
                     isConfigurable = item.isConfigurable,
                     modifier = Modifier.animateItem(),
-                    setScrollEnabled = { isScrollEnabled = it },
                     widgetEditor = widgetsViewModel,
                     configure = { appsLauncher.configureWidget(it, item.widgetData.widgetId) },
                   )
