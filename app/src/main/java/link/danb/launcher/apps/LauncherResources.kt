@@ -22,6 +22,7 @@ private val LocalLauncherResourceCache =
   }
 
 private class LauncherResourceCache {
+  val labels: MutableMap<UserComponent, String> = mutableMapOf()
   val icons: MutableMap<UserComponent, AdaptiveIconDrawable> = mutableMapOf()
 }
 
@@ -45,7 +46,14 @@ fun ProvideLauncherResources(content: @Composable () -> Unit) {
 @Composable
 fun componentLabel(userComponent: UserComponent): String? {
   val launcherResourceProvider = LocalLauncherResourceProvider.current
-  return produceState<String?>(null) { value = launcherResourceProvider.getLabel(userComponent) }
+  val launcherResourceCache = LocalLauncherResourceCache.current
+  return produceState(launcherResourceCache.labels[userComponent]) {
+      if (value == null) {
+        val label = launcherResourceProvider.getLabel(userComponent)
+        launcherResourceCache.labels[userComponent] = label
+        value = label
+      }
+    }
     .value
 }
 
