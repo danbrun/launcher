@@ -39,21 +39,21 @@ class MigrateUserHandleToProfile(private val application: Application) : Migrati
         // Migrate to safe values
         execSQL(
           "UPDATE ActivityData SET userHandle = ? WHERE userHandle != ?",
-          arrayOf(safeWorkValue, personalUserHandle),
+          arrayOf<Any>(safeWorkValue, personalUserHandle),
         )
         execSQL(
           "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-          arrayOf(safePersonalValue, personalUserHandle),
+          arrayOf<Any>(safePersonalValue, personalUserHandle),
         )
 
         // Migrate to final values
         execSQL(
           "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-          arrayOf(1, safePersonalValue),
+          arrayOf<Any>(1, safePersonalValue),
         )
         execSQL(
           "UPDATE ActivityData SET userHandle = ? WHERE userHandle = ?",
-          arrayOf(2, safeWorkValue),
+          arrayOf<Any>(2, safeWorkValue),
         )
       }
 
