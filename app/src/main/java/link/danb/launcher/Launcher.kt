@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -190,6 +192,8 @@ fun Launcher(
                     text = {
                       Text(
                         componentLabel(item.userShortcut) ?: "",
+                        Modifier.fillMaxSize(),
+                        textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         style = textStyle,
@@ -234,6 +238,8 @@ fun Launcher(
                       text = {
                         Text(
                           componentLabel(item.userActivity) ?: "",
+                          Modifier.fillMaxSize(),
+                          textAlign = TextAlign.Center,
                           maxLines = 2,
                           overflow = TextOverflow.Ellipsis,
                           style = textStyle,
@@ -269,6 +275,8 @@ fun Launcher(
                     text = {
                       Text(
                         item.name,
+                        Modifier.fillMaxSize(),
+                        textAlign = TextAlign.Center,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         style = textStyle,

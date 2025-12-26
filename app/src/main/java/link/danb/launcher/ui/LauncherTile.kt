@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -53,10 +52,7 @@ fun LauncherTile(
 
     Spacer(Modifier.height(8.dp))
 
-    CompositionLocalProvider(
-      LocalTextStyle provides
-        MaterialTheme.typography.labelMedium.copy(textAlign = TextAlign.Center)
-    ) {
+    CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.labelMedium) {
       text()
     }
   }
