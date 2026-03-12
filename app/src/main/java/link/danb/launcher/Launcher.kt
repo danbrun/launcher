@@ -52,6 +52,7 @@ import link.danb.launcher.activities.details.DetailsDialog
 import link.danb.launcher.activities.hidden.HiddenAppsDialog
 import link.danb.launcher.apps.componentLabel
 import link.danb.launcher.apps.rememberAppsLauncher
+import link.danb.launcher.browser.BrowserActivity
 import link.danb.launcher.gestures.GestureActivityAnimation
 import link.danb.launcher.shortcuts.PinShortcutsDialog
 import link.danb.launcher.ui.LauncherIcon
@@ -144,8 +145,7 @@ fun Launcher(
               span = { item ->
                 when (item) {
                   is WidgetViewItem,
-                  is GroupHeaderViewItem,
-                  is TabViewItem -> GridItemSpan(maxLineSpan)
+                  is GroupHeaderViewItem -> GridItemSpan(maxLineSpan)
 
                   else -> GridItemSpan(1)
                 }
@@ -266,7 +266,8 @@ fun Launcher(
                         Image(
                           item.icon,
                           contentDescription = null,
-                          Modifier.size(width = 80.dp, height = 60.dp).clip(RoundedCornerShape(25)),
+                          Modifier.size(dimensionResource(R.dimen.launcher_icon_size))
+                            .clip(RoundedCornerShape(25)),
                           alignment = Alignment.TopCenter,
                           contentScale = ContentScale.FillWidth,
                         )
@@ -285,10 +286,15 @@ fun Launcher(
                     modifier = Modifier.animateItem(),
                     onClick = {
                       if (item.uri != null) {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, item.uri))
+                        context.startActivity(
+                          Intent(context, BrowserActivity::class.java).apply {
+                            putExtra("tab_id", item.id)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                          }
+                        )
                       }
                     },
-                    onLongClick = { launcherViewModel.clearTab(item.id) },
+                    onLongClick = { launcherViewModel.closeTab(item.id) },
                   )
                 }
               }

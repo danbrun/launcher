@@ -51,10 +51,13 @@ dependencies {
   androidTestImplementation(libs.androidx.ui.test.junit4)
   androidTestImplementation(libs.ui.test.junit4)
   androidTestImplementation(platform(libs.androidx.compose.bom))
+
   annotationProcessor(libs.androidx.room.compiler)
+
   debugImplementation(libs.androidx.ui.test.manifest)
   debugImplementation(libs.androidx.ui.tooling)
   debugImplementation(libs.ui.tooling)
+
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.collection.ktx)
@@ -82,6 +85,7 @@ dependencies {
   implementation(libs.androidx.ui.tooling.preview)
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.dagger)
+  implementation(libs.geckoview)
   implementation(libs.hilt.android)
   implementation(libs.kotlinx.collections.immutable)
   implementation(libs.kotlinx.serialization.json)
@@ -97,8 +101,10 @@ dependencies {
   implementation(libs.ui.graphics)
   implementation(libs.ui.tooling.preview)
   implementation(platform(libs.androidx.compose.bom))
+
   ksp(libs.androidx.room.compiler)
   ksp(libs.dagger.compiler)
   ksp(libs.hilt.compiler)
+
   testImplementation(libs.junit)
 }

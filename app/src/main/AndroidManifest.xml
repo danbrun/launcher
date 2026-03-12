@@ -71,6 +71,21 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".browser.BrowserActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|fontScale|keyboard|keyboardHidden"
+            android:exported="true"
+            android:label="Browser"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.Launcher">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
     </application>
 
 </manifest>

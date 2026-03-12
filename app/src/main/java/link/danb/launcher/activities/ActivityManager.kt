@@ -50,7 +50,7 @@ constructor(
           .filter { it.isEnabled || it.profile != Profile.PRIVATE }
           .map { profileManager.getUserHandle(it.profile) }
           .flatMap { launcherApps.getActivityList(null, it) }
-          .filter { it.componentName.packageName != context.packageName }
+//          .filter { it.componentName.packageName != context.packageName }
           .map { UserActivity(it.componentName, checkNotNull(profileManager.getProfile(it.user))) }
           .toImmutableList()
       }

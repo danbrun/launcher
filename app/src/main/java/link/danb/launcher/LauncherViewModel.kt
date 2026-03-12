@@ -2,10 +2,8 @@ package link.danb.launcher
 
 import android.app.Application
 import android.appwidget.AppWidgetManager
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import android.util.Base64
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
@@ -33,13 +31,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
 import link.danb.launcher.activities.ActivityManager
 import link.danb.launcher.apps.LauncherResourceProvider
+import link.danb.launcher.browser.BrowserManager
+import link.danb.launcher.browser.database.BrowserDatabase
+import link.danb.launcher.browser.database.BrowserTab
 import link.danb.launcher.components.UserActivity
 import link.danb.launcher.components.UserShortcut
 import link.danb.launcher.database.ActivityData
-import link.danb.launcher.database.LauncherDatabase
-import link.danb.launcher.database.TabData
 import link.danb.launcher.database.WidgetData
 import link.danb.launcher.profiles.Profile
 import link.danb.launcher.profiles.ProfileManager
@@ -95,7 +95,8 @@ constructor(
   activityManager: ActivityManager,
   private val application: Application,
   private val appWidgetManager: AppWidgetManager,
-  private val launcherDatabase: LauncherDatabase,
+  private val browserDatabase: BrowserDatabase,
+  private val browserManager: BrowserManager,
   private val launcherResourceProvider: LauncherResourceProvider,
   private val profileManager: ProfileManager,
   private val shortcutManager: ShortcutManager,
@@ -122,7 +123,7 @@ constructor(
         activityManager.data,
         shortcutManager.shortcuts,
         widgetManager.data,
-        launcherDatabase.tabData().get(),
+        browserDatabase.browserTabDao().getAll(),
         combine(searchQuery, profile, ::Filter),
         ::CombinedData,
       )
@@ -166,8 +167,11 @@ constructor(
     shortcutManager.pinShortcut(userShortcut, isPinned = false)
   }
 
-  fun clearTab(tabId: Int) {
-    viewModelScope.launch { launcherDatabase.tabData().delete(tabId) }
+  fun closeTab(tabId: Int) {
+    viewModelScope.launch {
+      withContext(Dispatchers.IO) { browserDatabase.browserTabDao().delete(tabId) }
+      browserManager.closeSession(tabId)
+    }
   }
 
   private fun MutableList<ViewItem>.addWidgetListViewItems(
@@ -197,17 +201,11 @@ constructor(
     }
   }
 
-  private fun MutableList<ViewItem>.addTabTileViewItems(tabs: List<TabData>) {
+  private fun MutableList<ViewItem>.addTabTileViewItems(tabs: List<BrowserTab>) {
     if (tabs.isEmpty()) return
     add(GroupHeaderViewItem(application.getString(R.string.tabs)))
     for (tab in tabs) {
-      val uri = tab.url.takeIf { it.startsWith("http") }?.toUri()
-      val icon =
-        tab.capture?.let {
-          val bytes = Base64.decode(it.split(",")[1], Base64.DEFAULT)
-          BitmapFactory.decodeByteArray(bytes, 0, bytes.size).asImageBitmap()
-        }
-      add(TabViewItem(tab.id, uri, tab.title, icon))
+      add(TabViewItem(tab.tabId, tab.url.toUri(), tab.title, tab.bitmap?.asImageBitmap()))
     }
   }
 
@@ -298,7 +296,7 @@ constructor(
     val activities: List<ActivityData>,
     val shortcuts: List<UserShortcut>,
     val widgets: List<WidgetData>,
-    val tabState: List<TabData>,
+    val tabState: List<BrowserTab>,
     val filter: Filter,
   )
 
