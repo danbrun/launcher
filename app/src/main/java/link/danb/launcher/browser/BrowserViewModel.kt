@@ -54,7 +54,7 @@ constructor(
           flowOf(BackState.FINISH_ACTIVITY)
         }
       }
-      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), BackState.FINISH_ACTIVITY)
+      .stateIn(viewModelScope, SharingStarted.Eagerly, BackState.FINISH_ACTIVITY)
 
   init {
     viewModelScope.launch(Dispatchers.IO) { newTabIfNone() }
