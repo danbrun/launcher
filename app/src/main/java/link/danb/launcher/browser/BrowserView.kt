@@ -2,6 +2,7 @@ package link.danb.launcher.browser
 
 import android.content.Context
 import android.widget.FrameLayout
+import com.google.android.material.color.MaterialColors
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
@@ -20,7 +21,12 @@ class BrowserView(context: Context) : FrameLayout(context) {
 
   @Inject lateinit var browserManager: BrowserManager
 
-  private val geckoView: GeckoView = GeckoView(context)
+  private val geckoView: GeckoView =
+    GeckoView(context).apply {
+      coverUntilFirstPaint(
+        MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface)
+      )
+    }
 
   private var tab: BrowserTab? = null
   private var job: Job = SupervisorJob()
