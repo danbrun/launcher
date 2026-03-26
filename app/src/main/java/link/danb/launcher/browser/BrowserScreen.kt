@@ -128,7 +128,7 @@ fun BrowserScreen(viewModel: BrowserViewModel = viewModel()) {
                       }
                     },
                     trailingIcon = {
-                      IconButton(onClick = { viewModel.closeTab(tab) }) {
+                      IconButton(onClick = { viewModel.closeTab(tab.tabId) }) {
                         Icon(
                           painterResource(R.drawable.baseline_close_24),
                           contentDescription = null,

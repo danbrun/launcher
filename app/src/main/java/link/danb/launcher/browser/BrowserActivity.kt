@@ -17,22 +17,37 @@ class BrowserActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    handleIntent()
+
     enableEdgeToEdge()
     setContent { LauncherTheme { BrowserScreen(browserViewModel) } }
-    onBackPressedDispatcher.addCallback(this) { browserViewModel.goBack() }
-    setTab()
+
+    onBackPressedDispatcher.addCallback(this) {
+      when (browserViewModel.backState.value) {
+        BackState.BROWSER_BACK -> {
+          browserViewModel.goBack()
+        }
+        BackState.FINISH_ACTIVITY -> {
+          finish()
+          browserViewModel.closeTab()
+        }
+      }
+    }
   }
 
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     setIntent(intent)
-    setTab()
+    handleIntent()
   }
 
-  private fun setTab() {
+  private fun handleIntent() {
     val tabId = intent.getIntExtra("tab_id", -1)
     if (tabId != -1) {
       browserViewModel.changeTab(tabId)
+    } else {
+      val url = intent.dataString ?: return
+      browserViewModel.newTab(url)
     }
   }
 }
