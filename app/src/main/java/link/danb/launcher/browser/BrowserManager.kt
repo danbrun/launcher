@@ -47,13 +47,8 @@ constructor(
     if (session != null) return session
 
     val newSession =
-      GeckoSession().apply {
+      newSession(tab).apply {
         open(geckoRuntime)
-
-        val delegates = Delegates(this@BrowserManager, coroutineScope, browserDatabase, tab.tabId)
-        contentDelegate = delegates
-        navigationDelegate = delegates
-        progressDelegate = delegates
 
         coroutineScope.launch {
           val state =
@@ -82,6 +77,14 @@ constructor(
     session.close()
     sessions.remove(tabId)
   }
+
+  internal fun newSession(tab: BrowserTab) =
+    GeckoSession().apply {
+      val delegates = Delegates(this@BrowserManager, coroutineScope, browserDatabase, tab.tabId)
+      contentDelegate = delegates
+      navigationDelegate = delegates
+      progressDelegate = delegates
+    }
 
   class Delegates(
     private val browserManager: BrowserManager,
@@ -132,7 +135,8 @@ constructor(
       coroutineScope.launch(Dispatchers.IO) {
         val tabId = browserDatabase.browserTabDao().upsert(BrowserTab(url = uri)).toInt()
         val tab = checkNotNull(browserDatabase.browserTabDao().get(tabId))
-        result.complete(browserManager.getSession(tab))
+        val session = withContext(Dispatchers.Main) { browserManager.newSession(tab) }
+        result.complete(session)
       }
       return result
     }
